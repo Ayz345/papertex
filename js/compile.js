@@ -19,16 +19,36 @@
 
   var scriptPromise = null, compiler = null, assetsChecked = false;
 
-  /* The desktop build can carry TeX Live with it. If those files are present,
-     use them and never touch the network — see tools/fetch-texlive.js. */
+  /* Where the wasm engine and TeX Live come from, first match wins:
+       1. <meta name="papertex-engine" content="https://your.host/tl2025"> —
+          a deployment that hosts them elsewhere says so here;
+       2. engine/texlive/ beside the page — tools/fetch-texlive.js puts them
+          there, for the desktop app and for a site that serves them itself;
+       3. the public CDN, as a last resort.
+     CFG.source records which, for the error message when it fails. */
+  CFG.source = 'cdn';
   function useLocalAssetsIfPresent() {
-    if (assetsChecked || !window.papertexNative) return Promise.resolve();
+    if (assetsChecked) return Promise.resolve();
     assetsChecked = true;
-    return window.papertexNative.engineAssets().then(function (r) {
-      if (!r || !r.local) return;
+    var meta = document.querySelector('meta[name="papertex-engine"]');
+    var base = meta && meta.content.trim().replace(/\/+$/, '');
+    if (base) {
+      CFG.wasm = base + '/busytex.wasm';
+      CFG.bundles = base + '/bundles';
+      CFG.source = base;
+      return Promise.resolve();
+    }
+    function local() {
       CFG.wasm = 'engine/texlive/busytex.wasm';
       CFG.bundles = 'engine/texlive/bundles';
-    }, function () { /* keep the defaults */ });
+      CFG.source = 'local';
+    }
+    if (window.papertexNative) {
+      return window.papertexNative.engineAssets().then(function (r) { if (r && r.local) local(); },
+        function () { /* keep the defaults */ });
+    }
+    return fetch('engine/texlive/bundles/file-manifest.json', { method: 'HEAD', cache: 'no-store' })
+      .then(function (r) { if (r.ok) local(); }, function () { /* not served here */ });
   }
 
   function loadScript(src) {

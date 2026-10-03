@@ -6,6 +6,7 @@
   "scripts": {
     "desktop": "electron desktop/main.js",
     "build": "node build.js",
+    "build:web": "node tools/build-web.js",
     "build:engine": "node tools/bundle-engine.js",
     "build:texmf": "node tools/bundle-texmf.js",
     "fonts": "node tools/genfonts.js",
@@ -15,11 +16,9 @@
     "icon": "python tools/make-icon.py",
     "shortcut": "node tools/make-shortcut.js"
   },
-  "dependencies": {
-    "@siglum/engine": "^0.1.4",
-    "esbuild": "^0.28.2"
-  },
   "devDependencies": {
+    "@siglum/engine": "^0.1.4",
+    "esbuild": "^0.28.2",
     "electron": "^41.7.1"
   },
   "main": "desktop/main.js",

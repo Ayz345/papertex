@@ -35,8 +35,15 @@ Worth having for three reasons the browser build cannot match:
   in preference to the CDN.
 
 `npm run dist` builds an installer with electron-builder (NSIS and portable on
-Windows, dmg on macOS, AppImage on Linux). Supply your own icon before shipping
-one — it currently uses the stock Electron icon.
+Windows, dmg on macOS, AppImage on Linux), using the PaperTeX icon in
+`desktop/`. electron-builder is not a dependency yet — install it once with
+`npm install --save-dev electron-builder`. If `engine/texlive/` is present it
+goes into the installer (about 220 MB more) and the installed app compiles
+fully offline. An unsigned Windows installer makes SmartScreen warn on first
+run; sign it before handing it out widely.
+
+To publish the web version, see [DEPLOY.md](DEPLOY.md): `npm run build:web`
+assembles a ready-to-upload `dist/web/`.
 
 The renderer gets no Node access: `contextIsolation` is on, `nodeIntegration`
 is off, and `desktop/preload.js` exposes exactly six operations — save, export,

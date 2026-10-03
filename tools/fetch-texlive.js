@@ -53,6 +53,15 @@ function get(url, out) {
   process.stdout.write('  extracting bundles … ');
   execFileSync('tar', ['-xzf', tarball, '-C', dest], { stdio: 'inherit' });
   fs.rmSync(tarball, { force: true });
+  /* the tarball was made on a Mac and carries its "._name" metadata twins;
+     they are not files anyone needs, least of all a deployed site */
+  (function sweep(dir) {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.name.startsWith('._')) fs.rmSync(p, { recursive: true, force: true });
+      else if (e.isDirectory()) sweep(p);
+    }
+  })(dest);
   console.log('done');
 
   const manifest = path.join(dest, 'bundles', 'file-manifest.json');
