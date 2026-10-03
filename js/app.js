@@ -724,7 +724,7 @@
     });
 
     var paper = $('#paper').cloneNode(true);
-    ['.gutter', '.pt-tailadd', '.pt-addauth', '.pt-xauth', '.pt-figctl', '.pt-tabctl',
+    ['.gutter', '.pt-tailadd', '.pt-addauth', '.pt-xauth', '.pt-figctl', '.pt-tabctl', '.pt-chedit', '.pt-cherr',
       '.pt-codebar', '.pt-rawl', '.pt-bibx', '.pt-bibkey', '.mcaret', '.pt-drop']
       .forEach(function (sel) {
         [].forEach.call(paper.querySelectorAll(sel), function (e) { e.remove(); });
@@ -1235,14 +1235,39 @@
   /* -------------------------------------------------------------------- boot */
   /* Open the store, then the document last worked on (or the newest one, or
      the pre-IndexedDB copy if it could not be moved, or a fresh one). */
+  /* Links into the editor, as the home page makes them:
+       app.html#new=<template>   a new document from that template
+       app.html#doc=<id>         that saved document
+     The hash is taken off once followed, so a reload does not start a
+     second new document. */
+  function linkTarget() {
+    var m = /^#(new|doc)=([\w-]+)$/.exec(location.hash || '');
+    return m ? { kind: m[1], id: m[2] } : null;
+  }
+  function followLink() {
+    var link = linkTarget();
+    if (!link) return;
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* file: */ }
+    if (link.kind === 'doc') { if (link.id !== state.docId) switchTo(link.id); return; }
+    var t = (PT.templates || []).filter(function (x) { return x.id === link.id; })[0];
+    if (t) newFromTemplate(t);
+  }
+
   function boot() {
+    var link = linkTarget();
     S.open().then(function () { return Promise.all([S.current(), S.list()]); }).then(function (r) {
       var cur = r[0], docs = r[1];
-      var pick = docs.filter(function (d) { return d.id === cur; })[0] || docs[0];
+      var want = link && link.kind === 'doc' ? link.id : cur;
+      var pick = docs.filter(function (d) { return d.id === want; })[0] ||
+        docs.filter(function (d) { return d.id === cur; })[0] || docs[0];
       if (pick) return S.load(pick.id).then(function (json) { return { id: pick.id, json: json }; });
       var leg = S.legacy();
       return leg ? { id: S.newId(), json: leg, fresh: true } : null;
-    }).catch(function () { return null; }).then(start);
+    }).catch(function () { return null; }).then(function (got) {
+      start(got);
+      followLink();
+      window.addEventListener('hashchange', followLink);
+    });
   }
 
   function start(got) {

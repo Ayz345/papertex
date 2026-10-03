@@ -29,6 +29,8 @@
     "productName": "PaperTeX",
     "files": [
       "index.html",
+      "app.html",
+      "about.html",
       "css/**",
       "js/**",
       "engine/**",

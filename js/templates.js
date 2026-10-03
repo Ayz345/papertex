@@ -26,6 +26,13 @@
   function list(items, ordered) {
     return { id: D.uid(), t: 'list', ordered: !!ordered, items: items.map(function (h) { return { html: h, level: 0 }; }) };
   }
+  function chart(kind, o) {
+    var b = D.blockFactory(kind === 'function' ? 'plot' : 'chart');
+    b.kind = kind;
+    if (o.from) b.data = '';
+    Object.keys(o).forEach(function (k) { b[k] = o[k]; });
+    return b;
+  }
   function thm(kind, title, html, label) { return { id: D.uid(), t: 'theorem', kind: kind, title: title || '', html: html, label: label || '' }; }
   function base(title, overrides) {
     var d = D.newDoc();
@@ -99,6 +106,10 @@
       id: 'lab', name: 'Lab report', icon: '⚗', desc: 'Theory, method, data table, error analysis',
       build: function () {
         var d = base('Lab Report: Measuring g with a Pendulum');
+        var labData = { id: D.uid(), t: 'table', rows: [['L (m)', 'T (s)', 'g (m/s²)'], ['0.25', '1.01', '9.67'], ['0.50', '1.42', '9.79'], ['0.75', '1.74', '9.78'],
+          ['1.00', '2.01', '9.77'], ['1.25', '2.24', '9.84']],
+          align: ['c', 'c', 'c'], header: true, booktabs: true, rules: false,
+          caption: 'Measured periods and the resulting values of g.', label: 'tab:data', placement: 'htbp' };
         d.meta.abstract = 'What was measured, how, the result with its uncertainty, and how it compares with the accepted value.';
         d.blocks = [
           sec('Introduction'),
@@ -113,15 +124,64 @@
                 'Repeat for five different lengths.'], true),
           { id: D.uid(), t: 'figure', src: '', filename: '', caption: 'The experimental setup.', width: 0.6, label: 'fig:setup', placement: 'htbp' },
           sec('Results'),
-          { id: D.uid(), t: 'table', rows: [['L (m)', 'T (s)', 'g (m/s²)'], ['0.50', '1.42', '9.79'], ['0.75', '1.74', '9.78'], ['1.00', '2.01', '9.77']],
-            align: ['c', 'c', 'c'], header: true, booktabs: true, rules: false,
-            caption: 'Measured periods and the resulting values of g.', label: 'tab:data', placement: 'htbp' },
+          labData,
+          chart('scatter', {
+            from: labData.id, xcol: 0, ycols: [1], xlabel: 'Length $L$ (m)', ylabel: 'Period $T$ (s)', xmin: '0', xmax: '1.4', ymin: '0',
+            fns: [{ expr: '2pi sqrt(x/9.81)', name: 'theory, $g = 9.81$' }],
+            caption: 'Measured periods against the length, with the curve ' + im('T = 2\\pi\\sqrt{L/g}') + '.', label: 'fig:periods'
+          }),
           para('The uncertainty follows from propagating the errors in ' + im('L') + ' and ' + im('T') + ':'),
           eq(['\\frac{\\delta g}{g} = \\sqrt{\\left(\\frac{\\delta L}{L}\\right)^2 + \\left(2\\frac{\\delta T}{T}\\right)^2}'], ['eq:error']),
           sec('Discussion'),
           para('Compare with the accepted value, and name the largest sources of error.'),
           sec('Conclusion'),
           para('The result, with its uncertainty, in one or two sentences.')
+        ];
+        return d;
+      }
+    },
+    {
+      id: 'data', name: 'Data report', icon: '📊', desc: 'A table of measurements, charts drawn from it, a fitted model',
+      build: function () {
+        var d = base('How Fast Does Coffee Cool?');
+        d.meta.abstract = 'The question, the measurements, the model fitted to them, and what it predicts.';
+        var cooling = { id: D.uid(), t: 'table',
+          rows: [['Time (min)', 'Mug (°C)', 'Thermos (°C)'], ['0', '90', '90'], ['2', '79', '88'], ['4', '70', '86'], ['6', '63', '85'],
+            ['8', '57', '83'], ['10', '52', '82'], ['15', '43', '78'], ['20', '36', '75']],
+          align: ['c', 'c', 'c'], header: true, booktabs: true, rules: false,
+          caption: 'Temperature of the coffee, read every few minutes.', label: 'tab:cooling', placement: 'htbp' };
+        var cost = { id: D.uid(), t: 'table',
+          rows: [['Cup', 'Price', 'Still hot after 1 h'], ['Paper', '0.10', '0'], ['Ceramic', '6', '1'], ['Steel', '18', '4'], ['Thermos', '25', '6']],
+          align: ['l', 'r', 'r'], header: true, booktabs: true, rules: false,
+          caption: 'Cups tested: price and hours the coffee stayed above 60 °C.', label: 'tab:cups', placement: 'htbp' };
+        d.blocks = [
+          sec('Question'),
+          para('What is being measured, and why it is interesting.'),
+          sec('Measurements'),
+          para('Two cups were filled at the same moment and their temperature read every few minutes (Table ' + ref('tab:cooling') + ').'),
+          cooling,
+          chart('scatter', {
+            from: cooling.id, xcol: 0, ycols: [1, 2], xlabel: 'Time $t$ (min)', ylabel: 'Temperature (°C)',
+            fns: [{ expr: '21 + 69e^(-0.075x)', name: 'model for the mug' }],
+            caption: 'Both cups, with the cooling law fitted to the mug.', label: 'fig:cooling'
+          }),
+          sec('Model'),
+          para('Newton’s law of cooling says the temperature difference to the room decays exponentially:'),
+          eq(['T(t) = T_{\\text{room}} + \\left(T_0 - T_{\\text{room}}\\right) e^{-kt}'], ['eq:cooling']),
+          para('With ' + im('T_{\\text{room}} = 21') + ' and ' + im('T_0 = 90') + ', the mug fits ' + im('k \\approx 0.075') +
+            ' per minute (Figure ' + ref('fig:cooling') + '). The curve in a chart is typed as a formula, ' +
+            'and the same formula goes into the LaTeX.'),
+          chart('function', {
+            fns: [{ expr: '69e^(-0.075x)', name: 'mug' }, { expr: '69e^(-0.009x)', name: 'thermos' }],
+            xmin: '0', xmax: '120', ymin: '0', axes: 'box', xlabel: 'Time $t$ (min)', ylabel: '$T - T_{\\text{room}}$ (°C)',
+            caption: 'What the model predicts over two hours.', label: 'fig:model'
+          }),
+          sec('Which cup?'),
+          cost,
+          chart('bar', { from: cost.id, xcol: 0, ycols: [2], ylabel: 'Hours above 60 °C', legend: false,
+            caption: 'Hours each cup kept the coffee hot.', label: 'fig:cups' }),
+          sec('Conclusion'),
+          para('The answer to the question, and how sure the data let you be.')
         ];
         return d;
       }

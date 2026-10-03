@@ -374,3 +374,45 @@ blockquote.pt-quote {
 .mci { font-family: Consolas, monospace; font-size: .92em; color: #9a5b06; background: #fdf1dd; border-radius: 3px; padding: 0 .12em; }
 .mcibs { opacity: .55; }
 .mcis { text-decoration: underline; text-decoration-style: dotted; }
+
+
+/* charts (chart.js); their settings are in the studio (studio.js, app.css) */
+.pt-chart { margin: 1em auto; position: relative; }
+.pt-chplot { display: flex; flex-direction: column; align-items: center; user-select: none; cursor: zoom-in; }
+.pt-chsvg { display: block; max-width: 100%; overflow: visible; }
+.pt-chsvg text { font-family: "PaperTeX", "Latin Modern Roman", serif; font-size: 10px; fill: #111; }
+.pt-chsvg text.pt-chval { font-size: 9px; }
+.pt-chgrid line { stroke: #d9d9d9; stroke-width: .5; }
+.pt-chgrid .minor line { stroke: #ececec; stroke-width: .4; }
+.pt-chaxis line, .pt-chaxis rect { stroke: #111; stroke-width: .6; fill: none; }
+.pt-charrow { fill: #111; stroke: none; }
+.pt-chline { stroke-linejoin: round; stroke-linecap: round; }
+.pt-chlegend { fill: #fff; stroke: #111; stroke-width: .5; }
+.pt-chlab { font-family: "PaperTeX", "Latin Modern Roman", serif; font-size: 10px; line-height: 1.4; height: 100%; display: flex; align-items: center; white-space: nowrap; color: #111; }
+.pt-chlab.c { justify-content: center; }
+.pt-chlab.l { justify-content: flex-start; }
+.pt-chm { display: inline-block; }
+.pt-cherr {
+  font: 400 11px/1.4 ui-sans-serif, system-ui, sans-serif; color: #b42318;
+  background: #fef3f2; border-radius: 4px; padding: 3px 8px; margin-top: 4px;
+}
+.pt-chedit {
+  position: absolute; top: 0; right: 0; opacity: 0; transition: opacity .15s, transform .15s;
+  font: 600 11px/1 ui-sans-serif, system-ui, sans-serif; color: #7a4f10;
+  background: #fffaf0; border: 1px solid #e8d4a8; border-radius: 6px; padding: 6px 9px; cursor: pointer;
+  box-shadow: 0 4px 12px -6px rgba(92, 58, 10, .5);
+}
+.blk:hover .pt-chedit, .pt-chedit:focus-visible { opacity: 1; }
+.pt-chedit:hover { background: #fdf3dd; transform: translateY(-1px); }
+.pt-chart:hover .pt-chsvg { outline: 1px dashed #e8d4a8; outline-offset: 6px; border-radius: 2px; }
+
+/* table looks (the studio's Look settings) */
+.pt-tcap.below { margin: .45em 0 0; }
+.pt-table.zebra.hashead tr:nth-child(2n+3) > *,
+.pt-table.zebra:not(.hashead) tr:nth-child(2n) > * { background: #ededed; }
+.pt-table.boldfirst td:first-child { font-weight: 700; }
+.pt-table.plainhead th { font-weight: 400; }
+.pt-table.sz-small { font-size: .84em; }
+.pt-table.sz-footnotesize { font-size: .76em; }
+.pt-tabctl button.big { font-weight: 600; color: #7a4f10; border-color: #e8d4a8; background: #fffaf0; }
+@media print { .pt-chedit { display: none !important; } .pt-chart:hover .pt-chsvg { outline: none; } }

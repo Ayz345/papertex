@@ -55,8 +55,14 @@ To work on the source instead:
 python -m http.server 8777 --directory .
 ```
 
-then open `http://localhost:8777/index.html` and run `node build.js` to
+then open `http://localhost:8777/` for the home page or
+`http://localhost:8777/app.html` for the editor, and run `node build.js` to
 regenerate the bundle.
+
+The site has three pages: `index.html` (home), `app.html` (the editor) and
+`about.html`. The home page reads saved documents and templates through
+`js/home.js` and links into the editor with `app.html#new=<template>` and
+`app.html#doc=<id>`.
 
 `http://localhost:8777/tools/mathcheck.html` sets a list of formulas with
 PaperTeX beside KaTeX, in display and inline style; in its console,
@@ -71,6 +77,8 @@ touching the math layout in `js/math.js`.
 | `js/math.js` | The formula engine: a tree model, a WYSIWYG renderer with its own caret and keyboard handling, LaTeX serialisation, and a small LaTeX parser used only for pasting. |
 | `js/doc.js` | The document model (blocks) and the on-paper editor — numbering, block menus, inline formulas, tables, figures, lists. |
 | `js/latex.js` | Turns the model into a `.tex` file, collecting the packages it actually needs. |
+| `js/chart.js` | Function plots and charts of data: a formula parser (no `eval`), the SVG drawn on the page, and the pgfplots code for the `.tex`. Axis limits, ticks and the legend corner are decided here and written into both, so the PDF matches the page. |
+| `js/home.js` | What the home page needs without loading the editor: recent documents and templates. |
 | `js/symbols.js` | Symbol and structure tables driving the palette and the `\command` autocomplete. |
 | `js/app.js` | Chrome: palettes, LaTeX pane, outline, settings, undo, storage, export. |
 
@@ -85,8 +93,24 @@ fraction instead of deleting a brace.
 - `Ctrl+K` — the command palette: one search over every block, symbol, structure,
   template and command, showing each one's shortcut; `\` in running text opens it at
   the caret (`\` twice types a backslash)
-- **New** — start blank or from a template: article, homework, lab report, lecture notes
-- `/` on an empty line — block menu (section, equation, figure, table, list, theorem, code, bibliography, raw LaTeX)
+- **New** — start blank or from a template: article, homework, lab report, data report, lecture notes
+- `/` on an empty line — block menu (section, equation, figure, table, function plot, chart, list, theorem, code, bibliography, raw LaTeX)
+- **Function plot** — type `y = 2x^2 - 3x + 1`, `sin x`, `e^(-x/2)`, `|x|` the way they are written
+  on paper; several curves, ranges such as `-2pi` to `2pi`, axes framed or through the origin
+- **Chart** — line, scatter or bar chart of a table in the document (it follows the
+  table as you edit it) or of rows pasted from a spreadsheet; curves such as a fitted
+  model can be drawn over the data. Exported as pgfplots
+- **Tables** — paste a block of cells from Excel or Sheets into a cell; rows and
+  columns go in beside the cell you are in; the 📊 button charts the table
+- **The chart and table editor** — a new chart or table opens full-window, and so does
+  clicking a chart (or a table's ⤢ button): the drawing large, its data as a
+  spreadsheet, every setting beside it. Charts: type, series colours, line styles,
+  points, smooth lines, error bars, stacked bars and value labels, curves over the
+  data, title, axis ranges and tick spacing, framed or arrow axes, grid, legend place,
+  width and shape. Tables: book rules, grid or plain; bold header or first column;
+  shaded rows; text size; caption above or below; sort, swap rows and columns,
+  totals/average/min-max rows, CSV import and copy. Every change shows on the page
+  and in the LaTeX at once; *Undo changes* restores it as it was when it opened
 - `$` mid-sentence — inline formula, editable again by clicking it
 - `Ctrl+Enter` — display equation below the current block
 - Select text — bold, italic, code, cross-reference, or *make this a formula*

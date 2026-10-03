@@ -60,6 +60,8 @@
         align: ['l', 'c', 'c'], header: true, booktabs: true, rules: false,
         caption: 'Caption text.', label: '', placement: 'htbp'
       };
+      case 'plot': return chartBlock('function', { fns: [{ expr: 'sin x', name: '' }], xmin: '-2pi', xmax: '2pi', axes: 'middle', xlabel: '$x$', ylabel: '$y$' });
+      case 'chart': return chartBlock('line', { data: 'Time (s), Distance (m)\n0, 0\n1, 1.8\n2, 4.1\n3, 6.2\n4, 7.9\n5, 10.1' });
       case 'theorem': return { id: uid(), t: 'theorem', kind: 'theorem', title: '', html: '', label: '' };
       case 'lemma': return { id: uid(), t: 'theorem', kind: 'lemma', title: '', html: '', label: '' };
       case 'definition': return { id: uid(), t: 'theorem', kind: 'definition', title: '', html: '', label: '' };
@@ -72,6 +74,19 @@
       case 'raw': return { id: uid(), t: 'raw', tex: '% raw LaTeX passed straight through\n' };
       default: return { id: uid(), t: 'para', html: '' };
     }
+  }
+
+  /* A chart: kind is function | line | scatter | bar. Data comes from a
+     table in the document (from = its id) or from the chart's own rows
+     (data, as comma- or tab-separated text). See chart.js. */
+  function chartBlock(kind, o) {
+    var b = {
+      id: uid(), t: 'chart', kind: kind, fns: [], from: '', data: '', xcol: 0, ycols: [1],
+      xmin: '', xmax: '', ymin: '', ymax: '', xlabel: '', ylabel: '', axes: 'box',
+      grid: true, legend: true, marks: true, width: 0.75, caption: '', label: '', placement: 'htbp'
+    };
+    for (var k in o) b[k] = o[k];
+    return b;
   }
 
   var MENU = [
@@ -95,6 +110,8 @@
       ['enumerate', 'Numbered list', '1.', 'enumerate'],
       ['figure', 'Figure', '🖼', 'Image with caption'],
       ['table', 'Table', '▦', 'tabular with caption'],
+      ['plot', 'Function plot', '📈', 'y = f(x), drawn with pgfplots'],
+      ['chart', 'Chart', '📊', 'Line, scatter or bar chart of data'],
       ['quote', 'Quote', '❝', 'quote environment'],
       ['code', 'Code', '⌨', 'verbatim / lstlisting'],
       ['bib', 'Bibliography', '📚', 'thebibliography'],
@@ -125,7 +142,7 @@
           if (b.label) map[b.label] = b.__nums[0];
           if (b.labels) b.labels.forEach(function (l, i) { if (l) map[l] = b.__nums[i]; });
           break;
-        case 'figure':
+        case 'figure': case 'chart':
           b.__num = String(++fig);
           if (b.label) map[b.label] = b.__num;
           break;
@@ -222,6 +239,7 @@
 
   Editor.prototype.change = function (structural) {
     if (this.hooks.onChange) this.hooks.onChange(structural);
+    if (!structural) this.redrawCharts();
   };
   Editor.prototype.focusBlock = function (id, part, atEnd) {
     this.focusHint = { id: id, part: part || 'main', atEnd: atEnd !== false };
@@ -402,7 +420,7 @@
     if ((ev.ctrlKey || ev.metaKey) && !ev.altKey) return;
     /* \ in running text opens the command palette at the caret — blocks,
        symbols, formatting; pressing \ again there types a backslash */
-    if (ev.key === '\\' && !ev.metaKey && PT.palette) {   /* AltGr+… on many layouts */
+    if (ev.key === '\\' && !ev.metaKey && PT.palette && !e.closest('.studio')) {   /* AltGr+… on many layouts */
       ev.preventDefault();
       PT.palette.open({ fromBackslash: true });
       return;
@@ -533,6 +551,7 @@
       case 'list': return this.renderList(b, box, idx);
       case 'figure': return this.renderFigure(b, box, idx);
       case 'table': return this.renderTable(b, box, idx);
+      case 'chart': return this.renderChart(b, box, idx);
       case 'theorem': {
         var t = h('div', 'pt-thm pt-thm-' + b.kind);
         var head = h('span', 'pt-thmh');
@@ -937,11 +956,18 @@
   };
 
   /* ------------------------------------------------------------------- tables */
+  /* the classes that make a table look on the page as it will in the PDF */
+  function tableClass(b) {
+    return 'pt-table' + (b.booktabs ? ' booktabs' : '') + (b.rules ? ' ruled' : '') +
+      (b.zebra ? ' zebra' : '') + (b.header ? ' hashead' : '') + (b.boldFirst ? ' boldfirst' : '') +
+      (b.boldHeader === false ? ' plainhead' : '') + (b.size ? ' sz-' + b.size : '');
+  }
+
   Editor.prototype.renderTable = function (b, box, idx) {
     var self = this;
     var tw = h('div', 'pt-tabw');
 
-    var cap = h('div', 'pt-cap pt-tcap');
+    var cap = h('div', 'pt-cap pt-tcap' + (b.capBelow ? ' below' : ''));
     var cl = h('span', 'pt-capl', 'Table ' + (b.__num || '1') + ': ');
     cl.contentEditable = 'false';
     cap.appendChild(cl);
@@ -950,9 +976,9 @@
     });
     ce.dataset.ph = 'Caption…';
     cap.appendChild(ce);
-    tw.appendChild(cap);
+    if (!b.capBelow) tw.appendChild(cap);
 
-    var tbl = h('table', 'pt-table' + (b.booktabs ? ' booktabs' : '') + (b.rules ? ' ruled' : ''));
+    var tbl = h('table', tableClass(b));
     b.rows.forEach(function (r, ri) {
       var tr = h('tr', ri === 0 && b.header ? 'hdr' : '');
       r.forEach(function (c, ci) {
@@ -961,42 +987,85 @@
           onKey: function (ev) { self.tableKeys(ev, b, ri, ci); }
         });
         e.dataset.part = 'c' + ri + '_' + ci;
+        e.addEventListener('focus', function () { self.tableCur = { id: b.id, ri: ri, ci: ci }; });
         td.appendChild(e);
         tr.appendChild(td);
       });
       tbl.appendChild(tr);
     });
+    /* a block of cells copied from a spreadsheet lands cell by cell */
+    tbl.addEventListener('paste', function (ev) {
+      var text = ev.clipboardData && ev.clipboardData.getData('text/plain');
+      var cell = ev.target.closest && ev.target.closest('.pt-cell');
+      if (!text || !cell || !/[\t\n]/.test(text.replace(/\s+$/, ''))) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      var at = /^c(\d+)_(\d+)$/.exec(cell.dataset.part);
+      self.pasteCells(b, PT.chart.parseCSV(text), +at[1], +at[2]);
+    }, true);
     tw.appendChild(tbl);
+    if (b.capBelow) tw.appendChild(cap);
 
+    /* rows and columns go in beside the cell you were last in; everything
+       else is in the table editor */
+    function cur() {
+      var c = self.tableCur;
+      return c && c.id === b.id && c.ri < b.rows.length && c.ci < b.align.length ? c : null;
+    }
     var bar = h('div', 'pt-tabctl');
     bar.contentEditable = 'false';
-    [['+ row', function () { b.rows.push(b.rows[0].map(function () { return ''; })); }],
-     ['− row', function () { if (b.rows.length > 1) b.rows.pop(); }],
-     ['+ col', function () { b.rows.forEach(function (r) { r.push(''); }); b.align.push('c'); }],
-     ['− col', function () { if (b.align.length > 1) { b.rows.forEach(function (r) { r.pop(); }); b.align.pop(); } }],
-     ['header', function () { b.header = !b.header; }],
-     ['booktabs', function () { b.booktabs = !b.booktabs; b.rules = false; }],
-     ['grid', function () { b.rules = !b.rules; b.booktabs = false; }]
-    ].forEach(function (pair) {
-      var bt = h('button', '', pair[0]);
-      bt.onclick = function () { pair[1](); self.change(true); self.render(); };
+    [['⤢  Edit table', 'Open the table editor: style, sorting, totals, CSV, alignment', function () {
+      if (PT.studio) PT.studio.open(self, b, tw);
+      return false;
+    }, 'big'],
+     ['+ row', 'Insert a row below the current one', function () {
+       var c = cur(), at = c ? c.ri + 1 : b.rows.length;
+       b.rows.splice(at, 0, b.align.map(function () { return ''; }));
+       self.focusBlock(b.id, 'c' + at + '_' + (c ? c.ci : 0), false);
+     }],
+     ['− row', 'Delete the current row', function () {
+       if (b.rows.length < 2) return;
+       var c = cur();
+       b.rows.splice(c ? c.ri : b.rows.length - 1, 1);
+     }],
+     ['+ col', 'Insert a column right of the current one', function () {
+       var c = cur(), at = c ? c.ci + 1 : b.align.length;
+       b.rows.forEach(function (r) { r.splice(at, 0, ''); });
+       b.align.splice(at, 0, 'c');
+       self.focusBlock(b.id, 'c' + (c ? c.ri : 0) + '_' + at, false);
+     }],
+     ['− col', 'Delete the current column', function () {
+       if (b.align.length < 2) return;
+       var c = cur(), at = c ? c.ci : b.align.length - 1;
+       b.rows.forEach(function (r) { r.splice(at, 1); });
+       b.align.splice(at, 1);
+     }],
+     ['📊 chart', 'Draw a chart from this table', function () { self.chartFromTable(b, idx); return false; }]
+    ].forEach(function (it) {
+      var bt = h('button', it[3] || '', it[0]);
+      bt.title = it[1];
+      bt.onmousedown = function (e) { e.preventDefault(); };   /* keep the cell's caret */
+      bt.onclick = function () { if (it[2]() !== false) { self.change(true); self.render(); } };
       bar.appendChild(bt);
     });
-    var alg = h('span', 'pt-algs');
-    alg.appendChild(h('span', 'pt-alglbl', 'align:'));
-    b.align.forEach(function (a, ci) {
-      var s = h('select', 'pt-alg');
-      ['l', 'c', 'r'].forEach(function (v) {
-        var o = h('option', '', v); o.value = v;
-        if (v === a) o.selected = true;
-        s.appendChild(o);
-      });
-      s.onchange = function () { b.align[ci] = s.value; self.change(true); self.render(); };
-      alg.appendChild(s);
-    });
-    bar.appendChild(alg);
     tw.appendChild(bar);
     box.appendChild(tw);
+  };
+
+  function escHTML(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  /* rows of text into the table from (ri, ci), growing it to fit */
+  Editor.prototype.pasteCells = function (b, rows, ri, ci) {
+    rows.forEach(function (r, i) {
+      r.forEach(function (t, j) {
+        while (b.rows.length <= ri + i) b.rows.push(b.align.map(function () { return ''; }));
+        while (b.align.length <= ci + j) { b.rows.forEach(function (x) { x.push(''); }); b.align.push('r'); }
+        b.rows[ri + i][ci + j] = escHTML(t);
+      });
+    });
+    this.focusBlock(b.id, 'c' + (ri + rows.length - 1) + '_' + ci);
+    this.change(true);
+    this.render();
   };
 
   Editor.prototype.tableKeys = function (ev, b, ri, ci) {
@@ -1011,6 +1080,79 @@
       self.focusBlock(b.id, 'c' + nr + '_' + nc);
       self.render();
     }
+  };
+
+  /* ------------------------------------------------------------------- charts */
+  Editor.prototype.renderChart = function (b, box, idx) {
+    var self = this, C = PT.chart, doc = this.doc;
+    var fw = h('figure', 'pt-fig pt-chart');
+    var plot = h('div', 'pt-chplot');
+    plot.contentEditable = 'false';
+    plot.dataset.chart = b.id;
+    plot.title = 'Click to open the chart editor';
+    fw.appendChild(plot);
+    /* drawn once it is on the page: it sizes itself to the column */
+    setTimeout(function () { if (plot.isConnected) C.draw(plot, b, doc); }, 0);
+
+    /* the whole chart is the way in to its settings */
+    var edit = h('button', 'pt-chedit', '⤢  Edit chart');
+    edit.contentEditable = 'false';
+    edit.title = 'Open the chart editor: type, data, colours, axes, legend, size';
+    function openStudio(e) {
+      if (e) e.preventDefault();
+      if (PT.studio) PT.studio.open(self, b, fw);
+    }
+    edit.onclick = openStudio;
+    plot.addEventListener('click', openStudio);
+    fw.appendChild(edit);
+
+    var cap = h('figcaption', 'pt-cap');
+    var cl = h('span', 'pt-capl', 'Figure ' + (b.__num || '1') + ': ');
+    cl.contentEditable = 'false';
+    cap.appendChild(cl);
+    var ce = this.richEditable('span', 'pt-capt', b.caption, function (v) { b.caption = v; self.change(); }, {
+      onKey: function (ev) { self.textKeys(ev, b, idx, 'caption'); }
+    });
+    ce.dataset.part = 'main';
+    ce.dataset.ph = 'Caption…';
+    cap.appendChild(ce);
+    fw.appendChild(cap);
+    box.appendChild(fw);
+  };
+
+  /* every chart again, a burst of edits at a time: a chart drawn from a
+     table follows its cells as they are typed. A timer, not an animation
+     frame, which never comes while the tab is in the background. */
+  Editor.prototype.redrawCharts = function () {
+    var self = this;
+    if (this.chartTimer || !window.PT.chart) return;
+    this.chartTimer = setTimeout(function () {
+      self.chartTimer = 0;
+      [].forEach.call(self.paper.querySelectorAll('.pt-chplot'), function (p) {
+        var b = self.doc.blocks.filter(function (x) { return x.id === p.dataset.chart; })[0];
+        if (b) PT.chart.draw(p, b, self.doc);
+      });
+    }, 30);
+  };
+
+  Editor.prototype.chartFromTable = function (t, idx) {
+    var C = PT.chart, src = C.source({ from: t.id }, this.doc);
+    var numericCol = function (i) {
+      return src.rows.some(function (r) { return C.num(r[i]) !== null; }) &&
+        src.rows.every(function (r) { return !r[i] || C.num(r[i]) !== null; });
+    };
+    var ys = [];
+    for (var i = 1; i < src.head.length; i++) if (numericCol(i)) ys.push(i);
+    if (!ys.length) ys = [Math.min(1, src.head.length - 1)];
+    var b = chartBlock(numericCol(0) ? 'line' : 'bar', {
+      from: t.id, xcol: 0, ycols: ys,
+      xlabel: t.header ? src.head[0] : '', ylabel: t.header && ys.length === 1 ? src.head[ys[0]] : ''
+    });
+    this.doc.blocks.splice(idx + 1, 0, b);
+    this.focusBlock(b.id, 'main');
+    this.change(true);
+    this.render();
+    this.openStudioSoon(b);
   };
 
   /* -------------------------------------------------------------- bibliography */
@@ -1133,7 +1275,15 @@
     this.focusBlock(b.id, part, false);
     this.change(true);
     this.render();
+    this.openStudioSoon(b);
     return b;
+  };
+  /* a new chart or table opens straight into its editor, once it is drawn */
+  Editor.prototype.openStudioSoon = function (b) {
+    var self = this;
+    if ((b.t === 'chart' || b.t === 'table') && PT.studio) {
+      setTimeout(function () { if (self.doc.blocks.indexOf(b) >= 0) PT.studio.open(self, b); }, 40);
+    }
   };
 
   /* ------------------------------------------------------------------- menus */
@@ -1229,7 +1379,11 @@
         item(k.charAt(0).toUpperCase() + k.slice(1) + (b.kind === k ? '  ✓' : ''), function () { b.kind = k; self.change(true); self.render(); });
       });
     }
-    if (b.t === 'figure' || b.t === 'table' || b.t === 'eq' || b.t === 'section' || b.t === 'theorem') {
+    if (b.t === 'table') {
+      m.appendChild(h('div', 'popg', 'Data'));
+      item('Make a chart from this table', function () { self.chartFromTable(b, idx); });
+    }
+    if (b.t === 'figure' || b.t === 'chart' || b.t === 'table' || b.t === 'eq' || b.t === 'section' || b.t === 'theorem') {
       m.appendChild(h('div', 'popg', 'Label'));
       var lw = h('div', 'poplab');
       var inp = h('input');
@@ -1266,7 +1420,7 @@
   };
 
   function defaultLabelPrefix(b) {
-    return { section: 'sec:', eq: 'eq:', figure: 'fig:', table: 'tab:', theorem: 'thm:' }[b.t] || '';
+    return { section: 'sec:', eq: 'eq:', figure: 'fig:', chart: 'fig:', table: 'tab:', theorem: 'thm:' }[b.t] || '';
   }
   function posPop(m, anchor) {
     var r = anchor.getBoundingClientRect();
@@ -1314,7 +1468,7 @@
 
   window.PT.doc = {
     newDoc: newDoc, Editor: Editor, blockFactory: blockFactory, numbering: numbering,
-    MENU: MENU, uid: uid, stripTags: stripTags, closeAllPop: closeAllPop,
+    MENU: MENU, uid: uid, stripTags: stripTags, closeAllPop: closeAllPop, tableClass: tableClass,
     insertNodeAtCaret: insertNodeAtCaret, placeCaret: placeCaret
   };
 })();

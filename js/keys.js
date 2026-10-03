@@ -185,6 +185,7 @@
     if (recording || editor) return;                /* the shortcuts dialog has the keyboard */
     if (PT.palette && PT.palette.isOpen()) return;  /* so does the command palette */
     if (document.querySelector('.dlg-back')) return; /* an in-page confirm/prompt is open */
+    if (document.querySelector('.studio:not(.closing)')) return;   /* so is the chart or table editor */
     if (e.isComposing) return;
     /* AltGr+key types a character (@ \ { } on many layouts), never a shortcut */
     if (e.getModifierState && e.getModifierState('AltGraph')) return;

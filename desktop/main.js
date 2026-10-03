@@ -55,7 +55,7 @@ function createWindow() {
     }
   });
 
-  win.loadURL('app://papertex/index.html');
+  win.loadURL('app://papertex/app.html');
   win.on('closed', () => { win = null; });
 
   /* Links to the outside world open in the real browser, not in the app. */

@@ -119,11 +119,14 @@
   }
 
   function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  /* The title as plain text, read in an inert document: nothing in it can
+     load or run. Needs nothing else loaded, so a page that only lists the
+     documents (the home page) names them right too. */
   function titleOf(d) {
     var t = d && d.meta && d.meta.title ? String(d.meta.title) : '';
-    var div = document.createElement('div');
-    div.innerHTML = PT.sanitize ? PT.sanitize.clean(t) : '';
-    return (div.textContent || '').trim() || 'Untitled document';
+    var text = '';
+    try { text = new DOMParser().parseFromString(t, 'text/html').body.textContent || ''; } catch (e) { text = ''; }
+    return text.replace(/​/g, '').trim() || 'Untitled document';
   }
   function record(id, json, doc, prev) {
     var now = Date.now();

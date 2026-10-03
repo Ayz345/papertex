@@ -151,22 +151,38 @@
           (b.label ? '  \\label{' + PT.sanitize.label(b.label) + '}\n' : '') +
           '\\end{figure}\n';
       }
+      case 'chart':
+        return PT.chart.tex(b, doc, use, inline);
       case 'table': {
         var cols = b.align.join(b.rules ? '|' : '');
         if (b.rules) cols = '|' + cols + '|';
         var t = '\\begin{table}[' + (b.placement || 'htbp') + ']\n  \\centering\n';
-        if (b.caption) t += '  \\caption{' + inline(b.caption, use).trim() + '}\n';
-        if (b.label) t += '  \\label{' + PT.sanitize.label(b.label) + '}\n';
+        var size = { small: '\\small', footnotesize: '\\footnotesize', large: '\\large' }[b.size];
+        if (size) t += '  ' + size + '\n';
+        /* striped rows: every other body row shaded (xcolor's table option) */
+        /* the 2nd, 4th … body row; xcolor counts rows from the header */
+        if (b.zebra) { use.colortbl = true; t += '  \\rowcolors{2}' + (b.header ? '{ptzebra}{}' : '{}{ptzebra}') + '\n'; }
+        var capLab = (b.caption ? '  \\caption{' + inline(b.caption, use).trim() + '}\n' : '') +
+          (b.label ? '  \\label{' + PT.sanitize.label(b.label) + '}\n' : '');
+        if (!b.capBelow) t += capLab;
         t += '  \\begin{tabular}{' + cols + '}\n';
         if (b.booktabs) { use.booktabs = true; t += '    \\toprule\n'; }
         else if (b.rules) t += '    \\hline\n';
         b.rows.forEach(function (r, ri) {
-          t += '    ' + r.map(function (c) { return inline(c, use).trim(); }).join(' & ') + ' \\\\\n';
-          if (ri === 0 && b.header) t += b.booktabs ? '    \\midrule\n' : (b.rules ? '    \\hline\n' : '');
+          var head = ri === 0 && b.header;
+          t += '    ' + r.map(function (c, ci) {
+            var x = inline(c, use).trim();
+            /* bold as on the page: the header row, and the first column if asked */
+            var bold = x && ((head && b.boldHeader !== false) || (!head && ci === 0 && b.boldFirst));
+            return bold ? '\\textbf{' + x + '}' : x;
+          }).join(' & ') + ' \\\\\n';
+          if (head) t += b.booktabs ? '    \\midrule\n' : (b.rules ? '    \\hline\n' : '');
           else if (b.rules && !b.booktabs) t += '    \\hline\n';
         });
         if (b.booktabs) t += '    \\bottomrule\n';
-        t += '  \\end{tabular}\n\\end{table}\n';
+        t += '  \\end{tabular}\n';
+        if (b.capBelow) t += capLab;
+        t += '\\end{table}\n';
         return t;
       }
       case 'theorem': {
@@ -231,9 +247,12 @@
     p.push('\\usepackage[T1]{fontenc}');
     if (S.lang && S.lang !== 'english') p.push('\\usepackage[' + S.lang + ']{babel}');
     p.push('\\usepackage{amsmath, amssymb}');
+    /* before pgfplots, which loads xcolor without the table option */
+    if (use.colortbl) { p.push('\\usepackage[table]{xcolor}'); p.push('\\definecolor{ptzebra}{gray}{0.93}'); }
     if (use.amsthm) p.push('\\usepackage{amsthm}');
     if (use.graphicx) p.push('\\usepackage{graphicx}');
     if (use.booktabs) p.push('\\usepackage{booktabs}');
+    if (use.pgfplots) p.push.apply(p, PT.chart.preamble(use));
     if (use.listings) p.push('\\usepackage{listings}');
     if (use.ulem) p.push('\\usepackage[normalem]{ulem}');
     if (use.soul) p.push('\\usepackage{soul}');

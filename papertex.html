@@ -11,7 +11,7 @@
      are data: URLs; the compiled PDF is a blob:. connect-src names the
      engine host — tools/build-web.js narrows it to this site alone when
      TeX Live is deployed beside the page. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-nCsYqU57DcjyJdeLktuVapNA/VJyB+D3CgjahKkAG30=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-rYmUfC1bRf1MC2OYZgmryvMELReyz6J1wfPWRUiKJjA=' 'sha256-OI1XvI1YDe5z/WgOLZqJHOh6Nij9VeE5vwyJRCkFWKg=' 'sha256-NDf/P5kaLbBnWK42+ZOHaGbFggbtZ8Ko1Fpmm9ZxAqI=' 'sha256-DrmNT/aFR7qmsfPb8kPX7nLMAr0kEo5vZbUiNXtTKS8=' 'sha256-nt+HEqlM6KFPRxpUBGPKQ/qqp7BiHip9Uq46tGqSUz8=' 'sha256-TN9SaTGAHK+83BxemLZqeTqS9HgUlxrFayqccj1qads=' 'sha256-wjNRZIcaUh3uovpfTRPrkDz9zUKuNVLc6O2QfoAueHo=' 'sha256-5yNKBiJcGfTMesfu/uvAm/VXO5lpi1gCM87otMLrQqk=' 'sha256-y9lXdNHKpNXIYQ1raFdQua8Dr6uJyAW2+49IrZVkGcc=' 'sha256-eyBSmac0CYg/fuNAx2pl49kP2MzkbiRygW5k/3Ypphg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-nCsYqU57DcjyJdeLktuVapNA/VJyB+D3CgjahKkAG30=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-rYmUfC1bRf1MC2OYZgmryvMELReyz6J1wfPWRUiKJjA=' 'sha256-OI1XvI1YDe5z/WgOLZqJHOh6Nij9VeE5vwyJRCkFWKg=' 'sha256-ZrbxltlIulNj7Pq5vvXulUWwOhQyyBbx6hVZyXKm/xo=' 'sha256-NLTlZ/6DHQTtGYR6wsjltLssGhKEFp582QSmJ0xiV08=' 'sha256-x788qUJCdKrODFoL+y10YeAMg4UaaqW9yKdFurgITes=' 'sha256-RynbSeyD6lveujYomRzZ75dn3dh/oVJZyc7ktBH4hqQ=' 'sha256-BS1J7iTxliBphn5JweICBfBSBrlYnHMRsbxcyrTyC3U=' 'sha256-xs4TYzOXHa//x7Gn7Bvp9ZQfNryowJ7ZH7CzB+vmuoM=' 'sha256-wjNRZIcaUh3uovpfTRPrkDz9zUKuNVLc6O2QfoAueHo=' 'sha256-1j98pzamhpyl2OCzmdo7ZpX6kALlkzuYNp6g5UbeTVw=' 'sha256-y9lXdNHKpNXIYQ1raFdQua8Dr6uJyAW2+49IrZVkGcc=' 'sha256-4O4OVTWRrXSUZbk3uyZml8uujP+stiHP2v0lAMampXQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <!-- Where the compiler's wasm and TeX Live live, if not beside this page
      (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
 <meta name="papertex-engine" content="">
@@ -754,6 +754,206 @@ body.nopanel .side { margin-right: -380px; }
   .pt-drop { display: none; }
   @page { margin: 0; }
 }
+
+/* ------------------------------------------------------------------ studio */
+/* A chart or a table opened up to fill the window (js/studio.js): the
+   drawing large on the left, every setting on the right. */
+.studio { position: fixed; inset: 0; z-index: 85; }
+.studio.closing { pointer-events: none; }
+.st-back {
+  position: absolute; inset: 0; background: rgba(28, 32, 38, .46);
+  animation: stFade .25s ease both; transition: opacity .2s ease;
+}
+.st-back.out { opacity: 0; }
+@keyframes stFade { from { opacity: 0; } }
+.st-win {
+  position: absolute; inset: 2.2vh 1.6vw; display: flex; flex-direction: column; overflow: hidden;
+  background: var(--chrome); border-radius: 14px;
+  box-shadow: 0 30px 80px -20px rgba(15, 18, 25, .55), 0 0 0 1px rgba(15, 18, 25, .08);
+}
+.st-head {
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px 10px 20px;
+  background: var(--panel); border-bottom: 1px solid var(--line);
+}
+.st-title { font-size: 15px; font-weight: 650; letter-spacing: -.01em; }
+.st-sub { font-size: 12px; color: var(--muted); }
+.st-sp { flex: 1; }
+.st-btn {
+  height: 32px; padding: 0 14px; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--panel); color: var(--ink-2); font-size: 13px; cursor: pointer;
+}
+.st-btn:hover { border-color: var(--accent-2); color: var(--accent-ink); }
+.st-btn.primary { background: var(--accent-ink); border-color: var(--accent-ink); color: #fff9ee; font-weight: 600; padding: 0 20px; }
+.st-btn.primary:hover { background: #5c3a0a; color: #fff; }
+.st-body { flex: 1; display: flex; min-height: 0; }
+.st-stage { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--desk); }
+.st-panel {
+  width: 390px; flex: 0 0 auto; overflow: auto; background: var(--panel);
+  border-left: 1px solid var(--line); padding: 4px 20px 48px;
+}
+
+/* the drawing, as large as the window allows */
+.st-view {
+  flex: 1; min-height: 240px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 24px; overflow: hidden;
+}
+.st-paper {
+  background: #fffefb; color: #14100c; font-family: var(--serif); font-size: 15px; line-height: 1.4;
+  box-shadow: 0 0 0 1px rgba(30, 28, 24, .06), 0 18px 48px -16px rgba(30, 28, 24, .3); border-radius: 3px;
+}
+.st-card { padding: 22px 26px 16px; box-sizing: content-box; }
+.st-plot { display: flex; align-items: center; justify-content: center; }
+.st-plot .pt-chsvg { max-width: none; }
+.st-figcap { text-align: center; font-size: 13px; margin-top: 12px; }
+.st-figcap .st-ph { color: var(--faint); font-weight: 400; }
+.st-errs:empty { display: none; }
+.st-errs { margin-top: 10px; }
+
+/* the data under a chart, and a table's own sheet */
+.st-sheet {
+  flex: 0 0 auto; max-height: 42%; min-height: 150px; display: flex; flex-direction: column;
+  background: var(--panel); border-top: 1px solid var(--line);
+}
+.st-sheet.none { display: none; }
+.st-sheeth { display: flex; align-items: baseline; gap: 12px; padding: 9px 16px 0; font-size: 13px; }
+.st-gridhost { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.st-gridhost.big { background: var(--panel); }
+.st-gtools {
+  display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 8px 14px;
+  border-bottom: 1px solid var(--line-2);
+}
+.st-gt { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.st-gtl { font-size: 10.5px; font-weight: 650; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.st-gwrap { flex: 1; min-height: 0; overflow: auto; padding: 0 14px 14px; }
+.st-grid { border-collapse: separate; border-spacing: 0; margin-top: 10px; }
+.st-grid th, .st-grid td { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.st-grid tr:first-child > * { border-top: 1px solid var(--line); }
+.st-grid tr > :first-child { border-left: 1px solid var(--line); }
+.st-colh, .st-rowh, .st-corner {
+  background: var(--chrome); color: var(--muted); font: 600 11px/1 var(--ui); user-select: none; cursor: pointer;
+}
+.st-colh { position: sticky; top: 0; z-index: 2; padding: 6px 8px; min-width: 150px; }
+.st-corner { position: sticky; top: 0; left: 0; z-index: 3; width: 34px; }
+.st-rowh { position: sticky; left: 0; z-index: 1; width: 34px; text-align: center; }
+.st-colh.selh, .st-rowh.selh { background: var(--accent-soft); color: var(--accent-ink); }
+.st-colk { margin-right: 6px; }
+.st-al { display: inline-flex; gap: 1px; vertical-align: middle; }
+.st-al button {
+  width: 22px; height: 20px; border: 0; border-radius: 4px; background: transparent; color: var(--faint);
+  font-size: 12px; cursor: pointer; padding: 0;
+}
+.st-al button:hover { background: var(--chrome-2); color: var(--ink-2); }
+.st-al button.on { background: var(--panel); color: var(--accent-ink); box-shadow: 0 0 0 1px var(--line); }
+.st-grid td { background: #fff; padding: 0; vertical-align: top; }
+.st-grid td.al-c { text-align: center; }
+.st-grid td.al-r { text-align: right; }
+.st-grid .st-hrow td { background: #faf6ee; font-weight: 600; }
+.st-grid td.sel { box-shadow: inset 0 0 0 2px var(--accent-2); }
+.st-cell {
+  min-height: 1.5em; padding: 9px 12px; outline: none; font-family: var(--serif); font-size: 16.5px;
+  color: #14100c; white-space: pre-wrap; word-break: break-word;
+}
+
+.st-sheet .st-colh { min-width: 120px; }
+.st-sheet .st-cell { font-size: 14.5px; padding: 6px 10px; }
+
+/* a table as it will be printed */
+.st-preview {
+  flex: 0 0 auto; max-height: 40%; overflow: auto; padding: 10px 20px 22px;
+  border-top: 1px solid var(--line); background: var(--desk);
+}
+.st-pvh { font: 650 10.5px/1 var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.st-pvb { width: fit-content; max-width: 100%; margin: 0 auto; padding: 18px 30px; overflow: auto; }
+
+/* the settings */
+.st-sec { padding: 14px 0 12px; border-bottom: 1px solid var(--line-2); }
+.st-sec:last-child { border-bottom: 0; }
+.st-h { margin: 0 0 10px; font-size: 11px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.st-hint { margin: -4px 0 10px; font-size: 12px; line-height: 1.45; color: var(--muted); }
+.st-sheeth .st-hint { margin: 0; }
+.st-row { display: grid; grid-template-columns: 82px minmax(0, 1fr); align-items: center; gap: 8px; margin: 8px 0; }
+.st-row > .st-c:only-child { grid-column: 1 / -1; }
+.st-row.stack .st-c { flex-direction: column; align-items: flex-start; gap: 9px; }
+.st-l { font-size: 12.5px; color: var(--ink-2); }
+.st-c { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.st-to { font-size: 12px; color: var(--muted); }
+.st-in, .st-sel {
+  height: 32px; padding: 0 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel);
+  font: 13px var(--ui); color: var(--ink); min-width: 0;
+}
+.st-in:focus, .st-sel:focus { outline: none; border-color: var(--accent-2); box-shadow: 0 0 0 3px var(--accent-soft); }
+.st-in.wide { flex: 1; width: 100%; }
+.st-in.grow { flex: 1 1 140px; }
+.st-in.num { width: 80px; }
+.st-in.mono, .st-y { font-family: var(--mono); font-size: 12.5px; }
+.st-in.st-fn-expr { flex: 1; }
+.st-in.bad { border-color: #e5484d; background: #fff6f6; }
+.st-rich {
+  height: auto; min-height: 32px; width: 100%; padding: 6px 9px; line-height: 1.4;
+  font-family: var(--serif); font-size: 14.5px; color: #14100c; cursor: text;
+}
+.st-rich:empty::before { content: attr(data-ph); color: var(--faint); }
+.st-sel { padding-right: 4px; cursor: pointer; }
+.st-seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--panel); flex-wrap: wrap; }
+.st-seg button {
+  height: 30px; padding: 0 11px; border: 0; border-left: 1px solid var(--line); background: transparent;
+  font: 12.5px var(--ui); color: var(--ink-2); cursor: pointer; white-space: nowrap;
+}
+.st-seg button:first-child { border-left: 0; }
+.st-seg button:hover { background: var(--chrome); }
+.st-seg button.on { background: var(--accent-soft); color: var(--accent-ink); font-weight: 650; }
+.st-tog { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--ink); user-select: none; }
+.st-tog input { position: absolute; opacity: 0; pointer-events: none; }
+.st-tog-k {
+  position: relative; width: 30px; height: 18px; border-radius: 9px; background: #d5d9df; flex: 0 0 auto;
+  transition: background .15s;
+}
+.st-tog-k::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; box-shadow: 0 1px 2px rgba(0, 0, 0, .25); transition: transform .15s;
+}
+.st-tog input:checked + .st-tog-k { background: var(--accent-2); }
+.st-tog input:checked + .st-tog-k::after { transform: translateX(12px); }
+.st-tog input:focus-visible + .st-tog-k { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+.st-slide { display: flex; align-items: center; gap: 10px; width: 100%; }
+.st-slide input { flex: 1; accent-color: var(--accent-2); }
+.st-slide-v { font-size: 12px; color: var(--muted); min-width: 92px; }
+.st-b {
+  height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel);
+  font: 12.5px var(--ui); color: var(--ink-2); cursor: pointer; white-space: nowrap;
+}
+.st-b:hover { border-color: var(--accent-2); color: var(--accent-ink); }
+.st-b.ico { width: 30px; padding: 0; font-size: 14px; }
+.st-b.danger:hover { border-color: #e5a091; color: var(--danger); background: #fff6f4; }
+.st-b.wide { width: 100%; margin-top: 4px; border-style: dashed; }
+.st-b.accent { background: var(--accent-soft); border-color: #ecd3a2; color: var(--accent-ink); font-weight: 600; }
+.st-card-s {
+  border: 1px solid var(--line); border-radius: 10px; padding: 8px; margin: 8px 0; background: #fbfbfc;
+}
+.st-card-s.off { background: transparent; border-style: dashed; }
+.st-card-s.off .st-tog-t { color: var(--muted); }
+.st-cs-top { display: flex; align-items: center; gap: 7px; }
+.st-cs-top .st-tog { flex: 1; min-width: 0; }
+.st-cs-sub { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.st-cs-sub .st-sel { height: 30px; font-size: 12.5px; }
+.st-chip {
+  width: 24px; height: 24px; flex: 0 0 auto; border-radius: 7px; border: 2px solid #fff; cursor: pointer;
+  box-shadow: 0 0 0 1px var(--line);
+}
+.st-chip:hover { box-shadow: 0 0 0 2px var(--accent-2); }
+.st-pal { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line-2); }
+.st-swatch { width: 22px; height: 22px; border-radius: 6px; border: 2px solid #fff; box-shadow: 0 0 0 1px var(--line); cursor: pointer; padding: 0; }
+.st-swatch.on { box-shadow: 0 0 0 2px var(--accent-2); }
+.st-swatch.auto { width: auto; padding: 0 7px; background: var(--panel); font-size: 11px; color: var(--ink-2); }
+.st-anycol { width: 30px; height: 24px; padding: 0; border: 0; background: none; cursor: pointer; }
+
+@media (max-width: 900px) {
+  .st-win { inset: 0; border-radius: 0; }
+  .st-sub { display: none; }
+  .st-body { flex-direction: column; }
+  .st-panel { width: auto; max-height: 46%; border-left: 0; border-top: 1px solid var(--line); }
+}
+@media (prefers-reduced-motion: reduce) { .st-back { animation: none; transition: none; } }
 </style>
 <style>
 /* css/paper.css */
@@ -1133,12 +1333,54 @@ blockquote.pt-quote {
 .mci { font-family: Consolas, monospace; font-size: .92em; color: #9a5b06; background: #fdf1dd; border-radius: 3px; padding: 0 .12em; }
 .mcibs { opacity: .55; }
 .mcis { text-decoration: underline; text-decoration-style: dotted; }
+
+
+/* charts (chart.js); their settings are in the studio (studio.js, app.css) */
+.pt-chart { margin: 1em auto; position: relative; }
+.pt-chplot { display: flex; flex-direction: column; align-items: center; user-select: none; cursor: zoom-in; }
+.pt-chsvg { display: block; max-width: 100%; overflow: visible; }
+.pt-chsvg text { font-family: "PaperTeX", "Latin Modern Roman", serif; font-size: 10px; fill: #111; }
+.pt-chsvg text.pt-chval { font-size: 9px; }
+.pt-chgrid line { stroke: #d9d9d9; stroke-width: .5; }
+.pt-chgrid .minor line { stroke: #ececec; stroke-width: .4; }
+.pt-chaxis line, .pt-chaxis rect { stroke: #111; stroke-width: .6; fill: none; }
+.pt-charrow { fill: #111; stroke: none; }
+.pt-chline { stroke-linejoin: round; stroke-linecap: round; }
+.pt-chlegend { fill: #fff; stroke: #111; stroke-width: .5; }
+.pt-chlab { font-family: "PaperTeX", "Latin Modern Roman", serif; font-size: 10px; line-height: 1.4; height: 100%; display: flex; align-items: center; white-space: nowrap; color: #111; }
+.pt-chlab.c { justify-content: center; }
+.pt-chlab.l { justify-content: flex-start; }
+.pt-chm { display: inline-block; }
+.pt-cherr {
+  font: 400 11px/1.4 ui-sans-serif, system-ui, sans-serif; color: #b42318;
+  background: #fef3f2; border-radius: 4px; padding: 3px 8px; margin-top: 4px;
+}
+.pt-chedit {
+  position: absolute; top: 0; right: 0; opacity: 0; transition: opacity .15s, transform .15s;
+  font: 600 11px/1 ui-sans-serif, system-ui, sans-serif; color: #7a4f10;
+  background: #fffaf0; border: 1px solid #e8d4a8; border-radius: 6px; padding: 6px 9px; cursor: pointer;
+  box-shadow: 0 4px 12px -6px rgba(92, 58, 10, .5);
+}
+.blk:hover .pt-chedit, .pt-chedit:focus-visible { opacity: 1; }
+.pt-chedit:hover { background: #fdf3dd; transform: translateY(-1px); }
+.pt-chart:hover .pt-chsvg { outline: 1px dashed #e8d4a8; outline-offset: 6px; border-radius: 2px; }
+
+/* table looks (the studio's Look settings) */
+.pt-tcap.below { margin: .45em 0 0; }
+.pt-table.zebra.hashead tr:nth-child(2n+3) > *,
+.pt-table.zebra:not(.hashead) tr:nth-child(2n) > * { background: #ededed; }
+.pt-table.boldfirst td:first-child { font-weight: 700; }
+.pt-table.plainhead th { font-weight: 400; }
+.pt-table.sz-small { font-size: .84em; }
+.pt-table.sz-footnotesize { font-size: .76em; }
+.pt-tabctl button.big { font-weight: 600; color: #7a4f10; border-color: #e8d4a8; background: #fffaf0; }
+@media print { .pt-chedit { display: none !important; } .pt-chart:hover .pt-chsvg { outline: none; } }
 </style>
 </head>
 <body>
 
 <header class="top">
-  <a class="brand" href="about.html" target="_blank" rel="noopener" title="About PaperTeX — privacy, licence, who made it"><b>PaperTeX</b><i>write on the paper</i></a>
+  <a class="brand" href="./" title="PaperTeX home — templates, about, privacy"><b>PaperTeX</b><i>write on the paper</i></a>
   <span class="savestate" id="saveState" role="status" aria-live="polite"></span>
 
   <button class="tb" id="btnNew" title="New document"><span class="k">🗎</span>New</button>
@@ -3641,11 +3883,14 @@ blockquote.pt-quote {
   }
 
   function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  /* The title as plain text, read in an inert document: nothing in it can
+     load or run. Needs nothing else loaded, so a page that only lists the
+     documents (the home page) names them right too. */
   function titleOf(d) {
     var t = d && d.meta && d.meta.title ? String(d.meta.title) : '';
-    var div = document.createElement('div');
-    div.innerHTML = PT.sanitize ? PT.sanitize.clean(t) : '';
-    return (div.textContent || '').trim() || 'Untitled document';
+    var text = '';
+    try { text = new DOMParser().parseFromString(t, 'text/html').body.textContent || ''; } catch (e) { text = ''; }
+    return text.replace(/​/g, '').trim() || 'Untitled document';
   }
   function record(id, json, doc, prev) {
     var now = Date.now();
@@ -3733,6 +3978,971 @@ blockquote.pt-quote {
     estimate: estimate,
     /* is anything still waiting to be written? */
     busy: function () { return Object.keys(writing).length > 0 || Object.keys(pending).length > 0; }
+  };
+})();
+</script>
+<script>
+/* js/chart.js */
+/* PaperTeX — charts: a function plot or a chart of data, drawn on the page
+   and written out as pgfplots.
+
+   The page and the PDF are drawn from the same numbers. Whatever pgfplots
+   would choose by itself (axis limits, tick spacing, where a curve stops
+   near an asymptote) is decided here instead and written into the axis
+   options, so the PDF looks like the page rather than like a guess at it.
+
+   A function is typed the way it is written on paper: 2x^2 - 3x + 1,
+   sin x, e^(-x^2/2), |x|. It is parsed here, never evaluated as code, and
+   the parse tree is turned into pgfmath for the .tex (where trigonometry
+   works in degrees, so sin x becomes sin(deg(x))). */
+(function () {
+  'use strict';
+
+  /* the colours a chart cycles through, in order; any other colour picked
+     by hand gets a \definecolor of its own */
+  var COLORS = [
+    ['ptblue', '1F77B4'], ['ptred', 'D62728'], ['ptgreen', '2CA02C'], ['ptorange', 'FF7F0E'],
+    ['ptpurple', '9467BD'], ['ptbrown', '8C564B'], ['ptpink', 'E377C2'], ['ptcyan', '17BECF'],
+    ['ptolive', 'BCBD22'], ['ptgray', '7F7F7F'], ['ptblack', '000000']
+  ];
+  var SAMPLES = 200;
+
+  /* line and mark styles, by their TikZ names (sizes in pt) */
+  var THICK = { thin: 0.4, semithick: 0.6, thick: 0.8, 'very thick': 1.2, 'ultra thick': 1.6 };
+  var DASHES = ['solid', 'dashed', 'dotted', 'dashdotted'];
+  var MARKS = ['*', 'o', 'square*', 'square', 'triangle*', 'diamond*', 'x', '+', 'none'];
+  var MSIZE = { small: 1.2, normal: 1.8, large: 2.6 };
+  var LEGEND_POS = ['north east', 'north west', 'south east', 'south west', 'outer north east'];
+
+  /* ================================================== expressions ===== */
+
+  function deg(a) { return 'deg(' + a + ')'; }
+  function rad(a) { return 'rad(' + a + ')'; }
+  /* name: [arity, js, pgf] */
+  var FN = {
+    sin: [1, Math.sin, function (a) { return 'sin(' + deg(a) + ')'; }],
+    cos: [1, Math.cos, function (a) { return 'cos(' + deg(a) + ')'; }],
+    tan: [1, Math.tan, function (a) { return 'tan(' + deg(a) + ')'; }],
+    cot: [1, function (x) { return 1 / Math.tan(x); }, function (a) { return 'cot(' + deg(a) + ')'; }],
+    sec: [1, function (x) { return 1 / Math.cos(x); }, function (a) { return 'sec(' + deg(a) + ')'; }],
+    csc: [1, function (x) { return 1 / Math.sin(x); }, function (a) { return 'cosec(' + deg(a) + ')'; }],
+    asin: [1, Math.asin, function (a) { return rad('asin(' + a + ')'); }],
+    acos: [1, Math.acos, function (a) { return rad('acos(' + a + ')'); }],
+    atan: [1, Math.atan, function (a) { return rad('atan(' + a + ')'); }],
+    sinh: [1, Math.sinh, null], cosh: [1, Math.cosh, null], tanh: [1, Math.tanh, null],
+    exp: [1, Math.exp, null],
+    ln: [1, Math.log, null],
+    log: [1, Math.log10 || function (x) { return Math.log(x) / Math.LN10; }, function (a) { return 'log10(' + a + ')'; }],
+    log2: [1, Math.log2 || function (x) { return Math.log(x) / Math.LN2; }, null],
+    sqrt: [1, Math.sqrt, null],
+    abs: [1, Math.abs, null],
+    floor: [1, Math.floor, null], ceil: [1, Math.ceil, null], round: [1, Math.round, null],
+    sign: [1, function (x) { return x > 0 ? 1 : x < 0 ? -1 : 0; }, null],
+    min: [2, Math.min, null], max: [2, Math.max, null]
+  };
+  var ALIAS = { arcsin: 'asin', arccos: 'acos', arctan: 'atan', sgn: 'sign', cosec: 'csc', tg: 'tan', ctg: 'cot', lg: 'log' };
+  var CONST = { pi: Math.PI, e: Math.E, '\u03c0': Math.PI };
+
+  function tokenize(s) {
+    s = String(s)
+      .replace(/[\u2212\u2013]/g, '-').replace(/[\u00b7\u22c5\u00d7]/g, '*').replace(/\u00f7/g, '/')
+      .replace(/\u00b2/g, '^2').replace(/\u00b3/g, '^3').replace(/\u221a/g, 'sqrt');
+    var out = [], i = 0, m;
+    while (i < s.length) {
+      var c = s[i];
+      if (/\s/.test(c)) { i++; continue; }
+      if ((m = /^(\d+\.?\d*|\.\d+)(e[+-]?\d+)?/i.exec(s.slice(i)))) {
+        out.push({ k: 'num', v: parseFloat(m[0]) }); i += m[0].length; continue;
+      }
+      if ((m = /^[A-Za-z\u03c0]+\d*/.exec(s.slice(i)))) {
+        out.push({ k: 'id', v: m[0] }); i += m[0].length; continue;
+      }
+      if ('+-*/^(),|'.indexOf(c) >= 0) { out.push({ k: c }); i++; continue; }
+      throw new Error('“' + c + '” is not something a formula can contain');
+    }
+    return out;
+  }
+
+  /* A run of letters is read greedily into the names it is made of, the way
+     "xsin" or "2pix" are meant: functions, constants and x. */
+  function splitWord(w) {
+    var parts = [], i = 0;
+    var names = Object.keys(FN).concat(Object.keys(ALIAS), Object.keys(CONST), ['x'])
+      .sort(function (a, b) { return b.length - a.length; });
+    while (i < w.length) {
+      var hit = null;
+      for (var j = 0; j < names.length; j++) {
+        if (w.substr(i, names[j].length).toLowerCase() === names[j]) { hit = names[j]; break; }
+      }
+      if (!hit) throw new Error('“' + w + '” is not a function this knows — use x as the variable');
+      parts.push(hit); i += hit.length;
+    }
+    return parts;
+  }
+
+  function parse(src) {
+    var raw = tokenize(src), toks = [];
+    raw.forEach(function (t) {
+      if (t.k !== 'id') { toks.push(t); return; }
+      var m = /^(.*?)(\d+)$/.exec(t.v);           /* log2 is a name; x2 is x·2 */
+      var word = t.v, digits = '';
+      if (m && !FN[t.v.toLowerCase()]) { word = m[1]; digits = m[2]; }
+      splitWord(word).forEach(function (p) { toks.push({ k: 'id', v: ALIAS[p] || p }); });
+      if (digits) toks.push({ k: 'num', v: parseFloat(digits) });
+    });
+    var p = 0, absDepth = 0;
+    function peek() { return toks[p]; }
+    function eat(k) {
+      var t = toks[p];
+      if (!t || t.k !== k) throw new Error(k === ')' ? 'a bracket is not closed' : 'expected “' + k + '”');
+      p++; return t;
+    }
+    function startsPrimary(t) {
+      return t && (t.k === 'num' || t.k === 'id' || t.k === '(' || (t.k === '|' && absDepth === 0));
+    }
+    function expr() {
+      var a = term();
+      while (peek() && (peek().k === '+' || peek().k === '-')) {
+        var op = toks[p++].k; a = { k: 'bin', op: op, a: a, b: term() };
+      }
+      return a;
+    }
+    function term() {
+      var a = unary();
+      for (;;) {
+        var t = peek();
+        if (t && (t.k === '*' || t.k === '/')) { p++; a = { k: 'bin', op: t.k, a: a, b: unary() }; }
+        else if (startsPrimary(t)) a = { k: 'bin', op: '*', a: a, b: power() };   /* 2x, x(x+1) */
+        else return a;
+      }
+    }
+    function unary() {
+      var t = peek();
+      if (t && t.k === '-') { p++; return { k: 'neg', a: unary() }; }
+      if (t && t.k === '+') { p++; return unary(); }
+      return power();
+    }
+    function power() {
+      var a = primary();
+      if (peek() && peek().k === '^') { p++; return { k: 'bin', op: '^', a: a, b: unary() }; }
+      return a;
+    }
+    function primary() {
+      var t = toks[p++];
+      if (!t) throw new Error('the formula ends too soon');
+      if (t.k === 'num') return { k: 'num', v: t.v };
+      if (t.k === '(') { var e = expr(); eat(')'); return e; }
+      if (t.k === '|') { absDepth++; var a = expr(); absDepth--; eat('|'); return { k: 'call', f: 'abs', args: [a] }; }
+      if (t.k === 'id') {
+        if (t.v === 'x') return { k: 'x' };
+        if (t.v in CONST) return { k: 'const', n: t.v === '\u03c0' ? 'pi' : t.v };
+        var f = FN[t.v];
+        if (!f) throw new Error('“' + t.v + '” is not known');
+        var args = [], up = null;
+        if (peek() && peek().k === '^' && f[0] === 1) { p++; up = power(); }   /* sin^2 x */
+        if (peek() && peek().k === '(') {
+          p++;
+          args.push(expr());
+          while (peek() && peek().k === ',') { p++; args.push(expr()); }
+          eat(')');
+        } else {
+          if (f[0] !== 1) throw new Error(t.v + ' needs brackets: ' + t.v + '(a, b)');
+          /* sin x, ln 2x: the argument runs to the next + or − */
+          var b = power();
+          while (startsPrimary(peek())) b = { k: 'bin', op: '*', a: b, b: power() };
+          args.push(b);
+        }
+        if (args.length !== f[0]) throw new Error(t.v + ' takes ' + f[0] + (f[0] === 1 ? ' value' : ' values'));
+        var call = { k: 'call', f: t.v, args: args };
+        return up ? { k: 'bin', op: '^', a: call, b: up } : call;
+      }
+      throw new Error('“' + t.k + '” is out of place');
+    }
+    if (!toks.length) throw new Error('empty');
+    var ast = expr();
+    if (p < toks.length) throw new Error(toks[p].k === ')' ? 'there is a “)” too many' : 'something is out of place near the end');
+    return ast;
+  }
+
+  function evaluator(n) {
+    switch (n.k) {
+      case 'num': return function () { return n.v; };
+      case 'x': return function (x) { return x; };
+      case 'const': var c = CONST[n.n]; return function () { return c; };
+      case 'neg': var a = evaluator(n.a); return function (x) { return -a(x); };
+      case 'call': {
+        var f = FN[n.f][1], as = n.args.map(evaluator);
+        return as.length === 1 ? function (x) { return f(as[0](x)); }
+          : function (x) { return f(as[0](x), as[1](x)); };
+      }
+      case 'bin': {
+        var l = evaluator(n.a), r = evaluator(n.b);
+        switch (n.op) {
+          case '+': return function (x) { return l(x) + r(x); };
+          case '-': return function (x) { return l(x) - r(x); };
+          case '*': return function (x) { return l(x) * r(x); };
+          case '/': return function (x) { return l(x) / r(x); };
+          case '^': return function (x) { return Math.pow(l(x), r(x)); };
+        }
+      }
+    }
+    return function () { return NaN; };
+  }
+
+  /* and readable: only the brackets pgfmath needs. A minus sign in front of
+     anything but a plain number or name keeps its brackets: older pgfmath
+     read -x^2 as (-x)^2. */
+  var PREC = { '+': 1, '-': 1, '*': 2, '/': 2, '^': 4 };
+  function prec(n) { return n.k === 'bin' ? PREC[n.op] : n.k === 'neg' ? 3 : 9; }
+  function pgfPretty(n) {
+    switch (n.k) {
+      case 'num': return fmt(n.v);
+      case 'x': return 'x';
+      case 'const': return n.n === 'pi' ? 'pi' : 'e';
+      case 'neg': return '-' + wrap(n.a, prec(n.a) < 9);
+      case 'call': {
+        var args = n.args.map(pgfPretty), f = FN[n.f];
+        return f[2] ? f[2](args.join(',')) : n.f + '(' + args.join(',') + ')';
+      }
+      case 'bin': {
+        var my = PREC[n.op], pl = prec(n.a), pr = prec(n.b);
+        var l = wrap(n.a, n.op === '^' ? pl <= my : pl < my);
+        var r = wrap(n.b, n.b.k === 'neg' || pr < my || (pr === my && (n.op === '-' || n.op === '/')));
+        return l + (n.op === '+' || n.op === '-' ? ' ' + n.op + ' ' : n.op) + r;
+      }
+    }
+    return '0';
+  }
+  function wrap(n, need) { var s = pgfPretty(n); return need ? '(' + s + ')' : s; }
+
+  function compile(src) {
+    try {
+      var ast = parse(src);
+      return { ok: true, ast: ast, f: evaluator(ast), pgf: pgfPretty(ast) };
+    } catch (e) {
+      return { ok: false, err: e.message };
+    }
+  }
+
+  /* ======================================================= numbers ===== */
+
+  /* No exponents: TeX and readers both prefer 0.00012 to 1.2e-4. */
+  function fmt(v) {
+    if (!isFinite(v)) return '0';
+    var s = String(+v.toPrecision(10));
+    if (/e/i.test(s)) {
+      s = Math.abs(v) < 1 ? v.toFixed(Math.min(20, Math.ceil(-Math.log10(Math.abs(v))) + 8)) : v.toFixed(0);
+      s = s.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+    }
+    return s;
+  }
+  /* A cell as a number: "1,5" is one and a half (a decimal comma, as in
+     Turkish or German), "1 000" is a thousand; anything else is text. */
+  function num(t) {
+    t = String(t == null ? '' : t).replace(/[\u00a0\u202f\s]/g, '').replace(/\u2212/g, '-');
+    if (!t) return null;
+    if (/^[-+]?\d+,\d+$/.test(t)) t = t.replace(',', '.');
+    if (!/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?%?$/i.test(t)) return null;
+    return parseFloat(t);
+  }
+  /* a range limit: a number, or something like 2pi or -pi/2 */
+  function val(t) {
+    var n = num(t);
+    if (n !== null || !String(t == null ? '' : t).trim()) return n;
+    var c = compile(String(t));
+    if (!c.ok || JSON.stringify(c.ast).indexOf('"k":"x"') >= 0) return null;
+    var v = c.f(0);
+    return isFinite(v) ? v : null;
+  }
+  function niceStep(span, target) {
+    if (!(span > 0)) return 1;
+    var raw = span / target, mag = Math.pow(10, Math.floor(Math.log10(raw))), r = raw / mag;
+    return (r < 1.5 ? 1 : r < 3 ? 2 : r < 7 ? 5 : 10) * mag;
+  }
+  function round(v, step) {          /* away from float noise: 0.30000000000000004 */
+    var d = Math.max(0, -Math.floor(Math.log10(step)) + 2);
+    return +v.toFixed(Math.min(d, 15));
+  }
+  function ticks(lo, hi, step) {
+    var out = [], v = Math.ceil(lo / step - 1e-9) * step;
+    for (; v <= hi + step * 1e-9 && out.length < 60; v += step) out.push(round(v, step));
+    return out;
+  }
+  function tickText(v, step) {
+    var d = Math.max(0, -Math.floor(Math.log10(step) + 1e-9));
+    var s = v.toFixed(Math.min(d, 10));
+    if (s.indexOf('.') >= 0) s = s.replace(/0+$/, '').replace(/\.$/, '');
+    return s === '-0' ? '0' : s.replace('-', '\u2212');
+  }
+
+  /* ========================================================== data ===== */
+
+  function cellText(html) {
+    var box = PT.sanitize.parse(String(html || ''));
+    [].forEach.call(box.querySelectorAll('.imath'), function (m) {
+      try { m.textContent = PT.math.texRow(JSON.parse(m.dataset.m)); } catch (e) { m.textContent = ''; }
+    });
+    return box.textContent.replace(/\u200b/g, '').trim();
+  }
+
+  /* Pasted or typed rows: tabs (from a spreadsheet), else semicolons, else
+     commas. With tabs or semicolons a comma is a decimal comma. */
+  function parseCSV(text) {
+    var lines = String(text || '').replace(/\r\n?/g, '\n').split('\n').filter(function (l) { return l.trim(); });
+    if (!lines.length) return [];
+    var sep = /\t/.test(lines[0]) ? '\t' : /;/.test(lines[0]) ? ';' : ',';
+    return lines.map(function (l) {
+      if (sep !== ',') return l.split(sep).map(function (c) { return c.trim(); });
+      var out = [], cur = '', q = false;
+      for (var i = 0; i < l.length; i++) {
+        var c = l[i];
+        if (c === '"') { if (q && l[i + 1] === '"') { cur += '"'; i++; } else q = !q; }
+        else if (c === ',' && !q) { out.push(cur.trim()); cur = ''; }
+        else cur += c;
+      }
+      out.push(cur.trim());
+      return out;
+    });
+  }
+
+  /* The table a chart draws from: a table block in the document, or the
+     chart's own rows. Returns { head: [name…], rows: [[text…]…], html }. */
+  function source(b, doc) {
+    if (b.from) {
+      var t = (doc.blocks || []).filter(function (x) { return x.id === b.from && x.t === 'table'; })[0];
+      if (t) {
+        var all = t.rows.map(function (r) { return r.map(cellText); });
+        if (t.header) return { head: all[0], rows: all.slice(1), html: t.rows.slice(1), table: t };
+        return { head: all[0].map(function (_, i) { return 'Column ' + (i + 1); }), rows: all, html: t.rows, table: t };
+      }
+    }
+    var own = parseCSV(b.data);
+    if (!own.length) return { head: [], rows: [], html: [] };
+    var width = Math.max.apply(null, own.map(function (r) { return r.length; }));
+    own = own.map(function (r) { while (r.length < width) r.push(''); return r; });
+    var headed = own[0].some(function (c) { return c && num(c) === null; });
+    var head = headed ? own[0] : own[0].map(function (_, i) { return i ? 'y' + (width > 2 ? i : '') : 'x'; });
+    var rows = headed ? own.slice(1) : own;
+    return { head: head, rows: rows, html: null };
+  }
+
+  /* ======================================================== styles ===== */
+
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function hexOf(c) {
+    c = String(c || '').replace(/^#/, '').toUpperCase();
+    return /^[0-9A-F]{6}$/.test(c) ? c : null;
+  }
+  function gridOf(b) {
+    return b.grid === 'both' ? 'both' : (b.grid === false || b.grid === 'none') ? 'none' : 'major';
+  }
+  function axesOf(b) { return b.axes === 'middle' || b.axes === 'left' ? b.axes : 'box'; }
+  /* the automatic colour of the n-th series: the cycle leaves out black */
+  function autoHex(n) { return COLORS[n % (COLORS.length - 1)][1]; }
+
+  /* How one series is drawn: its own settings where it has them, the
+     chart's where it does not. A curve's settings live on its formula, a
+     data series' on b.style[column]. */
+  function look(b, s) {
+    var st = s.st || {};
+    var mark = s.fn || b.kind === 'bar' ? 'none'
+      : MARKS.indexOf(st.mark) >= 0 ? st.mark
+      : b.kind === 'scatter' ? '*' : (b.marks === false ? 'none' : '*');
+    return {
+      hex: hexOf(st.color) || autoHex(s.color),
+      line: !!s.fn || b.kind === 'line',
+      dash: DASHES.indexOf(st.dash) >= 0 ? st.dash : 'solid',
+      thick: THICK[st.thick] ? st.thick : 'thick',
+      mark: mark,
+      msize: MSIZE[st.msize] ? st.msize : 'normal'
+    };
+  }
+
+  /* ======================================================== layout ===== */
+
+  /* Everything both drawings need: the series as points, the axis limits
+     and the tick spacing. */
+  function model(b, doc) {
+    var out = { kind: b.kind, series: [], errors: [], cats: null };
+    var xr = [val(b.xmin), val(b.xmax)], yr = [val(b.ymin), val(b.ymax)];
+    out.samples = clamp(parseInt(b.samples, 10) || SAMPLES, 20, 1000);
+    out.stacked = b.kind === 'bar' && !!b.stacked;
+    out.values = b.kind === 'bar' && !!b.values && !out.stacked;
+
+    if (b.kind === 'function') {
+      var lo = xr[0] != null ? xr[0] : -5, hi = xr[1] != null ? xr[1] : 5;
+      if (!(hi > lo)) { out.errors.push('The x range must go from smaller to larger.'); hi = lo + 1; }
+      var ys = curves(b.fns, lo, hi, 0, out);
+      out.x = [lo, hi];
+      if (yr[0] != null && yr[1] != null && yr[1] > yr[0]) out.y = [yr[0], yr[1]];
+      else out.y = autoY(ys, yr, true, 0);
+      out.band = true;
+    } else {
+      var src = source(b, doc), xc = b.xcol | 0, ycs = (b.ycols && b.ycols.length ? b.ycols : [1]);
+      out.head = src.head;
+      ycs = ycs.filter(function (c) { return c !== xc && c < src.head.length; });
+      if (!src.rows.length || src.head.length < 2) out.errors.push(b.from ? 'The table needs at least two columns of numbers.' : 'Add some data: one row per point, one column per series.');
+      var numericX = src.rows.length && src.rows.every(function (r) { return num(r[xc]) !== null; });
+      if (b.kind === 'bar' || !numericX) {
+        out.cats = src.rows.map(function (r, i) { return { text: r[xc] || '', html: src.html ? src.html[i][xc] : null }; });
+      }
+      var allY = [], allX = [];
+      ycs.forEach(function (yc, si) {
+        var st = (b.style && b.style[yc]) || {};
+        var ec = st.err === '' || st.err == null ? -1 : +st.err;
+        if (!(ec >= 0 && ec < src.head.length && ec !== yc)) ec = -1;
+        var pts = [];
+        src.rows.forEach(function (r, i) {
+          var x = out.cats ? i : num(r[xc]), y = num(r[yc]);
+          if (y === null || x === null) return;
+          var p = [x, y];
+          if (ec >= 0) { var e = num(r[ec]); p.err = e !== null ? Math.abs(e) : 0; }
+          pts.push(p);
+          allX.push(x);
+        });
+        out.series.push({
+          name: st.name || src.head[yc] || '', named: !!st.name, col: yc, err: ec >= 0, st: st, color: si,
+          html: !st.name && src.table && src.table.header ? src.table.rows[0][yc] : null, pts: pts
+        });
+      });
+      /* stacked bars: each series starts where the ones before it ended */
+      if (out.stacked) {
+        var acc = {};
+        out.series.forEach(function (s) {
+          s.pts.forEach(function (p) { p.base = acc[p[0]] || 0; acc[p[0]] = p.base + p[1]; });
+        });
+      }
+      out.series.forEach(function (s) {
+        s.pts.forEach(function (p) {
+          var top = (p.base || 0) + p[1];
+          allY.push(top);
+          if (p.base) allY.push(p.base);
+          if (p.err) allY.push(top - p.err, top + p.err);
+        });
+      });
+      out.wholeX = allX.length > 0 && allX.every(function (v) { return v === Math.round(v); });
+      if (out.cats) out.x = [-0.5, Math.max(0, out.cats.length - 1) + 0.5];
+      else {
+        var x0 = Math.min.apply(null, allX.length ? allX : [0]), x1 = Math.max.apply(null, allX.length ? allX : [1]);
+        if (x1 === x0) { x0 -= 1; x1 += 1; }
+        var px = (x1 - x0) * 0.05;
+        out.x = [xr[0] != null ? xr[0] : x0 - px, xr[1] != null ? xr[1] : x1 + px];
+      }
+      if (b.kind === 'bar') allY.push(0);
+      /* curves drawn over the data, a fit or a model: they take the data's
+         x range and leave the y range to the data */
+      if (!out.cats && b.fns && b.fns.length) {
+        var fys = curves(b.fns, out.x[0], out.x[1], ycs.length, out);
+        if (fys.length) out.band = true;
+        if (!allY.length) allY = fys;
+      }
+      out.y = autoY(allY, yr, false, out.values ? 0.1 : 0);
+      if (b.kind === 'bar' && out.y[0] > 0 && yr[0] == null) out.y[0] = 0;
+      if (b.kind === 'bar' && out.y[1] < 0 && yr[1] == null) out.y[1] = 0;
+    }
+
+    /* tick spacing: what was asked, if it gives a sensible number of ticks */
+    var xs = val(b.xstep), yst = val(b.ystep);
+    if (out.cats) out.xstep = 1;
+    else if (xs > 0 && (out.x[1] - out.x[0]) / xs <= 60) out.xstep = xs;
+    else {
+      out.xstep = niceStep(out.x[1] - out.x[0], 7);
+      /* years, counts, trial numbers: no ticks between whole numbers */
+      if (out.wholeX && out.xstep < 1) out.xstep = 1;
+    }
+    out.ystep = yst > 0 && (out.y[1] - out.y[0]) / yst <= 60 ? yst : niceStep(out.y[1] - out.y[0], 6);
+    /* function plots: the drawn y range is what was asked or what the curve
+       spans, rounded outward to whole ticks */
+    if (b.kind === 'function' && !(yr[0] != null && yr[1] != null)) {
+      if (yr[0] == null) out.y[0] = round(Math.floor(out.y[0] / out.ystep + 1e-9) * out.ystep, out.ystep);
+      if (yr[1] == null) out.y[1] = round(Math.ceil(out.y[1] / out.ystep - 1e-9) * out.ystep, out.ystep);
+    }
+    out.x = out.x.map(function (v) { return round(v, out.xstep); });
+    out.y = out.y.map(function (v) { return round(v, out.ystep); });
+    if (out.band) {
+      var span = out.y[1] - out.y[0];
+      out.keep = [round(out.y[0] - span, out.ystep), round(out.y[1] + span, out.ystep)];
+    }
+
+    /* the legend: where it was put, or the emptiest corner; shown when there
+       is more than one thing to tell apart, a name was given, or a place
+       for it was chosen */
+    var pos = b.legend === false ? 'none' : (b.legendPos || 'auto');
+    var want = pos !== 'none' && out.series.length > 0 && (pos !== 'auto' || out.series.length > 1 ||
+      out.series.some(function (s) { return s.fn ? !!s.name : s.named; }));
+    out.legend = want ? (LEGEND_POS.indexOf(pos) >= 0 ? pos : corner(out, b.kind)) : null;
+    return out;
+  }
+
+  /* The legend goes in whichever corner the data leaves emptiest. */
+  function corner(m, kind) {
+    var C = [['north east', 1, 1], ['north west', 0, 1], ['south east', 1, 0], ['south west', 0, 0]], n = [0, 0, 0, 0];
+    m.series.forEach(function (s) {
+      var w = s.fn ? 0.1 : 1;           /* a curve is many samples, a point is one */
+      s.pts.forEach(function (p) {
+        if (!isFinite(p[1])) return;
+        var nx = (p[0] - m.x[0]) / (m.x[1] - m.x[0]);
+        (kind === 'bar' ? [0.2, 0.4, 0.6, 0.8, 1] : [1]).forEach(function (f) {
+          var ny = ((p.base || 0) + p[1] * f - m.y[0]) / (m.y[1] - m.y[0]);
+          C.forEach(function (c, i) {
+            if ((c[1] ? nx > 0.5 : nx < 0.5) && (c[2] ? ny > 0.6 && ny <= 1.05 : ny < 0.4 && ny >= -0.05)) n[i] += w;
+          });
+        });
+      });
+    });
+    var best = 0;
+    for (var i = 1; i < 4; i++) if (n[i] < n[best]) best = i;
+    return C[best][0];
+  }
+
+  /* y = f(x) for each formula, sampled where pgfplots will sample it */
+  function curves(fns, lo, hi, color0, out) {
+    var ys = [], N = out.samples;
+    (fns || []).forEach(function (fn, i) {
+      if (!String(fn.expr || '').trim()) return;
+      var c = compile(fn.expr);
+      if (!c.ok) { out.errors.push('y = ' + fn.expr + ': ' + c.err); return; }
+      var pts = [];
+      for (var k = 0; k < N; k++) {
+        var x = lo + (hi - lo) * k / (N - 1), y = c.f(x);
+        pts.push([x, y]);
+        if (isFinite(y)) ys.push(y);
+      }
+      out.series.push({ name: fn.name || '', expr: fn.expr, pgf: c.pgf, pts: pts, color: color0 + i, fn: true, st: fn });
+    });
+    return ys;
+  }
+
+  /* A curve with an asymptote runs off to ±huge; the view is fitted to the
+     bulk of it, not to the spike. */
+  function autoY(ys, yr, fn, extraTop) {
+    var lo, hi;
+    if (!ys.length) { lo = -1; hi = 1; }
+    else {
+      var s = ys.slice().sort(function (a, b) { return a - b; });
+      lo = s[0]; hi = s[s.length - 1];
+      if (fn && s.length > 20) {
+        var p5 = s[Math.floor(s.length * 0.05)], p95 = s[Math.ceil(s.length * 0.95) - 1];
+        if (hi - lo > 8 * (p95 - p5) && p95 > p5) { lo = p5; hi = p95; }
+      }
+      if (hi === lo) { lo -= 1; hi += 1; }
+      var pad = (hi - lo) * (fn ? 0.04 : 0.08);
+      if (!(fn && lo === 0)) lo -= pad;
+      if (!(fn && hi === 0)) hi += pad + (hi - lo) * (extraTop || 0);
+      if (fn && lo > 0 && lo < hi * 0.4) lo = 0;      /* keep the x axis in view when it is near */
+      if (fn && hi < 0 && hi > lo * 0.4) hi = 0;
+    }
+    if (yr[0] != null) lo = yr[0];
+    if (yr[1] != null) hi = yr[1];
+    if (!(hi > lo)) hi = lo + 1;
+    return [lo, hi];
+  }
+
+  /* ======================================================= drawing ===== */
+
+  var SVGNS = 'http://www.w3.org/2000/svg', XHTML = 'http://www.w3.org/1999/xhtml';
+  function el(tag, attrs, parent) {
+    var e = document.createElementNS(SVGNS, tag);
+    for (var k in attrs) if (attrs[k] != null) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+
+  /* "Speed $v$ (m/s)": text, with formulas between dollar signs */
+  function labelInto(target, str) {
+    String(str || '').split('$').forEach(function (part, i) {
+      if (!part) return;
+      if (i % 2 === 0) { target.appendChild(document.createTextNode(part)); return; }
+      var s = document.createElement('span');
+      s.className = 'pt-chm';
+      try { PT.math.renderStatic(s, PT.math.parseTex(part)); } catch (e) { s.textContent = part; }
+      target.appendChild(s);
+    });
+  }
+  function labelTex(str, use) {
+    var esc = PT.latex.esc;
+    return String(str || '').split('$').map(function (part, i) {
+      if (i % 2 === 0) return esc(part);
+      var r = PT.math.parseTex(part);
+      PT.math.scanRow(r, use);
+      return '$' + PT.math.texRow(r) + '$';
+    }).join('');
+  }
+  function richLabelInto(target, html) {
+    var box = PT.sanitize.parse(String(html || ''));
+    [].forEach.call(box.querySelectorAll('.imath'), function (m) {
+      var s = document.createElement('span');
+      s.className = 'pt-chm';
+      try { PT.math.renderStatic(s, JSON.parse(m.dataset.m)); } catch (e) { /* leave it out */ }
+      m.parentNode.replaceChild(s, m);
+    });
+    while (box.firstChild) target.appendChild(box.firstChild);
+  }
+  /* HTML (and so formulas) inside the drawing, scaled with it */
+  function html(svg, x, y, w, h, align, fill, rotate) {
+    var fo = el('foreignObject', { x: x, y: y, width: w, height: h }, svg);
+    if (rotate) fo.setAttribute('transform', 'rotate(-90 ' + (x + w / 2) + ' ' + (y + h / 2) + ')');
+    var d = document.createElementNS(XHTML, 'div');
+    d.className = 'pt-chlab ' + (align || 'c');
+    /* one inline box inside the flex box, or the spaces either side of a
+       formula would be trimmed away */
+    var span = document.createElementNS(XHTML, 'span');
+    d.appendChild(span);
+    fo.appendChild(d);
+    fill(span);       /* in the page already: formulas measure themselves */
+    return fo;
+  }
+  function legendText(s) { return s.name || (s.expr ? 'y = ' + s.expr : ''); }
+  function valueText(v) {
+    var s = String(+v.toFixed(2));
+    return s.replace('-', '\u2212');
+  }
+
+  /* A mark the way TikZ draws it: r is pgfplots' mark size */
+  function mark(g, shape, x, y, r, col, sw) {
+    var hollow = shape === 'o' || shape === 'square';
+    var paint = { fill: hollow ? 'none' : col, stroke: col, 'stroke-width': sw };
+    switch (shape) {
+      case '*': case 'o': el('circle', Object.assign({ cx: x, cy: y, r: r }, paint), g); break;
+      case 'square*': case 'square': el('rect', Object.assign({ x: x - r, y: y - r, width: 2 * r, height: 2 * r }, paint), g); break;
+      case 'triangle*':
+        el('path', Object.assign({ d: 'M' + x + ' ' + (y - r) + 'L' + (x + r * 0.866) + ' ' + (y + r / 2) + 'L' + (x - r * 0.866) + ' ' + (y + r / 2) + 'Z' }, paint), g);
+        break;
+      case 'diamond*':
+        el('path', Object.assign({ d: 'M' + x + ' ' + (y - r) + 'L' + (x + r * 0.75) + ' ' + y + 'L' + x + ' ' + (y + r) + 'L' + (x - r * 0.75) + ' ' + y + 'Z' }, paint), g);
+        break;
+      case 'x':
+        el('path', { d: 'M' + (x - r) + ' ' + (y - r) + 'L' + (x + r) + ' ' + (y + r) + 'M' + (x - r) + ' ' + (y + r) + 'L' + (x + r) + ' ' + (y - r), stroke: col, 'stroke-width': sw }, g);
+        break;
+      case '+':
+        el('path', { d: 'M' + (x - r) + ' ' + y + 'L' + (x + r) + ' ' + y + 'M' + x + ' ' + (y - r) + 'L' + x + ' ' + (y + r), stroke: col, 'stroke-width': sw }, g);
+        break;
+    }
+  }
+  /* TikZ's dash patterns, in drawing units */
+  function dashArray(dash, lw, P) {
+    if (dash === 'dashed') return (3 * P) + ' ' + (3 * P);
+    if (dash === 'dotted') return lw + ' ' + (2 * P);
+    if (dash === 'dashdotted') return (3 * P) + ' ' + (2 * P) + ' ' + lw + ' ' + (2 * P);
+    return null;
+  }
+  /* through the points, straight or smoothed the way TikZ's "smooth" does */
+  function pathOf(pts, smooth) {
+    if (pts.length < 2) return pts.length ? 'M' + pts[0][0] + ' ' + pts[0][1] : '';
+    var d = 'M' + pts[0][0].toFixed(2) + ' ' + pts[0][1].toFixed(2), k = 0.18;
+    for (var i = 1; i < pts.length; i++) {
+      var p = pts[i];
+      if (!smooth) { d += 'L' + p[0].toFixed(2) + ' ' + p[1].toFixed(2); continue; }
+      var a = pts[i - 2] || pts[i - 1], q = pts[i - 1], n = pts[i + 1] || p;
+      d += 'C' + (q[0] + (p[0] - a[0]) * k).toFixed(2) + ' ' + (q[1] + (p[1] - a[1]) * k).toFixed(2) + ' ' +
+        (p[0] - (n[0] - q[0]) * k).toFixed(2) + ' ' + (p[1] - (n[1] - q[1]) * k).toFixed(2) + ' ' +
+        p[0].toFixed(2) + ' ' + p[1].toFixed(2);
+    }
+    return d;
+  }
+
+  var U = 10;   /* drawing units per em */
+  /* the pen, in drawing units; never so thin that a screen loses it */
+  function lineWidth(L, P) { return Math.max(THICK[L.thick] * P, 0.55); }
+
+  /* Draw chart b into target. opts.fit: fill the target (the studio)
+     instead of taking b.width of it; opts.colEm: the text column, in em,
+     that the chart's proportions are taken from. */
+  function draw(target, b, doc, opts) {
+    opts = opts || {};
+    var m = model(b, doc);
+    target.textContent = '';
+    var fpt = parseFloat(doc && doc.settings && doc.settings.fontsize) || 10;
+    var P = U / fpt;                   /* drawing units per pt */
+    var fs = parseFloat(getComputedStyle(target).fontSize) || 13;
+    var colEm = opts.colEm || (target.parentNode && target.parentNode.clientWidth ? target.parentNode.clientWidth / fs : 36);
+    var w = clamp(+b.width || 0.75, 0.2, 1), aspect = clamp(+b.aspect || 0.62, 0.3, 1.2);
+    var W = Math.max(12, w * colEm) * U, H = W * aspect;
+    var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, 'class': 'pt-chsvg' });
+    if (opts.fit) { svg.style.width = '100%'; svg.style.height = '100%'; }
+    else { svg.style.width = Math.round(w * 1000) / 10 + '%'; svg.style.aspectRatio = W + ' / ' + H; }
+    target.appendChild(svg);
+    var axes = axesOf(b), middle = axes === 'middle', grid = gridOf(b);
+
+    var xt = ticks(m.x[0], m.x[1], m.xstep), yt = ticks(m.y[0], m.y[1], m.ystep);
+    var yw = Math.max.apply(null, yt.map(function (v) { return tickText(v, m.ystep).length; }).concat([1])) * 0.55 * U;
+    var titleH = b.title ? 1.9 * U : 0;
+    var ml, mr, mt, mb;
+    if (middle) {
+      ml = 0.6 * U; mr = (b.xlabel ? 2.6 : 0.8) * U; mt = (b.ylabel ? 2 : 0.8) * U; mb = 0.6 * U;
+      /* axes through 0 that end up at an edge take their tick labels outside it */
+      var fx = (Math.min(Math.max(0, m.x[0]), m.x[1]) - m.x[0]) / (m.x[1] - m.x[0]);
+      var fy = (Math.min(Math.max(0, m.y[0]), m.y[1]) - m.y[0]) / (m.y[1] - m.y[0]);
+      if (fx < 0.15) ml = Math.max(ml, yw + 0.8 * U - fx * W * 0.8);
+      if (fy < 0.12) mb = 1.7 * U;
+    } else {
+      ml = yw + 0.8 * U + (b.ylabel ? 1.8 * U : 0); mr = (axes === 'left' ? 1.2 : 1) * U;
+      mt = (axes === 'left' ? 1.2 : 0.8) * U; mb = 1.7 * U + (b.xlabel ? 1.7 * U : 0);
+    }
+    mt += titleH;
+    var leg = null;
+    if (m.legend) {
+      var lw = 0;
+      m.series.forEach(function (s) { lw = Math.max(lw, legendText(s).replace(/\$/g, '').length); });
+      leg = { w: (lw * 0.55 + 2.8) * U, h: m.series.length * 1.35 * U + 0.4 * U };
+      if (m.legend === 'outer north east') mr += leg.w + 0.8 * U;
+    }
+    var pw = W - ml - mr, ph = H - mt - mb;
+    if (leg && m.legend !== 'outer north east') leg.w = Math.min(leg.w, pw * 0.7);
+    function X(v) { return ml + (v - m.x[0]) / (m.x[1] - m.x[0]) * pw; }
+    function Y(v) { return mt + (m.y[1] - v) / (m.y[1] - m.y[0]) * ph; }
+
+    var clipId = 'ptc' + Math.random().toString(36).slice(2, 8);
+    el('rect', { x: ml, y: mt, width: pw, height: ph }, el('clipPath', { id: clipId }, el('defs', {}, svg)));
+
+    /* grid: major lines at the ticks, minor ones halfway between */
+    if (grid !== 'none') {
+      var g = el('g', { 'class': 'pt-chgrid' }, svg);
+      if (grid === 'both') {
+        var gm = el('g', { 'class': 'minor' }, g);
+        if (!m.cats) ticks(m.x[0], m.x[1], m.xstep / 2).forEach(function (v) { el('line', { x1: X(v), x2: X(v), y1: mt, y2: mt + ph }, gm); });
+        ticks(m.y[0], m.y[1], m.ystep / 2).forEach(function (v) { el('line', { x1: ml, x2: ml + pw, y1: Y(v), y2: Y(v) }, gm); });
+      }
+      if (!m.cats) xt.forEach(function (v) { el('line', { x1: X(v), x2: X(v), y1: mt, y2: mt + ph }, g); });
+      yt.forEach(function (v) { el('line', { x1: ml, x2: ml + pw, y1: Y(v), y2: Y(v) }, g); });
+    }
+
+    /* axes, ticks, tick labels */
+    var ax = el('g', { 'class': 'pt-chaxis' }, svg);
+    var ox = middle ? Math.min(Math.max(0, m.x[0]), m.x[1]) : m.x[0];
+    var oy = middle ? Math.min(Math.max(0, m.y[0]), m.y[1]) : m.y[0];
+    var tl = 0.35 * U;
+    function arrows(x0, y0) {
+      el('line', { x1: ml, x2: ml + pw + 0.5 * U, y1: y0, y2: y0 }, ax);
+      el('line', { x1: x0, x2: x0, y1: mt + ph, y2: mt - 0.5 * U }, ax);
+      el('path', { d: 'M' + (ml + pw + 0.5 * U) + ' ' + y0 + 'l-' + 0.6 * U + ' -' + 0.25 * U + 'v' + 0.5 * U + 'z', 'class': 'pt-charrow' }, ax);
+      el('path', { d: 'M' + x0 + ' ' + (mt - 0.5 * U) + 'l-' + 0.25 * U + ' ' + 0.6 * U + 'h' + 0.5 * U + 'z', 'class': 'pt-charrow' }, ax);
+    }
+    if (middle) arrows(X(ox), Y(oy));
+    else if (axes === 'left') arrows(ml, mt + ph);
+    else el('rect', { x: ml, y: mt, width: pw, height: ph, fill: 'none' }, ax);
+    var tx = el('g', { 'class': 'pt-chtick' }, svg);
+    if (m.cats) {
+      m.cats.forEach(function (c, i) {
+        var xx = X(i), y0 = middle ? Y(oy) : mt + ph;
+        el('line', { x1: xx, x2: xx, y1: y0, y2: y0 - tl }, ax);
+        html(svg, xx - (pw / m.cats.length) / 2, y0 + 0.3 * U, pw / m.cats.length, 1.4 * U, 'c', function (d) {
+          if (c.html != null) richLabelInto(d, c.html); else d.textContent = c.text;
+        });
+      });
+    } else {
+      xt.forEach(function (v) {
+        if (middle && v === ox && yt.length) return;   /* the origin, where the axes cross */
+        var xx = X(v), y0 = middle ? Y(oy) : mt + ph;
+        el('line', { x1: xx, x2: xx, y1: y0 + (middle ? tl / 2 : 0), y2: y0 - tl / (middle ? 2 : 1) }, ax);
+        var t = el('text', { x: xx, y: y0 + 1.2 * U, 'text-anchor': 'middle' }, tx);
+        t.textContent = tickText(v, m.xstep);
+      });
+    }
+    yt.forEach(function (v) {
+      if (middle && v === oy && xt.length) return;
+      var yy = Y(v), x0 = middle ? X(ox) : ml;
+      el('line', { x1: x0 - (middle ? tl / 2 : 0), x2: x0 + tl / (middle ? 2 : 1), y1: yy, y2: yy }, ax);
+      var t = el('text', { x: x0 - 0.4 * U, y: yy + 0.35 * U, 'text-anchor': 'end' }, tx);
+      t.textContent = tickText(v, m.ystep);
+    });
+
+    /* title and axis labels */
+    if (b.title) html(svg, ml, 0.1 * U, pw, 1.6 * U, 'c', function (d) { labelInto(d, b.title); });
+    if (b.xlabel) {
+      if (middle) html(svg, ml + pw + 0.6 * U, Y(oy) - 0.75 * U, mr, 1.5 * U, 'l', function (d) { labelInto(d, b.xlabel); });
+      else html(svg, ml, H - 1.6 * U, pw, 1.5 * U, 'c', function (d) { labelInto(d, b.xlabel); });
+    }
+    if (b.ylabel) {
+      if (middle) html(svg, X(ox) - 6 * U, titleH, 12 * U, 1.5 * U, 'c', function (d) { labelInto(d, b.ylabel); });
+      else html(svg, 0.1 * U - (ph - 1.5 * U) / 2, mt + ph / 2 - 0.75 * U, ph, 1.5 * U, 'c', function (d) { labelInto(d, b.ylabel); }, true);
+    }
+
+    /* the data */
+    var plot = el('g', { 'clip-path': 'url(#' + clipId + ')' }, svg);
+    var over = el('g', {}, svg);            /* value labels may stand above the frame */
+    var nbar = m.series.filter(function (s) { return !s.fn; }).length || 1;
+    var barw = clamp(+b.barw || 0.8, 0.2, 1);
+    function errBar(x, y, dy, col, sw) {
+      if (!(dy > 0)) return;
+      var c = 1.5 * P;
+      el('path', { d: 'M' + x + ' ' + Y(y - dy) + 'V' + Y(y + dy) + 'M' + (x - c) + ' ' + Y(y - dy) + 'h' + 2 * c +
+        'M' + (x - c) + ' ' + Y(y + dy) + 'h' + 2 * c, stroke: col, 'stroke-width': sw, fill: 'none' }, plot);
+    }
+    m.series.forEach(function (s, si) {
+      var L = look(b, s), col = '#' + L.hex, sw = lineWidth(L, P);
+      if (b.kind === 'bar' && !s.fn) {
+        var bw = m.stacked ? barw : barw / nbar;
+        s.pts.forEach(function (p) {
+          var left = p[0] - barw / 2 + (m.stacked ? 0 : si * bw), base = p.base || 0;
+          var ya = Y(base), yb = Y(base + p[1]);
+          el('rect', { x: X(left), width: Math.max(0.5, X(left + bw) - X(left)), y: Math.min(ya, yb), height: Math.abs(yb - ya),
+            fill: col, 'fill-opacity': 0.75, stroke: col, 'stroke-width': 0.4 * P }, plot);
+          if (p.err) errBar(X(left + bw / 2), base + p[1], p.err, col, 0.4 * P);
+          if (m.values) {
+            var t = el('text', { x: X(left + bw / 2), y: p[1] >= 0 ? yb - 0.35 * U : yb + 1.05 * U, 'text-anchor': 'middle', 'class': 'pt-chval' }, over);
+            t.textContent = valueText(p[1]);
+          }
+        });
+        return;
+      }
+      if (L.line) {
+        var runs = [], run = [];
+        s.pts.forEach(function (p) {
+          var ok = isFinite(p[1]) && (!m.keep || (p[1] >= m.keep[0] && p[1] <= m.keep[1]));
+          if (!ok) { if (run.length) runs.push(run); run = []; return; }
+          run.push([X(p[0]), Y(p[1])]);
+        });
+        if (run.length) runs.push(run);
+        el('path', { d: runs.map(function (r) { return pathOf(r, !s.fn && !!b.smooth); }).join(''), fill: 'none', stroke: col,
+          'stroke-width': sw, 'stroke-dasharray': dashArray(L.dash, sw, P), 'class': 'pt-chline' }, plot);
+      }
+      s.pts.forEach(function (p) {
+        if (!isFinite(p[1])) return;
+        if (p.err) errBar(X(p[0]), p[1], p.err, col, 0.4 * P);
+        if (L.mark !== 'none') mark(plot, L.mark, X(p[0]), Y(p[1]), MSIZE[L.msize] * P, col, 0.4 * P);
+      });
+    });
+
+    /* legend */
+    if (leg) {
+      var outer = m.legend === 'outer north east';
+      var east = /east/.test(m.legend), north = /north/.test(m.legend);
+      var lx = outer ? ml + pw + 0.8 * U : east ? ml + pw - leg.w - 0.4 * U : ml + 0.4 * U;
+      var ly = outer || north ? mt + (outer ? 0 : 0.4 * U) : mt + ph - leg.h - 0.4 * U;
+      el('rect', { x: lx, y: ly, width: leg.w, height: leg.h, 'class': 'pt-chlegend' }, svg);
+      m.series.forEach(function (s, i) {
+        var L = look(b, s), col = '#' + L.hex, sw = lineWidth(L, P);
+        var yy = ly + 0.2 * U + i * 1.35 * U + 0.675 * U;
+        if (b.kind === 'bar' && !s.fn) {
+          el('rect', { x: lx + 0.4 * U, y: yy - 0.35 * U, width: 1 * U, height: 0.7 * U, fill: col, 'fill-opacity': 0.75, stroke: col, 'stroke-width': 0.4 * P }, svg);
+        } else {
+          if (L.line) el('line', { x1: lx + 0.3 * U, x2: lx + 1.5 * U, y1: yy, y2: yy, stroke: col, 'stroke-width': sw,
+            'stroke-dasharray': dashArray(L.dash, sw, P), 'class': 'pt-chline' }, svg);
+          if (L.mark !== 'none') mark(svg, L.mark, lx + 0.9 * U, yy, MSIZE[L.msize] * P, col, 0.4 * P);
+        }
+        html(svg, lx + 1.8 * U, yy - 0.7 * U, leg.w - 2 * U, 1.4 * U, 'l', function (d) {
+          if (s.html) richLabelInto(d, s.html);
+          else if (s.name) labelInto(d, s.name);
+          else labelInto(d, '$y = ' + exprTex(s.expr) + '$');
+        });
+      });
+    }
+
+    if (m.errors.length) {
+      var er = document.createElement('div');
+      er.className = 'pt-cherr';
+      er.textContent = m.errors.join(' ');
+      target.appendChild(er);
+    }
+    return m;
+  }
+
+  /* y = 2x^2 for a legend: through the formula parser, so 2x^2 is set as math */
+  function exprTex(src) {
+    return String(src || '').replace(/\*/g, '\\cdot ').replace(/\bpi\b/g, '\\pi ')
+      .replace(/\b(sin|cos|tan|cot|sec|csc|ln|log|exp|sinh|cosh|tanh|arcsin|arccos|arctan|min|max)\b/g, '\\$1 ')
+      .replace(/sqrt\(([^()]*)\)/g, '\\sqrt{$1}').replace(/\^\(([^()]*)\)/g, '^{$1}');
+  }
+
+  /* ========================================================= LaTeX ===== */
+
+  /* a colour by name: ours, or one defined for this document (xcolor names
+     are kept to letters) */
+  function colorName(hex, use) {
+    for (var i = 0; i < COLORS.length; i++) if (COLORS[i][1] === hex) return COLORS[i][0];
+    (use.ptColors = use.ptColors || {})[hex] = true;
+    return customName(hex);
+  }
+  function customName(hex) { return 'ptc' + hex.toLowerCase().replace(/[0-9]/g, function (d) { return 'ghijklmnop'[d]; }); }
+
+  function tex(b, doc, use, inline) {
+    var m = model(b, doc);
+    use.pgfplots = true;
+    var axes = axesOf(b), middle = axes === 'middle', grid = gridOf(b);
+    var w = clamp(+b.width || 0.75, 0.2, 1), aspect = clamp(+b.aspect || 0.62, 0.3, 1.2);
+    var o = [];
+    o.push('width=' + fmt(w) + '\\linewidth', 'height=' + fmt(+(w * aspect).toFixed(3)) + '\\linewidth');
+    o.push(middle ? 'axis lines=middle' : axes === 'left' ? 'axis lines=left' : 'tick pos=left');
+    if (b.title) o.push('title={' + labelTex(b.title, use) + '}');
+    o.push('xmin=' + fmt(m.x[0]) + ', xmax=' + fmt(m.x[1]), 'ymin=' + fmt(m.y[0]) + ', ymax=' + fmt(m.y[1]));
+    if (m.cats) {
+      o.push('xtick={' + m.cats.map(function (_, i) { return i; }).join(',') + '}');
+      o.push('xticklabels={' + m.cats.map(function (c) {
+        return '{' + (c.html != null ? inline(c.html, use).trim() : PT.latex.esc(c.text)) + '}';
+      }).join(',') + '}');
+    } else o.push('xtick distance=' + fmt(m.xstep));
+    o.push('ytick distance=' + fmt(m.ystep));
+    if (grid === 'major') o.push(m.cats ? 'ymajorgrids' : 'grid=major');
+    if (grid === 'both') o.push(m.cats ? 'ymajorgrids, yminorgrids, minor y tick num=1' : 'grid=both, minor tick num=1', 'minor tick length=0pt');
+    if (b.xlabel) o.push('xlabel={' + labelTex(b.xlabel, use) + '}');
+    if (b.ylabel) o.push('ylabel={' + labelTex(b.ylabel, use) + '}');
+    if (middle) {
+      if (b.xlabel) o.push('xlabel style={at={(ticklabel* cs:1)}, anchor=west}');
+      if (b.ylabel) o.push('ylabel style={at={(ticklabel* cs:1)}, anchor=south}');
+    }
+    if (m.keep) o.push('unbounded coords=jump', 'restrict y to domain=' + fmt(m.keep[0]) + ':' + fmt(m.keep[1]));
+    var nbar = m.series.filter(function (s) { return !s.fn; }).length || 1;
+    var barw = clamp(+b.barw || 0.8, 0.2, 1);
+    if (b.kind === 'bar') {
+      o.push(m.stacked ? 'ybar stacked' : 'ybar=0pt', 'bar width=' + fmt(+(m.stacked ? barw : barw / nbar).toFixed(4)), 'area legend');
+      if (m.values) o.push('nodes near coords',
+        'every node near coord/.append style={font=\\small, /pgf/number format/fixed, /pgf/number format/precision=2, /pgf/number format/1000 sep={}}');
+    }
+    if (m.legend) o.push('legend pos=' + m.legend, 'legend cell align=left');
+
+    var t = '\\begin{figure}[' + (b.placement || 'htbp') + ']\n  \\centering\n  \\begin{tikzpicture}\n' +
+      '    \\begin{axis}[\n      ' + o.join(',\n      ') + '\n    ]\n';
+    m.series.forEach(function (s, si) {
+      var L = look(b, s), cn = colorName(L.hex, use), opts;
+      var errs = s.err ? ['error bars/.cd', 'y dir=both', 'y explicit'] : [];
+      if (s.fn) {
+        opts = [cn, L.thick].concat(L.dash !== 'solid' ? [L.dash] : [],
+          ['domain=' + fmt(m.x[0]) + ':' + fmt(m.x[1]), 'samples=' + m.samples]);
+        t += '      \\addplot[' + opts.join(', ') + '] {' + s.pgf + '};\n';
+      } else {
+        if (b.kind === 'bar') {
+          opts = ['fill=' + cn + '!75', 'draw=' + cn];
+          if (!m.stacked) opts.push('bar shift=' + fmt(+((-barw / 2 + (si + 0.5) * barw / nbar)).toFixed(4)));
+        } else {
+          opts = [cn];
+          if (L.line) { opts.push(L.thick); if (L.dash !== 'solid') opts.push(L.dash); if (b.smooth) opts.push('smooth'); }
+          else opts.push('only marks');
+          if (L.mark === 'none') opts.push('no marks');
+          else opts.push('mark=' + L.mark, 'mark size=' + MSIZE[L.msize] + 'pt', 'mark options={solid}');
+        }
+        t += '      \\addplot[' + opts.concat(errs).join(', ') + '] coordinates {' +
+          s.pts.map(function (p) {
+            return '(' + fmt(p[0]) + ',' + fmt(p[1]) + ')' + (s.err ? ' +- (0,' + fmt(p.err || 0) + ')' : '');
+          }).join(' ') + '};\n';
+      }
+      if (m.legend) {
+        var name = s.html ? inline(s.html, use).trim() : s.name ? labelTex(s.name, use)
+          : s.expr ? '$y = ' + PT.math.texRow(PT.math.parseTex(exprTex(s.expr))) + '$' : '';
+        t += '      \\addlegendentry{' + name + '}\n';
+      }
+    });
+    t += '    \\end{axis}\n  \\end{tikzpicture}\n';
+    if (b.caption) t += '  \\caption{' + inline(b.caption, use).trim() + '}\n';
+    if (b.label) t += '  \\label{' + PT.sanitize.label(b.label) + '}\n';
+    return t + '\\end{figure}\n';
+  }
+
+  function preamble(use) {
+    var custom = Object.keys((use && use.ptColors) || {});
+    return ['\\usepackage{pgfplots}',
+      '\\pgfplotsset{compat=1.18, scaled ticks=false,',
+      '  tick label style={/pgf/number format/fixed, /pgf/number format/precision=4, /pgf/number format/1000 sep={}}}']
+      .concat(COLORS.map(function (c) { return '\\definecolor{' + c[0] + '}{HTML}{' + c[1] + '}'; }))
+      .concat(custom.map(function (hex) { return '\\definecolor{' + customName(hex) + '}{HTML}{' + hex + '}'; }));
+  }
+
+  window.PT = window.PT || {};
+  window.PT.chart = {
+    compile: compile, parse: parse, parseCSV: parseCSV, num: num, model: model, look: look,
+    draw: draw, tex: tex, preamble: preamble, source: source, cellText: cellText,
+    COLORS: COLORS, THICK: THICK, DASHES: DASHES, MARKS: MARKS, MSIZE: MSIZE, LEGEND_POS: LEGEND_POS,
+    autoHex: autoHex
   };
 })();
 </script>
@@ -3891,22 +5101,38 @@ blockquote.pt-quote {
           (b.label ? '  \\label{' + PT.sanitize.label(b.label) + '}\n' : '') +
           '\\end{figure}\n';
       }
+      case 'chart':
+        return PT.chart.tex(b, doc, use, inline);
       case 'table': {
         var cols = b.align.join(b.rules ? '|' : '');
         if (b.rules) cols = '|' + cols + '|';
         var t = '\\begin{table}[' + (b.placement || 'htbp') + ']\n  \\centering\n';
-        if (b.caption) t += '  \\caption{' + inline(b.caption, use).trim() + '}\n';
-        if (b.label) t += '  \\label{' + PT.sanitize.label(b.label) + '}\n';
+        var size = { small: '\\small', footnotesize: '\\footnotesize', large: '\\large' }[b.size];
+        if (size) t += '  ' + size + '\n';
+        /* striped rows: every other body row shaded (xcolor's table option) */
+        /* the 2nd, 4th … body row; xcolor counts rows from the header */
+        if (b.zebra) { use.colortbl = true; t += '  \\rowcolors{2}' + (b.header ? '{ptzebra}{}' : '{}{ptzebra}') + '\n'; }
+        var capLab = (b.caption ? '  \\caption{' + inline(b.caption, use).trim() + '}\n' : '') +
+          (b.label ? '  \\label{' + PT.sanitize.label(b.label) + '}\n' : '');
+        if (!b.capBelow) t += capLab;
         t += '  \\begin{tabular}{' + cols + '}\n';
         if (b.booktabs) { use.booktabs = true; t += '    \\toprule\n'; }
         else if (b.rules) t += '    \\hline\n';
         b.rows.forEach(function (r, ri) {
-          t += '    ' + r.map(function (c) { return inline(c, use).trim(); }).join(' & ') + ' \\\\\n';
-          if (ri === 0 && b.header) t += b.booktabs ? '    \\midrule\n' : (b.rules ? '    \\hline\n' : '');
+          var head = ri === 0 && b.header;
+          t += '    ' + r.map(function (c, ci) {
+            var x = inline(c, use).trim();
+            /* bold as on the page: the header row, and the first column if asked */
+            var bold = x && ((head && b.boldHeader !== false) || (!head && ci === 0 && b.boldFirst));
+            return bold ? '\\textbf{' + x + '}' : x;
+          }).join(' & ') + ' \\\\\n';
+          if (head) t += b.booktabs ? '    \\midrule\n' : (b.rules ? '    \\hline\n' : '');
           else if (b.rules && !b.booktabs) t += '    \\hline\n';
         });
         if (b.booktabs) t += '    \\bottomrule\n';
-        t += '  \\end{tabular}\n\\end{table}\n';
+        t += '  \\end{tabular}\n';
+        if (b.capBelow) t += capLab;
+        t += '\\end{table}\n';
         return t;
       }
       case 'theorem': {
@@ -3971,9 +5197,12 @@ blockquote.pt-quote {
     p.push('\\usepackage[T1]{fontenc}');
     if (S.lang && S.lang !== 'english') p.push('\\usepackage[' + S.lang + ']{babel}');
     p.push('\\usepackage{amsmath, amssymb}');
+    /* before pgfplots, which loads xcolor without the table option */
+    if (use.colortbl) { p.push('\\usepackage[table]{xcolor}'); p.push('\\definecolor{ptzebra}{gray}{0.93}'); }
     if (use.amsthm) p.push('\\usepackage{amsthm}');
     if (use.graphicx) p.push('\\usepackage{graphicx}');
     if (use.booktabs) p.push('\\usepackage{booktabs}');
+    if (use.pgfplots) p.push.apply(p, PT.chart.preamble(use));
     if (use.listings) p.push('\\usepackage{listings}');
     if (use.ulem) p.push('\\usepackage[normalem]{ulem}');
     if (use.soul) p.push('\\usepackage{soul}');
@@ -4089,6 +5318,8 @@ blockquote.pt-quote {
         align: ['l', 'c', 'c'], header: true, booktabs: true, rules: false,
         caption: 'Caption text.', label: '', placement: 'htbp'
       };
+      case 'plot': return chartBlock('function', { fns: [{ expr: 'sin x', name: '' }], xmin: '-2pi', xmax: '2pi', axes: 'middle', xlabel: '$x$', ylabel: '$y$' });
+      case 'chart': return chartBlock('line', { data: 'Time (s), Distance (m)\n0, 0\n1, 1.8\n2, 4.1\n3, 6.2\n4, 7.9\n5, 10.1' });
       case 'theorem': return { id: uid(), t: 'theorem', kind: 'theorem', title: '', html: '', label: '' };
       case 'lemma': return { id: uid(), t: 'theorem', kind: 'lemma', title: '', html: '', label: '' };
       case 'definition': return { id: uid(), t: 'theorem', kind: 'definition', title: '', html: '', label: '' };
@@ -4101,6 +5332,19 @@ blockquote.pt-quote {
       case 'raw': return { id: uid(), t: 'raw', tex: '% raw LaTeX passed straight through\n' };
       default: return { id: uid(), t: 'para', html: '' };
     }
+  }
+
+  /* A chart: kind is function | line | scatter | bar. Data comes from a
+     table in the document (from = its id) or from the chart's own rows
+     (data, as comma- or tab-separated text). See chart.js. */
+  function chartBlock(kind, o) {
+    var b = {
+      id: uid(), t: 'chart', kind: kind, fns: [], from: '', data: '', xcol: 0, ycols: [1],
+      xmin: '', xmax: '', ymin: '', ymax: '', xlabel: '', ylabel: '', axes: 'box',
+      grid: true, legend: true, marks: true, width: 0.75, caption: '', label: '', placement: 'htbp'
+    };
+    for (var k in o) b[k] = o[k];
+    return b;
   }
 
   var MENU = [
@@ -4124,6 +5368,8 @@ blockquote.pt-quote {
       ['enumerate', 'Numbered list', '1.', 'enumerate'],
       ['figure', 'Figure', '🖼', 'Image with caption'],
       ['table', 'Table', '▦', 'tabular with caption'],
+      ['plot', 'Function plot', '📈', 'y = f(x), drawn with pgfplots'],
+      ['chart', 'Chart', '📊', 'Line, scatter or bar chart of data'],
       ['quote', 'Quote', '❝', 'quote environment'],
       ['code', 'Code', '⌨', 'verbatim / lstlisting'],
       ['bib', 'Bibliography', '📚', 'thebibliography'],
@@ -4154,7 +5400,7 @@ blockquote.pt-quote {
           if (b.label) map[b.label] = b.__nums[0];
           if (b.labels) b.labels.forEach(function (l, i) { if (l) map[l] = b.__nums[i]; });
           break;
-        case 'figure':
+        case 'figure': case 'chart':
           b.__num = String(++fig);
           if (b.label) map[b.label] = b.__num;
           break;
@@ -4251,6 +5497,7 @@ blockquote.pt-quote {
 
   Editor.prototype.change = function (structural) {
     if (this.hooks.onChange) this.hooks.onChange(structural);
+    if (!structural) this.redrawCharts();
   };
   Editor.prototype.focusBlock = function (id, part, atEnd) {
     this.focusHint = { id: id, part: part || 'main', atEnd: atEnd !== false };
@@ -4431,7 +5678,7 @@ blockquote.pt-quote {
     if ((ev.ctrlKey || ev.metaKey) && !ev.altKey) return;
     /* \ in running text opens the command palette at the caret — blocks,
        symbols, formatting; pressing \ again there types a backslash */
-    if (ev.key === '\\' && !ev.metaKey && PT.palette) {   /* AltGr+… on many layouts */
+    if (ev.key === '\\' && !ev.metaKey && PT.palette && !e.closest('.studio')) {   /* AltGr+… on many layouts */
       ev.preventDefault();
       PT.palette.open({ fromBackslash: true });
       return;
@@ -4562,6 +5809,7 @@ blockquote.pt-quote {
       case 'list': return this.renderList(b, box, idx);
       case 'figure': return this.renderFigure(b, box, idx);
       case 'table': return this.renderTable(b, box, idx);
+      case 'chart': return this.renderChart(b, box, idx);
       case 'theorem': {
         var t = h('div', 'pt-thm pt-thm-' + b.kind);
         var head = h('span', 'pt-thmh');
@@ -4966,11 +6214,18 @@ blockquote.pt-quote {
   };
 
   /* ------------------------------------------------------------------- tables */
+  /* the classes that make a table look on the page as it will in the PDF */
+  function tableClass(b) {
+    return 'pt-table' + (b.booktabs ? ' booktabs' : '') + (b.rules ? ' ruled' : '') +
+      (b.zebra ? ' zebra' : '') + (b.header ? ' hashead' : '') + (b.boldFirst ? ' boldfirst' : '') +
+      (b.boldHeader === false ? ' plainhead' : '') + (b.size ? ' sz-' + b.size : '');
+  }
+
   Editor.prototype.renderTable = function (b, box, idx) {
     var self = this;
     var tw = h('div', 'pt-tabw');
 
-    var cap = h('div', 'pt-cap pt-tcap');
+    var cap = h('div', 'pt-cap pt-tcap' + (b.capBelow ? ' below' : ''));
     var cl = h('span', 'pt-capl', 'Table ' + (b.__num || '1') + ': ');
     cl.contentEditable = 'false';
     cap.appendChild(cl);
@@ -4979,9 +6234,9 @@ blockquote.pt-quote {
     });
     ce.dataset.ph = 'Caption…';
     cap.appendChild(ce);
-    tw.appendChild(cap);
+    if (!b.capBelow) tw.appendChild(cap);
 
-    var tbl = h('table', 'pt-table' + (b.booktabs ? ' booktabs' : '') + (b.rules ? ' ruled' : ''));
+    var tbl = h('table', tableClass(b));
     b.rows.forEach(function (r, ri) {
       var tr = h('tr', ri === 0 && b.header ? 'hdr' : '');
       r.forEach(function (c, ci) {
@@ -4990,42 +6245,85 @@ blockquote.pt-quote {
           onKey: function (ev) { self.tableKeys(ev, b, ri, ci); }
         });
         e.dataset.part = 'c' + ri + '_' + ci;
+        e.addEventListener('focus', function () { self.tableCur = { id: b.id, ri: ri, ci: ci }; });
         td.appendChild(e);
         tr.appendChild(td);
       });
       tbl.appendChild(tr);
     });
+    /* a block of cells copied from a spreadsheet lands cell by cell */
+    tbl.addEventListener('paste', function (ev) {
+      var text = ev.clipboardData && ev.clipboardData.getData('text/plain');
+      var cell = ev.target.closest && ev.target.closest('.pt-cell');
+      if (!text || !cell || !/[\t\n]/.test(text.replace(/\s+$/, ''))) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      var at = /^c(\d+)_(\d+)$/.exec(cell.dataset.part);
+      self.pasteCells(b, PT.chart.parseCSV(text), +at[1], +at[2]);
+    }, true);
     tw.appendChild(tbl);
+    if (b.capBelow) tw.appendChild(cap);
 
+    /* rows and columns go in beside the cell you were last in; everything
+       else is in the table editor */
+    function cur() {
+      var c = self.tableCur;
+      return c && c.id === b.id && c.ri < b.rows.length && c.ci < b.align.length ? c : null;
+    }
     var bar = h('div', 'pt-tabctl');
     bar.contentEditable = 'false';
-    [['+ row', function () { b.rows.push(b.rows[0].map(function () { return ''; })); }],
-     ['− row', function () { if (b.rows.length > 1) b.rows.pop(); }],
-     ['+ col', function () { b.rows.forEach(function (r) { r.push(''); }); b.align.push('c'); }],
-     ['− col', function () { if (b.align.length > 1) { b.rows.forEach(function (r) { r.pop(); }); b.align.pop(); } }],
-     ['header', function () { b.header = !b.header; }],
-     ['booktabs', function () { b.booktabs = !b.booktabs; b.rules = false; }],
-     ['grid', function () { b.rules = !b.rules; b.booktabs = false; }]
-    ].forEach(function (pair) {
-      var bt = h('button', '', pair[0]);
-      bt.onclick = function () { pair[1](); self.change(true); self.render(); };
+    [['⤢  Edit table', 'Open the table editor: style, sorting, totals, CSV, alignment', function () {
+      if (PT.studio) PT.studio.open(self, b, tw);
+      return false;
+    }, 'big'],
+     ['+ row', 'Insert a row below the current one', function () {
+       var c = cur(), at = c ? c.ri + 1 : b.rows.length;
+       b.rows.splice(at, 0, b.align.map(function () { return ''; }));
+       self.focusBlock(b.id, 'c' + at + '_' + (c ? c.ci : 0), false);
+     }],
+     ['− row', 'Delete the current row', function () {
+       if (b.rows.length < 2) return;
+       var c = cur();
+       b.rows.splice(c ? c.ri : b.rows.length - 1, 1);
+     }],
+     ['+ col', 'Insert a column right of the current one', function () {
+       var c = cur(), at = c ? c.ci + 1 : b.align.length;
+       b.rows.forEach(function (r) { r.splice(at, 0, ''); });
+       b.align.splice(at, 0, 'c');
+       self.focusBlock(b.id, 'c' + (c ? c.ri : 0) + '_' + at, false);
+     }],
+     ['− col', 'Delete the current column', function () {
+       if (b.align.length < 2) return;
+       var c = cur(), at = c ? c.ci : b.align.length - 1;
+       b.rows.forEach(function (r) { r.splice(at, 1); });
+       b.align.splice(at, 1);
+     }],
+     ['📊 chart', 'Draw a chart from this table', function () { self.chartFromTable(b, idx); return false; }]
+    ].forEach(function (it) {
+      var bt = h('button', it[3] || '', it[0]);
+      bt.title = it[1];
+      bt.onmousedown = function (e) { e.preventDefault(); };   /* keep the cell's caret */
+      bt.onclick = function () { if (it[2]() !== false) { self.change(true); self.render(); } };
       bar.appendChild(bt);
     });
-    var alg = h('span', 'pt-algs');
-    alg.appendChild(h('span', 'pt-alglbl', 'align:'));
-    b.align.forEach(function (a, ci) {
-      var s = h('select', 'pt-alg');
-      ['l', 'c', 'r'].forEach(function (v) {
-        var o = h('option', '', v); o.value = v;
-        if (v === a) o.selected = true;
-        s.appendChild(o);
-      });
-      s.onchange = function () { b.align[ci] = s.value; self.change(true); self.render(); };
-      alg.appendChild(s);
-    });
-    bar.appendChild(alg);
     tw.appendChild(bar);
     box.appendChild(tw);
+  };
+
+  function escHTML(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  /* rows of text into the table from (ri, ci), growing it to fit */
+  Editor.prototype.pasteCells = function (b, rows, ri, ci) {
+    rows.forEach(function (r, i) {
+      r.forEach(function (t, j) {
+        while (b.rows.length <= ri + i) b.rows.push(b.align.map(function () { return ''; }));
+        while (b.align.length <= ci + j) { b.rows.forEach(function (x) { x.push(''); }); b.align.push('r'); }
+        b.rows[ri + i][ci + j] = escHTML(t);
+      });
+    });
+    this.focusBlock(b.id, 'c' + (ri + rows.length - 1) + '_' + ci);
+    this.change(true);
+    this.render();
   };
 
   Editor.prototype.tableKeys = function (ev, b, ri, ci) {
@@ -5040,6 +6338,79 @@ blockquote.pt-quote {
       self.focusBlock(b.id, 'c' + nr + '_' + nc);
       self.render();
     }
+  };
+
+  /* ------------------------------------------------------------------- charts */
+  Editor.prototype.renderChart = function (b, box, idx) {
+    var self = this, C = PT.chart, doc = this.doc;
+    var fw = h('figure', 'pt-fig pt-chart');
+    var plot = h('div', 'pt-chplot');
+    plot.contentEditable = 'false';
+    plot.dataset.chart = b.id;
+    plot.title = 'Click to open the chart editor';
+    fw.appendChild(plot);
+    /* drawn once it is on the page: it sizes itself to the column */
+    setTimeout(function () { if (plot.isConnected) C.draw(plot, b, doc); }, 0);
+
+    /* the whole chart is the way in to its settings */
+    var edit = h('button', 'pt-chedit', '⤢  Edit chart');
+    edit.contentEditable = 'false';
+    edit.title = 'Open the chart editor: type, data, colours, axes, legend, size';
+    function openStudio(e) {
+      if (e) e.preventDefault();
+      if (PT.studio) PT.studio.open(self, b, fw);
+    }
+    edit.onclick = openStudio;
+    plot.addEventListener('click', openStudio);
+    fw.appendChild(edit);
+
+    var cap = h('figcaption', 'pt-cap');
+    var cl = h('span', 'pt-capl', 'Figure ' + (b.__num || '1') + ': ');
+    cl.contentEditable = 'false';
+    cap.appendChild(cl);
+    var ce = this.richEditable('span', 'pt-capt', b.caption, function (v) { b.caption = v; self.change(); }, {
+      onKey: function (ev) { self.textKeys(ev, b, idx, 'caption'); }
+    });
+    ce.dataset.part = 'main';
+    ce.dataset.ph = 'Caption…';
+    cap.appendChild(ce);
+    fw.appendChild(cap);
+    box.appendChild(fw);
+  };
+
+  /* every chart again, a burst of edits at a time: a chart drawn from a
+     table follows its cells as they are typed. A timer, not an animation
+     frame, which never comes while the tab is in the background. */
+  Editor.prototype.redrawCharts = function () {
+    var self = this;
+    if (this.chartTimer || !window.PT.chart) return;
+    this.chartTimer = setTimeout(function () {
+      self.chartTimer = 0;
+      [].forEach.call(self.paper.querySelectorAll('.pt-chplot'), function (p) {
+        var b = self.doc.blocks.filter(function (x) { return x.id === p.dataset.chart; })[0];
+        if (b) PT.chart.draw(p, b, self.doc);
+      });
+    }, 30);
+  };
+
+  Editor.prototype.chartFromTable = function (t, idx) {
+    var C = PT.chart, src = C.source({ from: t.id }, this.doc);
+    var numericCol = function (i) {
+      return src.rows.some(function (r) { return C.num(r[i]) !== null; }) &&
+        src.rows.every(function (r) { return !r[i] || C.num(r[i]) !== null; });
+    };
+    var ys = [];
+    for (var i = 1; i < src.head.length; i++) if (numericCol(i)) ys.push(i);
+    if (!ys.length) ys = [Math.min(1, src.head.length - 1)];
+    var b = chartBlock(numericCol(0) ? 'line' : 'bar', {
+      from: t.id, xcol: 0, ycols: ys,
+      xlabel: t.header ? src.head[0] : '', ylabel: t.header && ys.length === 1 ? src.head[ys[0]] : ''
+    });
+    this.doc.blocks.splice(idx + 1, 0, b);
+    this.focusBlock(b.id, 'main');
+    this.change(true);
+    this.render();
+    this.openStudioSoon(b);
   };
 
   /* -------------------------------------------------------------- bibliography */
@@ -5162,7 +6533,15 @@ blockquote.pt-quote {
     this.focusBlock(b.id, part, false);
     this.change(true);
     this.render();
+    this.openStudioSoon(b);
     return b;
+  };
+  /* a new chart or table opens straight into its editor, once it is drawn */
+  Editor.prototype.openStudioSoon = function (b) {
+    var self = this;
+    if ((b.t === 'chart' || b.t === 'table') && PT.studio) {
+      setTimeout(function () { if (self.doc.blocks.indexOf(b) >= 0) PT.studio.open(self, b); }, 40);
+    }
   };
 
   /* ------------------------------------------------------------------- menus */
@@ -5258,7 +6637,11 @@ blockquote.pt-quote {
         item(k.charAt(0).toUpperCase() + k.slice(1) + (b.kind === k ? '  ✓' : ''), function () { b.kind = k; self.change(true); self.render(); });
       });
     }
-    if (b.t === 'figure' || b.t === 'table' || b.t === 'eq' || b.t === 'section' || b.t === 'theorem') {
+    if (b.t === 'table') {
+      m.appendChild(h('div', 'popg', 'Data'));
+      item('Make a chart from this table', function () { self.chartFromTable(b, idx); });
+    }
+    if (b.t === 'figure' || b.t === 'chart' || b.t === 'table' || b.t === 'eq' || b.t === 'section' || b.t === 'theorem') {
       m.appendChild(h('div', 'popg', 'Label'));
       var lw = h('div', 'poplab');
       var inp = h('input');
@@ -5295,7 +6678,7 @@ blockquote.pt-quote {
   };
 
   function defaultLabelPrefix(b) {
-    return { section: 'sec:', eq: 'eq:', figure: 'fig:', table: 'tab:', theorem: 'thm:' }[b.t] || '';
+    return { section: 'sec:', eq: 'eq:', figure: 'fig:', chart: 'fig:', table: 'tab:', theorem: 'thm:' }[b.t] || '';
   }
   function posPop(m, anchor) {
     var r = anchor.getBoundingClientRect();
@@ -5343,9 +6726,1009 @@ blockquote.pt-quote {
 
   window.PT.doc = {
     newDoc: newDoc, Editor: Editor, blockFactory: blockFactory, numbering: numbering,
-    MENU: MENU, uid: uid, stripTags: stripTags, closeAllPop: closeAllPop,
+    MENU: MENU, uid: uid, stripTags: stripTags, closeAllPop: closeAllPop, tableClass: tableClass,
     insertNodeAtCaret: insertNodeAtCaret, placeCaret: placeCaret
   };
+})();
+</script>
+<script>
+/* js/studio.js */
+/* PaperTeX — the studio: a chart or a table opened up to fill the window,
+   with every setting beside it.
+
+   It opens by itself when a chart or a table is added, and again whenever
+   the chart is clicked (or a table's ⤢ button). The block is edited in
+   place: every change shows on the page behind and in the LaTeX at once,
+   and "Undo changes" puts the block back as it was when the studio opened.
+
+     PT.studio.open(editor, block, fromElement)
+     PT.studio.isOpen()                                                   */
+(function () {
+  'use strict';
+  var C = PT.chart;
+  var current = null;
+
+  function h(tag, cls, txt) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (txt != null) e.textContent = txt;
+    return e;
+  }
+  function reduced() { return !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  function same(a, b) { return String(a) === String(b); }
+  /* put the saved state back into the same object, so every reference to the block stays good */
+  function restore(obj, json) {
+    var o = JSON.parse(json);
+    Object.keys(obj).forEach(function (k) { if (k.indexOf('__') !== 0) delete obj[k]; });
+    Object.keys(o).forEach(function (k) { obj[k] = o[k]; });
+  }
+  function blockById(doc, id) { return (doc.blocks || []).filter(function (x) { return x.id === id; })[0] || null; }
+  function renderMath(root) {
+    [].forEach.call(root.querySelectorAll('.imath'), function (span) {
+      try { span.contentEditable = 'false'; PT.math.renderStatic(span, JSON.parse(span.dataset.m)); } catch (e) { /* leave it */ }
+    });
+  }
+  function textOf(html) { return C.cellText(html); }
+
+  /* ================================================== the frame ===== */
+
+  /* The window-sized card, zoomed out of the block it was opened from. */
+  function frame(editor, b, from, title) {
+    if (current) current.done();
+    var st = { editor: editor, b: b, doc: editor.doc, saved: JSON.stringify(b) };
+    var root = h('div', 'studio');
+    var back = h('div', 'st-back');
+    var win = h('div', 'st-win');
+    win.setAttribute('role', 'dialog');
+    win.setAttribute('aria-modal', 'true');
+    win.setAttribute('aria-label', title);
+    var head = h('div', 'st-head');
+    st.title = h('div', 'st-title', title);
+    head.appendChild(st.title);
+    head.appendChild(h('div', 'st-sub', 'Every change shows on the page and in the LaTeX as you make it'));
+    head.appendChild(h('div', 'st-sp'));
+    var undo = h('button', 'st-btn', 'Undo changes');
+    undo.title = 'Put this back the way it was when the editor opened';
+    head.appendChild(undo);
+    var done = h('button', 'st-btn primary', 'Done');
+    done.title = 'Back to the page (Esc)';
+    head.appendChild(done);
+    var body = h('div', 'st-body');
+    st.stage = h('div', 'st-stage');
+    st.panel = h('div', 'st-panel');
+    body.appendChild(st.stage);
+    body.appendChild(st.panel);
+    win.appendChild(head);
+    win.appendChild(body);
+    root.appendChild(back);
+    root.appendChild(win);
+    document.body.appendChild(root);
+    document.body.classList.add('st-open');
+    st.root = root;
+    st.win = win;
+
+    st.done = function () {
+      if (st.closed) return;
+      st.closed = true;
+      current = null;
+      window.removeEventListener('resize', st.onResize);
+      PT.doc.closeAllPop();
+      document.body.classList.remove('st-open');
+      editor.change(true);          /* one undo step for everything done here */
+      editor.render();
+      var host = editor.paper.querySelector('[data-bid="' + b.id + '"]');
+      var to = host && (host.querySelector('.pt-chart, .pt-tabw') || host);
+      back.classList.add('out');
+      /* gone for good even if the animation never finishes (a background
+         tab does not run it): a lingering studio would hold the keyboard */
+      root.classList.add('closing');
+      var gone = function () { if (root.parentNode) root.remove(); };
+      setTimeout(gone, 400);
+      zoom(win, to, true, gone);
+      if (host) {
+        var r = host.getBoundingClientRect();
+        if (r.bottom < 0 || r.top > window.innerHeight) host.scrollIntoView({ block: 'center' });
+      }
+    };
+    st.undo = function () {
+      restore(b, st.saved);
+      if (st.savedTable) { var t = blockById(st.doc, st.savedTableId); if (t) restore(t, st.savedTable); }
+      editor.change();
+      st.rebuild();
+    };
+    st.onResize = function () { if (st.draw) st.draw(); };
+    window.addEventListener('resize', st.onResize);
+    undo.onclick = function () { st.undo(); };
+    done.onclick = function () { st.done(); };
+    back.addEventListener('mousedown', function () { st.done(); });
+    root.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape' || document.querySelector('.mathpop, .popmenu')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      st.done();
+    });
+    current = st;
+    zoom(win, from, false);
+    return st;
+  }
+
+  /* The card grows out of the block on the page, and shrinks back into it. */
+  function zoom(win, from, out, after) {
+    var finish = function () { if (after) after(); };
+    if (!from || reduced() || !win.animate) { finish(); return; }
+    var a = from.getBoundingClientRect(), z = win.getBoundingClientRect();
+    if (!a.width || !a.height || !z.width) { finish(); return; }
+    var start = 'translate(' + (a.left - z.left) + 'px,' + (a.top - z.top) + 'px) scale(' +
+      (a.width / z.width) + ',' + (a.height / z.height) + ')';
+    var frames = [{ transform: start, opacity: 0.35 }, { transform: 'none', opacity: 1 }];
+    if (out) frames.reverse();
+    win.style.transformOrigin = '0 0';
+    var an = win.animate(frames, { duration: out ? 220 : 320, easing: 'cubic-bezier(.2,.7,.2,1)', fill: out ? 'forwards' : 'none' });
+    an.onfinish = finish;
+  }
+
+  /* ============================================== little controls ===== */
+
+  function section(panel, title, hint) {
+    var s = h('section', 'st-sec');
+    s.appendChild(h('h3', 'st-h', title));
+    if (hint) s.appendChild(h('p', 'st-hint', hint));
+    panel.appendChild(s);
+    return s;
+  }
+  function row(parent, label, cls) {
+    var r = h('div', 'st-row' + (cls ? ' ' + cls : ''));
+    if (label != null) r.appendChild(h('label', 'st-l', label));
+    var c = h('div', 'st-c');
+    r.appendChild(c);
+    parent.appendChild(r);
+    return c;
+  }
+  /* buttons side by side, one of them chosen */
+  function seg(parent, opts, value, on) {
+    var s = h('div', 'st-seg');
+    opts.forEach(function (o) {
+      var bt = h('button', same(o[0], value) ? 'on' : '', o[1]);
+      if (o[2]) bt.title = o[2];
+      bt.type = 'button';
+      bt.onclick = function () { on(o[0]); };
+      s.appendChild(bt);
+    });
+    parent.appendChild(s);
+    return s;
+  }
+  function toggle(parent, label, value, on, title) {
+    var l = h('label', 'st-tog');
+    var i = h('input');
+    i.type = 'checkbox';
+    i.checked = !!value;
+    i.onchange = function () { on(i.checked); };
+    l.appendChild(i);
+    l.appendChild(h('span', 'st-tog-k'));
+    l.appendChild(h('span', 'st-tog-t', label));
+    if (title) l.title = title;
+    parent.appendChild(l);
+    return i;
+  }
+  function input(parent, value, ph, on, cls) {
+    var i = h('input', 'st-in' + (cls ? ' ' + cls : ''));
+    i.value = value == null ? '' : value;
+    i.placeholder = ph || '';
+    i.spellcheck = false;
+    i.oninput = function () { on(i.value, i); };
+    parent.appendChild(i);
+    return i;
+  }
+  function select(parent, opts, value, on, title) {
+    var s = h('select', 'st-sel');
+    opts.forEach(function (o) {
+      var op = h('option', '', o[1]);
+      op.value = o[0];
+      if (same(o[0], value)) op.selected = true;
+      s.appendChild(op);
+    });
+    if (title) s.title = title;
+    s.onchange = function () { on(s.value); };
+    parent.appendChild(s);
+    return s;
+  }
+  function slider(parent, min, max, step, value, show, on) {
+    var w = h('div', 'st-slide');
+    var i = h('input');
+    i.type = 'range'; i.min = min; i.max = max; i.step = step; i.value = value;
+    var v = h('span', 'st-slide-v', show(+value));
+    i.oninput = function () { v.textContent = show(+i.value); on(+i.value); };
+    w.appendChild(i);
+    w.appendChild(v);
+    parent.appendChild(w);
+    return i;
+  }
+  function button(parent, label, on, cls, title) {
+    var bt = h('button', 'st-b' + (cls ? ' ' + cls : ''), label);
+    bt.type = 'button';
+    if (title) bt.title = title;
+    bt.onclick = on;
+    parent.appendChild(bt);
+    return bt;
+  }
+  /* a colour: the chip, and under it the palette it opens */
+  function colorPick(parent, hex, autoHex, on) {
+    var chip = h('button', 'st-chip');
+    chip.type = 'button';
+    chip.title = 'Colour';
+    chip.style.background = '#' + (hex || autoHex);
+    var pal = null;
+    chip.onclick = function () {
+      if (pal) { pal.remove(); pal = null; return; }
+      pal = h('div', 'st-pal');
+      var auto = h('button', 'st-swatch auto' + (hex ? '' : ' on'), 'auto');
+      auto.title = 'The chart’s own colour for this series';
+      auto.onclick = function () { on(null); };
+      pal.appendChild(auto);
+      C.COLORS.forEach(function (c) {
+        var sw = h('button', 'st-swatch' + (hex === c[1] ? ' on' : ''));
+        sw.style.background = '#' + c[1];
+        sw.title = c[0].replace(/^pt/, '');
+        sw.onclick = function () { on(c[1]); };
+        pal.appendChild(sw);
+      });
+      var any = h('input', 'st-anycol');
+      any.type = 'color';
+      any.value = '#' + (hex || autoHex).toLowerCase();
+      any.title = 'Any colour';
+      any.onchange = function () { on(any.value.slice(1).toUpperCase()); };
+      pal.appendChild(any);
+      var host = chip.closest('.st-card-s') || parent;
+      host.appendChild(pal);
+    };
+    parent.appendChild(chip);
+    return chip;
+  }
+
+  var PLACEMENT = [['htbp', 'Wherever it fits best'], ['!ht', 'Here, if at all possible'], ['t', 'Top of a page'],
+    ['b', 'Bottom of a page'], ['p', 'On a page of its own']];
+
+  /* the caption, edited as on the page (formulas with $ work here too) */
+  function captionEditor(st, parent, onChange) {
+    var e = st.editor.richEditable('div', 'st-in st-rich', st.b.caption || '', function (v) {
+      st.b.caption = v;
+      st.editor.change();
+      if (onChange) onChange();
+    }, {});
+    e.dataset.ph = 'Caption…';
+    parent.appendChild(e);
+    renderMath(e);
+    return e;
+  }
+
+  /* ===================================================== the grid ===== */
+
+  /* A spreadsheet over an array of rows (edited in place).
+       opts.rich       cells take the editor's rich text, formulas included
+       opts.header()   whether the first row is a header
+       opts.align      column alignments, edited alongside, or null
+       opts.change(structural)   after every edit */
+  function Grid(st, host, rows, opts) {
+    var g = { sel: { r: 0, c: 0 } };
+    var tools = h('div', 'st-gtools');
+    var wrap = h('div', 'st-gwrap');
+    host.appendChild(tools);
+    host.appendChild(wrap);
+    var width = function () { return rows.reduce(function (m, r) { return Math.max(m, r.length); }, 0) || 1; };
+    var blank = function () { var r = []; for (var i = 0; i < width(); i++) r.push(''); return r; };
+    function even() { var w = width(); rows.forEach(function (r) { while (r.length < w) r.push(''); }); if (opts.align) while (opts.align.length < w) opts.align.push('l'); }
+
+    function structural() { opts.change(true); g.render(); }
+
+    g.insertRow = function (at) { rows.splice(at, 0, blank()); g.sel = { r: at, c: g.sel.c }; structural(); };
+    g.deleteRow = function (r) { if (rows.length < 2) return; rows.splice(r, 1); g.sel.r = Math.min(r, rows.length - 1); structural(); };
+    g.moveRow = function (r, d) {
+      var to = r + d;
+      if (to < 0 || to >= rows.length) return;
+      rows.splice(to, 0, rows.splice(r, 1)[0]);
+      g.sel.r = to; structural();
+    };
+    g.insertCol = function (at) {
+      rows.forEach(function (r) { r.splice(at, 0, ''); });
+      if (opts.align) opts.align.splice(at, 0, 'c');
+      g.sel = { r: g.sel.r, c: at }; structural();
+    };
+    g.deleteCol = function (c) {
+      if (width() < 2) return;
+      rows.forEach(function (r) { r.splice(c, 1); });
+      if (opts.align) opts.align.splice(c, 1);
+      g.sel.c = Math.min(c, width() - 1); structural();
+    };
+    g.moveCol = function (c, d) {
+      var to = c + d;
+      if (to < 0 || to >= width()) return;
+      rows.forEach(function (r) { r.splice(to, 0, r.splice(c, 1)[0]); });
+      if (opts.align) opts.align.splice(to, 0, opts.align.splice(c, 1)[0]);
+      g.sel.c = to; structural();
+    };
+    /* numbers as numbers, words in the reader's alphabetical order */
+    g.sort = function (c, dir) {
+      var head = opts.header() ? rows.slice(0, 1) : [];
+      var bodyRows = rows.slice(head.length);
+      var vals = bodyRows.map(function (r) { return textOf(r[c]); });
+      var numeric = vals.every(function (v) { return !v || C.num(v) !== null; });
+      bodyRows.sort(function (a, b2) {
+        var x = textOf(a[c]), y = textOf(b2[c]);
+        if (!x && y) return 1;
+        if (x && !y) return -1;
+        var k = numeric ? C.num(x) - C.num(y) : x.localeCompare(y, undefined, { numeric: true, sensitivity: 'base' });
+        return k * dir;
+      });
+      rows.splice.apply(rows, [0, rows.length].concat(head, bodyRows));
+      structural();
+    };
+
+    function toolbar() {
+      tools.textContent = '';
+      var a = h('div', 'st-gt');
+      a.appendChild(h('span', 'st-gtl', 'Row'));
+      button(a, '+ above', function () { g.insertRow(g.sel.r); }, '', 'Insert a row above the selected cell');
+      button(a, '+ below', function () { g.insertRow(g.sel.r + 1); }, '', 'Insert a row below the selected cell');
+      button(a, '↑', function () { g.moveRow(g.sel.r, -1); }, 'ico', 'Move the row up');
+      button(a, '↓', function () { g.moveRow(g.sel.r, 1); }, 'ico', 'Move the row down');
+      button(a, 'Delete', function () { g.deleteRow(g.sel.r); }, 'danger', 'Delete the selected row');
+      tools.appendChild(a);
+      var b2 = h('div', 'st-gt');
+      b2.appendChild(h('span', 'st-gtl', 'Column'));
+      button(b2, '+ left', function () { g.insertCol(g.sel.c); }, '', 'Insert a column left of the selected cell');
+      button(b2, '+ right', function () { g.insertCol(g.sel.c + 1); }, '', 'Insert a column right of the selected cell');
+      button(b2, '←', function () { g.moveCol(g.sel.c, -1); }, 'ico', 'Move the column left');
+      button(b2, '→', function () { g.moveCol(g.sel.c, 1); }, 'ico', 'Move the column right');
+      button(b2, 'Sort A→Z', function () { g.sort(g.sel.c, 1); }, '', 'Sort the rows by this column, smallest first');
+      button(b2, 'Z→A', function () { g.sort(g.sel.c, -1); }, '', 'Sort the rows by this column, largest first');
+      button(b2, 'Delete', function () { g.deleteCol(g.sel.c); }, 'danger', 'Delete the selected column');
+      tools.appendChild(b2);
+    }
+
+    function cellAt(r, c) { return wrap.querySelector('[data-rc="' + r + '_' + c + '"]'); }
+    g.focus = function (r, c, atEnd) {
+      var e = cellAt(r, c);
+      if (e) PT.doc.placeCaret(e, atEnd !== false);
+    };
+    function mark() {
+      [].forEach.call(wrap.querySelectorAll('.sel, .selh'), function (x) { x.classList.remove('sel', 'selh'); });
+      var e = cellAt(g.sel.r, g.sel.c);
+      if (e) e.parentNode.classList.add('sel');
+      var ch = wrap.querySelector('[data-col="' + g.sel.c + '"]'), rh = wrap.querySelector('[data-row="' + g.sel.r + '"]');
+      if (ch) ch.classList.add('selh');
+      if (rh) rh.classList.add('selh');
+    }
+    function move(r, c) {
+      if (r >= rows.length) { rows.push(blank()); g.sel = { r: r, c: c }; structural(); g.focus(r, c); return; }
+      if (r < 0 || c < 0 || c >= width()) return;
+      g.sel = { r: r, c: c };
+      mark();
+      g.focus(r, c);
+    }
+    function keys(ev, r, c) {
+      if (ev.key === 'Tab') {
+        ev.preventDefault();
+        var w = width(), flat = r * w + c + (ev.shiftKey ? -1 : 1);
+        if (flat < 0) return;
+        move(Math.floor(flat / w), flat % w);
+      } else if (ev.key === 'Enter' && !ev.shiftKey) {
+        ev.preventDefault();
+        move(r + 1, c);
+      } else if (ev.key === 'ArrowUp' && !ev.shiftKey) {
+        ev.preventDefault(); move(r - 1, c);
+      } else if (ev.key === 'ArrowDown' && !ev.shiftKey) {
+        ev.preventDefault(); move(r + 1 < rows.length ? r + 1 : r, c);
+      }
+    }
+
+    g.render = function () {
+      even();
+      toolbar();
+      wrap.textContent = '';
+      var tbl = h('table', 'st-grid' + (opts.header() ? ' hashead' : ''));
+      var hr = h('tr', 'st-gh');
+      hr.appendChild(h('th', 'st-corner'));
+      for (var c = 0; c < width(); c++) (function (c) {
+        var th = h('th', 'st-colh');
+        th.dataset.col = c;
+        th.appendChild(h('span', 'st-colk', String.fromCharCode(65 + (c % 26)) + (c >= 26 ? Math.floor(c / 26) : '')));
+        if (opts.align) {
+          var al = h('span', 'st-al');
+          [['l', '⇤', 'Align left'], ['c', '↔', 'Centre'], ['r', '⇥', 'Align right']].forEach(function (o) {
+            var bt = h('button', opts.align[c] === o[0] ? 'on' : '', o[1]);
+            bt.type = 'button';
+            bt.title = o[2];
+            bt.onmousedown = function (e) { e.preventDefault(); };
+            bt.onclick = function () { opts.align[c] = o[0]; opts.change(false); g.render(); };
+            al.appendChild(bt);
+          });
+          th.appendChild(al);
+        }
+        th.onclick = function (e) { if (e.target.closest('button')) return; g.sel.c = c; mark(); g.focus(g.sel.r, c); };
+        hr.appendChild(th);
+      })(c);
+      tbl.appendChild(hr);
+      rows.forEach(function (r, ri) {
+        var tr = h('tr', ri === 0 && opts.header() ? 'st-hrow' : '');
+        var rh = h('th', 'st-rowh', ri === 0 && opts.header() ? 'H' : String(opts.header() ? ri : ri + 1));
+        rh.title = ri === 0 && opts.header() ? 'Header row' : 'Row ' + (opts.header() ? ri : ri + 1);
+        rh.dataset.row = ri;
+        rh.onclick = function () { g.sel.r = ri; mark(); g.focus(ri, g.sel.c); };
+        tr.appendChild(rh);
+        r.forEach(function (v, ci) {
+          var td = h('td', 'al-' + ((opts.align && opts.align[ci]) || 'l'));
+          var e;
+          if (opts.rich) {
+            e = st.editor.richEditable('div', 'st-cell', v, function (nv) { r[ci] = nv; opts.change(false); }, {
+              onKey: function (ev) { keys(ev, ri, ci); }
+            });
+          } else {
+            e = h('div', 'st-cell');
+            e.contentEditable = 'true';
+            e.spellcheck = false;
+            e.textContent = v;
+            e.addEventListener('input', function () { r[ci] = e.textContent.replace(/[\t\n]/g, ' '); opts.change(false); });
+            e.addEventListener('keydown', function (ev) { keys(ev, ri, ci); });
+          }
+          e.dataset.rc = ri + '_' + ci;
+          e.addEventListener('focus', function () { g.sel = { r: ri, c: ci }; mark(); });
+          td.appendChild(e);
+          tr.appendChild(td);
+        });
+        tbl.appendChild(tr);
+      });
+      wrap.appendChild(tbl);
+      if (opts.rich) renderMath(wrap);
+      mark();
+    };
+
+    /* a block of cells from a spreadsheet lands cell by cell, from the selected one */
+    wrap.addEventListener('paste', function (ev) {
+      var text = ev.clipboardData && ev.clipboardData.getData('text/plain');
+      if (!text || !/[\t\n]/.test(text.replace(/\s+$/, ''))) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      var got = C.parseCSV(text);
+      got.forEach(function (r, i) {
+        r.forEach(function (t, j) {
+          while (rows.length <= g.sel.r + i) rows.push(blank());
+          while (width() <= g.sel.c + j) { rows.forEach(function (x) { x.push(''); }); if (opts.align) opts.align.push('r'); }
+          rows[g.sel.r + i][g.sel.c + j] = opts.rich ? escHTML(t) : t;
+        });
+      });
+      structural();
+    }, true);
+    /* bold, italic, underline in a cell: the page's shortcuts are asleep while the studio is open */
+    wrap.addEventListener('keydown', function (ev) {
+      if (!opts.rich || !(ev.ctrlKey || ev.metaKey) || ev.altKey) return;
+      var cmd = { b: 'bold', i: 'italic', u: 'underline' }[ev.key.toLowerCase()];
+      if (!cmd) return;
+      ev.preventDefault();
+      document.execCommand(cmd);
+      var cell = ev.target.closest && ev.target.closest('.st-cell');
+      if (cell) cell.dispatchEvent(new Event('input'));
+    });
+
+    g.render();
+    return g;
+  }
+  function escHTML(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+  /* ===================================================== charts ===== */
+
+  function openChart(editor, b, from) {
+    var st = frame(editor, b, from, 'Chart');
+    var doc = editor.doc;
+    var linked = b.from ? blockById(doc, b.from) : null;
+    if (linked) { st.savedTable = JSON.stringify(linked); st.savedTableId = linked.id; }
+
+    /* the text column the chart is set in, so the zoomed drawing keeps the
+       page's proportions of text to plot */
+    var body = editor.paper.querySelector('.pt-body');
+    var colEm = body ? body.clientWidth / (parseFloat(getComputedStyle(body).fontSize) || 15) : 36;
+
+    var view = h('div', 'st-view');
+    var card = h('div', 'st-card st-paper');
+    var plot = h('div', 'st-plot');
+    var cap = h('div', 'st-figcap');
+    var errs = h('div', 'st-errs');
+    card.appendChild(plot);
+    card.appendChild(cap);
+    view.appendChild(card);
+    view.appendChild(errs);
+    st.stage.appendChild(view);
+    var sheet = h('div', 'st-sheet');
+    st.stage.appendChild(sheet);
+
+    st.draw = function () {
+      var aspect = Math.max(0.3, Math.min(1.2, +b.aspect || 0.62));
+      /* the view's padding (24 a side) and the card's (26 across, 22 + 16 down) */
+      var vw = view.clientWidth - 48 - 52 - 8;
+      var vh = view.clientHeight - 48 - 38 - (cap.offsetHeight + 12) - errs.offsetHeight - 8;
+      var wpx = Math.max(200, Math.min(vw, vh / aspect));
+      card.style.width = wpx + 'px';
+      plot.style.height = wpx * aspect + 'px';
+      C.draw(plot, b, doc, { fit: true, colEm: colEm });
+      errs.textContent = '';
+      var er = plot.querySelector('.pt-cherr');
+      if (er) errs.appendChild(er);
+      cap.innerHTML = '';
+      var lab = h('b', '', 'Figure ' + (b.__num || '') + ': ');
+      cap.appendChild(lab);
+      var ct = h('span');
+      ct.innerHTML = PT.sanitize.clean(b.caption || '');
+      if (!textOf(b.caption)) ct.appendChild(h('i', 'st-ph', 'no caption yet'));
+      cap.appendChild(ct);
+      renderMath(cap);
+    };
+    st.touch = function (panelToo) {
+      editor.change();
+      if (panelToo) st.buildPanel();
+      st.draw();
+    };
+
+    /* ---- the data, under the chart ---- */
+    function buildSheet() {
+      sheet.textContent = '';
+      sheet.classList.toggle('none', b.kind === 'function');
+      if (b.kind === 'function') return;
+      var t = b.from ? blockById(doc, b.from) : null;
+      var head = h('div', 'st-sheeth');
+      head.appendChild(h('b', '', t ? 'Data — Table ' + (t.__num || '') : 'Data'));
+      head.appendChild(h('span', 'st-hint', t ? 'Edits here go into the table on the page.'
+        : 'One row per point. Paste cells straight from Excel or Google Sheets.'));
+      sheet.appendChild(head);
+      var gh = h('div', 'st-gridhost');
+      sheet.appendChild(gh);
+      if (t) {
+        Grid(st, gh, t.rows, {
+          rich: true, align: t.align, header: function () { return !!t.header; },
+          change: function (structural) { st.touch(structural); }
+        });
+      } else {
+        var rows = C.parseCSV(b.data);
+        if (!rows.length) rows = [['x', 'y'], ['', '']];
+        var save = function () {
+          b.data = rows.map(function (r) { return r.join('\t'); }).join('\n');
+        };
+        Grid(st, gh, rows, {
+          rich: false, align: null,
+          header: function () { return rows[0].some(function (c) { return c && C.num(c) === null; }); },
+          change: function (structural) { save(); st.touch(structural); }
+        });
+      }
+    }
+
+    /* ---- the settings ---- */
+    st.buildPanel = function () {
+      var P = st.panel, keep = P.scrollTop;
+      P.textContent = '';
+      var rebuild = function () { st.touch(true); };
+
+      var s1 = section(P, 'Type');
+      seg(row(s1, null), [['function', 'ƒ(x)  Function'], ['line', '⟋  Line'], ['scatter', '⁘  Scatter'], ['bar', '▮▮  Bar']], b.kind, function (v) {
+        var was = b.kind;
+        if (v === was) return;
+        b.kind = v;
+        if (v === 'function' && !(b.fns && b.fns.length)) b.fns = [{ expr: 'x^2', name: '' }];
+        if (was === 'function' && v !== 'function') {
+          /* the plot's range and axes through 0 mean nothing for data */
+          b.fns = [];
+          b.xmin = b.xmax = b.ymin = b.ymax = b.xstep = b.ystep = '';
+          if (b.axes === 'middle') b.axes = 'box';
+          if (!b.from && !b.data) b.data = 'x\ty\n0\t1\n1\t3\n2\t2\n3\t5';
+        }
+        if (v === 'function' && was !== 'function') b.xmin = b.xmax = b.ymin = b.ymax = b.xstep = b.ystep = '';
+        st.rebuild();
+      });
+
+      if (b.kind === 'function') {
+        var s2 = section(P, 'Curves', 'Type them as on paper: 2x^2 - 3x + 1, sin x, e^(-x/2), |x|, sqrt(x).');
+        curveCards(s2, 0, true);
+        button(s2, '+ Add a curve', function () { b.fns.push({ expr: '', name: '' }); st.focusFn = b.fns.length - 1; rebuild(); }, 'wide');
+        var r = row(s2, 'x from');
+        input(r, b.xmin, '-5', function (v) { b.xmin = v; st.touch(); }, 'num');
+        r.appendChild(h('span', 'st-to', 'to'));
+        input(r, b.xmax, '5', function (v) { b.xmax = v; st.touch(); }, 'num');
+        slider(row(s2, 'Smoothness'), 50, 500, 25, b.samples || 200, function (v) { return v + ' points'; }, function (v) { b.samples = v; st.touch(); });
+      } else {
+        var s3 = section(P, 'Data');
+        var tables = doc.blocks.filter(function (x) { return x.t === 'table'; });
+        select(row(s3, 'From'), [['', 'Its own rows (under the chart)']].concat(tables.map(function (t) {
+          return [t.id, 'Table ' + (t.__num || '') + (t.caption ? ' — ' + textOf(t.caption).slice(0, 28) : '')];
+        })), b.from || '', function (v) {
+          b.from = v;
+          if (!v && !b.data) b.data = 'x\ty\n0\t1\n1\t3\n2\t2\n3\t5';
+          b.xcol = 0; b.ycols = [1];
+          var t = v ? blockById(doc, v) : null;
+          if (t && !st.savedTable) { st.savedTable = JSON.stringify(t); st.savedTableId = t.id; }
+          st.rebuild();
+        });
+        var src = C.source(b, doc);
+        if (src.head.length) {
+          select(row(s3, b.kind === 'bar' ? 'Labels' : 'x axis'), src.head.map(function (n, i) { return [i, n || 'Column ' + (i + 1)]; }),
+            b.xcol | 0, function (v) {
+              b.xcol = parseInt(v, 10);
+              b.ycols = (b.ycols || []).filter(function (c) { return c !== b.xcol; });
+              if (!b.ycols.length) b.ycols = [b.xcol === 0 ? 1 : 0];
+              rebuild();
+            }, 'The column along the horizontal axis');
+          var s4 = section(P, 'Series', 'Each column of numbers can be a series: tick it, then style it.');
+          src.head.forEach(function (n, i) {
+            if (i === (b.xcol | 0)) return;
+            seriesCard(s4, src, i, n);
+          });
+        }
+        if (b.kind === 'line') toggle(row(s3, null), 'Smooth lines', b.smooth, function (v) { b.smooth = v; st.touch(); });
+        if (b.kind === 'bar') {
+          seg(row(s3, 'Bars'), [[false, 'Side by side'], [true, 'Stacked']], !!b.stacked, function (v) { b.stacked = v === true || v === 'true'; rebuild(); });
+          if (!b.stacked) toggle(row(s3, null), 'Write each value above its bar', b.values, function (v) { b.values = v; st.touch(); });
+          slider(row(s3, 'Bar width'), 20, 100, 5, Math.round((b.barw || 0.8) * 100), function (v) { return v + '%'; },
+            function (v) { b.barw = v / 100; st.touch(); });
+        }
+        if (b.kind !== 'bar') {
+          var s5 = section(P, 'Curves over the data', 'A fitted line or a model, e.g. 2.03x + 0.1 or 21 + 69e^(-0.075x).');
+          curveCards(s5, (b.ycols || [1]).length, false);
+          button(s5, '+ Add a curve', function () { b.fns = b.fns || []; b.fns.push({ expr: '', name: '' }); st.focusFn = b.fns.length - 1; rebuild(); }, 'wide');
+        }
+      }
+
+      var s6 = section(P, 'Axes');
+      input(row(s6, 'Title'), b.title, 'above the chart (optional)', function (v) { b.title = v; st.touch(); }, 'wide');
+      input(row(s6, 'x label'), b.xlabel, 'e.g. Time $t$ (s)', function (v) { b.xlabel = v; st.touch(); }, 'wide');
+      input(row(s6, 'y label'), b.ylabel, 'formulas go between $…$', function (v) { b.ylabel = v; st.touch(); }, 'wide');
+      if (b.kind !== 'function' && b.kind !== 'bar') {
+        var rx = row(s6, 'x range');
+        input(rx, b.xmin, 'auto', function (v) { b.xmin = v; st.touch(); }, 'num');
+        rx.appendChild(h('span', 'st-to', 'to'));
+        input(rx, b.xmax, 'auto', function (v) { b.xmax = v; st.touch(); }, 'num');
+      }
+      var ry = row(s6, 'y range');
+      input(ry, b.ymin, 'auto', function (v) { b.ymin = v; st.touch(); }, 'num');
+      ry.appendChild(h('span', 'st-to', 'to'));
+      input(ry, b.ymax, 'auto', function (v) { b.ymax = v; st.touch(); }, 'num');
+      var rt = row(s6, 'Tick every');
+      if (b.kind !== 'bar') {
+        rt.appendChild(h('span', 'st-to', 'x'));
+        input(rt, b.xstep, 'auto', function (v) { b.xstep = v; st.touch(); }, 'num');
+      }
+      rt.appendChild(h('span', 'st-to', 'y'));
+      input(rt, b.ystep, 'auto', function (v) { b.ystep = v; st.touch(); }, 'num');
+      seg(row(s6, 'Axes'), [['box', 'Framed'], ['left', 'Arrows'], ['middle', 'Through 0']], b.axes || 'box', function (v) { b.axes = v; rebuild(); });
+      var gv = b.grid === 'both' ? 'both' : (b.grid === false || b.grid === 'none') ? 'none' : 'major';
+      seg(row(s6, 'Grid'), [['none', 'None'], ['major', 'Lines'], ['both', 'Fine']], gv, function (v) { b.grid = v; rebuild(); });
+
+      var s7 = section(P, 'Legend');
+      select(row(s7, 'Place'), [['auto', 'Automatic (the emptiest corner)'], ['north east', 'Top right'], ['north west', 'Top left'],
+        ['south east', 'Bottom right'], ['south west', 'Bottom left'], ['outer north east', 'Outside, on the right'], ['none', 'Hidden']],
+        b.legend === false ? 'none' : (b.legendPos || 'auto'), function (v) { b.legend = v !== 'none'; b.legendPos = v; st.touch(); });
+
+      var s8 = section(P, 'Size on the page');
+      slider(row(s8, 'Width'), 30, 100, 5, Math.round((b.width || 0.75) * 100), function (v) { return v + '% of the text'; },
+        function (v) { b.width = v / 100; st.touch(); });
+      var asp = +b.aspect || 0.62;
+      seg(row(s8, 'Shape'), [[0.5, 'Wide'], [0.62, 'Standard'], [0.8, 'Tall'], [1, 'Square']],
+        [0.5, 0.62, 0.8, 1].reduce(function (best, v) { return Math.abs(v - asp) < Math.abs(best - asp) ? v : best; }, 0.62),
+        function (v) { b.aspect = +v; rebuild(); });
+
+      var s9 = section(P, 'Caption and label');
+      captionEditor(st, row(s9, null, 'full'), function () { st.draw(); });
+      input(row(s9, 'Label'), b.label, 'fig:name — to refer to it with \\ref', function (v) {
+        b.label = v.replace(/[^A-Za-z0-9:_-]/g, ''); editor.change();
+      }, 'wide');
+      select(row(s9, 'In the PDF'), PLACEMENT, b.placement || 'htbp', function (v) { b.placement = v; editor.change(); });
+
+      P.scrollTop = keep;
+      if (st.focusFn != null) {
+        var ins = P.querySelectorAll('.st-fn-expr');
+        var target = ins[st.focusFn];
+        st.focusFn = null;
+        if (target) target.focus();
+      }
+    };
+
+    /* a formula with its look */
+    function curveCards(parent, color0, keepOne) {
+      b.fns = b.fns || [];
+      b.fns.forEach(function (fn, i) {
+        var card2 = h('div', 'st-card-s');
+        var top = h('div', 'st-cs-top');
+        var L = C.look(b, { fn: true, st: fn, color: color0 + i });
+        colorPick(top, fn.color || null, C.autoHex(color0 + i), function (hex) {
+          if (hex) fn.color = hex; else delete fn.color;
+          st.touch(true);
+        });
+        top.appendChild(h('span', 'st-y', 'y ='));
+        var ex = input(top, fn.expr, 'e.g. 2x^2 - 3x + 1', function (v, el) {
+          fn.expr = v;
+          var c = C.compile(v);
+          el.classList.toggle('bad', !!v.trim() && !c.ok);
+          el.title = c.ok ? '' : c.err;
+          st.touch();
+        }, 'st-fn-expr mono');
+        var c0 = C.compile(fn.expr);
+        if (fn.expr && !c0.ok) { ex.classList.add('bad'); ex.title = c0.err; }
+        if (b.fns.length > 1 || !keepOne) button(top, '×', function () { b.fns.splice(i, 1); st.touch(true); }, 'ico', 'Remove this curve');
+        card2.appendChild(top);
+        var sub = h('div', 'st-cs-sub');
+        input(sub, fn.name, 'name in the legend', function (v) { fn.name = v; st.touch(); }, 'grow');
+        lineControls(sub, fn, L);
+        card2.appendChild(sub);
+        parent.appendChild(card2);
+      });
+    }
+    function lineControls(parent, sty, L) {
+      select(parent, [['solid', '—— solid'], ['dashed', '– – dashed'], ['dotted', '····· dotted'], ['dashdotted', '–·–· dash-dot']],
+        L.dash, function (v) { if (v === 'solid') delete sty.dash; else sty.dash = v; st.touch(); }, 'Line style');
+      select(parent, [['thin', 'thin'], ['semithick', 'medium'], ['thick', 'thick'], ['very thick', 'heavy'], ['ultra thick', 'heaviest']],
+        L.thick, function (v) { sty.thick = v; st.touch(); }, 'Line width');
+    }
+    /* one column of the data as a series: on or off, and how it looks */
+    function seriesCard(parent, src, col, name) {
+      var on = (b.ycols || [1]).indexOf(col) >= 0;
+      b.style = b.style || {};
+      var sty = b.style[col] || {};
+      var card2 = h('div', 'st-card-s' + (on ? '' : ' off'));
+      var top = h('div', 'st-cs-top');
+      toggle(top, name || 'Column ' + (col + 1), on, function (v) {
+        var ys = (b.ycols || [1]).filter(function (c) { return c !== col; });
+        if (v) ys.push(col);
+        ys.sort(function (x, y) { return x - y; });
+        b.ycols = ys;
+        st.touch(true);
+      });
+      card2.appendChild(top);
+      if (on) {
+        var si = (b.ycols || [1]).indexOf(col);
+        var L = C.look(b, { st: sty, color: si });
+        var save = function () { if (Object.keys(sty).length) b.style[col] = sty; else delete b.style[col]; };
+        colorPick(top, sty.color || null, C.autoHex(si), function (hex) {
+          if (hex) sty.color = hex; else delete sty.color;
+          save(); st.touch(true);
+        });
+        var sub = h('div', 'st-cs-sub');
+        input(sub, sty.name, 'name in the legend: ' + (name || ''), function (v) {
+          if (v) sty.name = v; else delete sty.name;
+          save(); st.touch();
+        }, 'grow');
+        if (b.kind === 'line') lineControls(sub, sty, L);
+        if (b.kind === 'line' || b.kind === 'scatter') {
+          select(sub, [['*', '● dot'], ['o', '○ ring'], ['square*', '■ square'], ['square', '□ box'], ['triangle*', '▲ triangle'],
+            ['diamond*', '◆ diamond'], ['x', '× cross'], ['+', '+ plus'], ['none', 'no points']], L.mark, function (v) {
+            sty.mark = v; save(); st.touch();
+          }, 'Points');
+          if (L.mark !== 'none') select(sub, [['small', 'small'], ['normal', 'medium'], ['large', 'large']], L.msize, function (v) {
+            sty.msize = v; save(); st.touch();
+          }, 'Point size');
+        }
+        var errOpts = [['', 'no error bars']].concat(src.head.map(function (n, i) { return [i, '± ' + (n || 'Column ' + (i + 1))]; })
+          .filter(function (o) { return o[0] !== col && o[0] !== (b.xcol | 0); }));
+        if (errOpts.length > 1) select(sub, errOpts, sty.err == null ? '' : sty.err, function (v) {
+          if (v === '') delete sty.err; else sty.err = +v;
+          save(); st.touch();
+        }, 'Error bars: a column of ± uncertainties');
+        card2.appendChild(sub);
+      }
+      parent.appendChild(card2);
+    }
+
+    st.rebuild = function () {
+      editor.change();
+      buildSheet();
+      st.buildPanel();
+      st.draw();
+    };
+    st.rebuild();
+    return st;
+  }
+
+  /* ====================================================== tables ===== */
+
+  function openTable(editor, b, from) {
+    var st = frame(editor, b, from, 'Table');
+    var doc = editor.doc;
+    var gh = h('div', 'st-gridhost big');
+    st.stage.appendChild(gh);
+    var pv = h('div', 'st-preview');
+    pv.appendChild(h('div', 'st-pvh', 'On the page'));
+    var pvBody = h('div', 'st-paper st-pvb');
+    pv.appendChild(pvBody);
+    st.stage.appendChild(pv);
+    var grid = null, timer = 0;
+
+    /* the table as it will be printed */
+    st.draw = function () {
+      pvBody.textContent = '';
+      var cap = h('div', 'pt-cap');
+      cap.appendChild(h('span', 'pt-capl', 'Table ' + (b.__num || '') + ': '));
+      var ct = h('span');
+      ct.innerHTML = PT.sanitize.clean(b.caption || '');
+      cap.appendChild(ct);
+      var tbl = h('table', PT.doc.tableClass(b));
+      b.rows.forEach(function (r, ri) {
+        var head = ri === 0 && b.header;
+        var tr = h('tr', head ? 'hdr' : '');
+        r.forEach(function (c, ci) {
+          var td = h(head ? 'th' : 'td', 'al-' + (b.align[ci] || 'l'));
+          td.innerHTML = PT.sanitize.clean(c);
+          tr.appendChild(td);
+        });
+        tbl.appendChild(tr);
+      });
+      if (b.capBelow) { pvBody.appendChild(tbl); pvBody.appendChild(cap); } else { pvBody.appendChild(cap); pvBody.appendChild(tbl); }
+      renderMath(pvBody);
+    };
+    st.touch = function (structural) {
+      editor.change();
+      if (structural) st.buildPanel();
+      clearTimeout(timer);
+      timer = setTimeout(st.draw, structural ? 0 : 120);
+    };
+
+    st.buildPanel = function () {
+      var P = st.panel, keep = P.scrollTop;
+      P.textContent = '';
+      var redo = function () { st.touch(true); grid.render(); };
+
+      var s1 = section(P, 'Look');
+      var style = b.booktabs ? 'booktabs' : b.rules ? 'grid' : 'plain';
+      seg(row(s1, null), [['booktabs', 'Book rules', 'Rules above, below and under the header (booktabs)'],
+        ['grid', 'Grid', 'A line between every cell'], ['plain', 'Plain', 'No lines']], style, function (v) {
+        b.booktabs = v === 'booktabs'; b.rules = v === 'grid'; redo();
+      });
+      var tg = row(s1, null, 'stack');
+      toggle(tg, 'First row is a header', b.header, function (v) { b.header = v; redo(); });
+      toggle(tg, 'Header in bold', b.boldHeader !== false, function (v) { b.boldHeader = v; st.touch(); });
+      toggle(tg, 'First column in bold', b.boldFirst, function (v) { b.boldFirst = v; st.touch(); });
+      toggle(tg, 'Shade every other row', b.zebra, function (v) { b.zebra = v; st.touch(); });
+      seg(row(s1, 'Text'), [['normal', 'Normal'], ['small', 'Small'], ['footnotesize', 'Smaller']], b.size || 'normal', function (v) {
+        if (v === 'normal') delete b.size; else b.size = v;
+        redo();
+      });
+
+      var s2 = section(P, 'Size');
+      var rs = row(s2, null);
+      var nr = input(rs, b.rows.length, '', function () {}, 'num');
+      nr.type = 'number'; nr.min = 1; nr.max = 500;
+      rs.appendChild(h('span', 'st-to', 'rows ×'));
+      var nc = input(rs, b.align.length, '', function () {}, 'num');
+      nc.type = 'number'; nc.min = 1; nc.max = 40;
+      rs.appendChild(h('span', 'st-to', 'columns'));
+      var apply = function () {
+        var R = Math.max(1, Math.min(500, parseInt(nr.value, 10) || 1)), K = Math.max(1, Math.min(40, parseInt(nc.value, 10) || 1));
+        while (b.rows.length < R) b.rows.push(b.align.map(function () { return ''; }));
+        b.rows.length = R;
+        b.rows.forEach(function (r) { while (r.length < K) r.push(''); r.length = K; });
+        while (b.align.length < K) b.align.push('c');
+        b.align.length = K;
+        redo();
+      };
+      nr.onchange = apply;
+      nc.onchange = apply;
+
+      var s3 = section(P, 'Rearrange');
+      var ra = row(s3, null, 'wrap');
+      button(ra, 'Swap rows and columns', function () {
+        var w = b.align.length, out = [];
+        for (var c = 0; c < w; c++) out.push(b.rows.map(function (r) { return r[c] || ''; }));
+        b.rows = out;
+        b.align = out[0].map(function (_, j) { return j === 0 ? 'l' : 'c'; });
+        grid = null; st.rebuild();
+      });
+      button(ra, 'Sort by the selected column ↑', function () { grid.sort(grid.sel.c, 1); });
+      button(ra, '↓', function () { grid.sort(grid.sel.c, -1); });
+
+      var s4 = section(P, 'Calculate', 'Adds a row underneath with the result for every column of numbers.');
+      var ca = row(s4, null, 'wrap');
+      button(ca, 'Σ  Totals row', function () { summary('Total', function (v) { return v.reduce(function (a, x) { return a + x; }, 0); }); });
+      button(ca, 'x̄  Average row', function () { summary('Mean', function (v) { return v.reduce(function (a, x) { return a + x; }, 0) / v.length; }); });
+      button(ca, 'Min / max rows', function () {
+        summary('Min', function (v) { return Math.min.apply(null, v); });
+        summary('Max', function (v) { return Math.max.apply(null, v); });
+      });
+
+      var s5 = section(P, 'Caption and label');
+      captionEditor(st, row(s5, null, 'full'), function () { st.touch(); });
+      seg(row(s5, 'Caption'), [[false, 'Above the table'], [true, 'Below it']], !!b.capBelow, function (v) {
+        b.capBelow = v === true || v === 'true'; st.touch(true);
+      });
+      input(row(s5, 'Label'), b.label, 'tab:name — to refer to it with \\ref', function (v) {
+        b.label = v.replace(/[^A-Za-z0-9:_-]/g, ''); editor.change();
+      }, 'wide');
+      select(row(s5, 'In the PDF'), PLACEMENT, b.placement || 'htbp', function (v) { b.placement = v; editor.change(); });
+
+      var s6 = section(P, 'Data');
+      var da = row(s6, null, 'wrap');
+      button(da, 'Import a CSV file…', function () { importCSV(); });
+      button(da, 'Copy as CSV', function () {
+        var csv = b.rows.map(function (r) {
+          return r.map(function (c) { var t = textOf(c); return /[",\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; }).join(',');
+        }).join('\n');
+        if (navigator.clipboard) navigator.clipboard.writeText(csv);
+      }, '', 'For a spreadsheet');
+      button(da, '📊  Make a chart from it', function () {
+        var i = doc.blocks.indexOf(b);
+        st.done();
+        if (i >= 0) editor.chartFromTable(b, i);
+      }, 'accent');
+      P.scrollTop = keep;
+    };
+
+    /* a row of totals (or means …) under the numbers, with as many
+       decimals as the column already uses */
+    function summary(name, fn) {
+      var w = b.align.length, out = [];
+      var body = b.rows.slice(b.header ? 1 : 0);
+      for (var c = 0; c < w; c++) {
+        var cells = body.map(function (r) { return textOf(r[c]); }).filter(Boolean);
+        var nums = cells.map(C.num);
+        if (c > 0 && cells.length && nums.every(function (v) { return v !== null; })) {
+          var dec = cells.reduce(function (m, t) { var k = /[.,](\d+)/.exec(t); return Math.max(m, k ? k[1].length : 0); }, 0);
+          if (name === 'Mean') dec = Math.max(dec, 1);
+          var v = fn(nums);
+          var s = v.toFixed(dec);
+          if (cells.some(function (t) { return /\d,\d/.test(t); })) s = s.replace('.', ',');
+          out.push(s);
+        } else out.push(c === 0 ? '<b>' + name + '</b>' : '');
+      }
+      b.rows.push(out);
+      st.touch(true);
+      grid.render();
+    }
+    function importCSV() {
+      var inp = h('input');
+      inp.type = 'file';
+      inp.accept = '.csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain';
+      inp.onchange = function () {
+        var f = inp.files[0];
+        if (!f) return;
+        var fr = new FileReader();
+        fr.onload = function () {
+          var rows = C.parseCSV(String(fr.result).replace(/^﻿/, '')).slice(0, 500);
+          if (!rows.length) return;
+          var w = Math.max.apply(null, rows.map(function (r) { return r.length; }));
+          b.rows = rows.map(function (r) { var o = r.map(escHTML); while (o.length < w) o.push(''); return o; });
+          b.align = b.rows[0].map(function (_, j) {
+            var body = rows.slice(1).map(function (r) { return r[j]; }).filter(Boolean);
+            return body.length && body.every(function (t) { return C.num(t) !== null; }) ? 'r' : 'l';
+          });
+          b.header = rows.length > 1 && rows[0].some(function (t) { return t && C.num(t) === null; });
+          grid = null;
+          st.rebuild();
+        };
+        fr.readAsText(f);
+      };
+      inp.click();
+    }
+
+    st.rebuild = function () {
+      editor.change();
+      gh.textContent = '';
+      grid = Grid(st, gh, b.rows, {
+        rich: true, align: b.align, header: function () { return !!b.header; },
+        change: function (structural) { st.touch(structural); }
+      });
+      st.buildPanel();
+      st.draw();
+    };
+    st.rebuild();
+    setTimeout(function () { grid.focus(grid.sel.r, grid.sel.c); }, reduced() ? 0 : 330);
+    return st;
+  }
+
+  function open(editor, b, from) {
+    if (!b) return null;
+    if (!from) {
+      var host = editor.paper.querySelector('[data-bid="' + b.id + '"]');
+      from = host && (host.querySelector('.pt-chart, .pt-tabw') || host);
+    }
+    if (b.t === 'chart') return openChart(editor, b, from);
+    if (b.t === 'table') return openTable(editor, b, from);
+    return null;
+  }
+
+  window.PT = window.PT || {};
+  window.PT.studio = { open: open, isOpen: function () { return !!current; } };
 })();
 </script>
 <script>
@@ -5377,6 +7760,13 @@ blockquote.pt-quote {
   }
   function list(items, ordered) {
     return { id: D.uid(), t: 'list', ordered: !!ordered, items: items.map(function (h) { return { html: h, level: 0 }; }) };
+  }
+  function chart(kind, o) {
+    var b = D.blockFactory(kind === 'function' ? 'plot' : 'chart');
+    b.kind = kind;
+    if (o.from) b.data = '';
+    Object.keys(o).forEach(function (k) { b[k] = o[k]; });
+    return b;
   }
   function thm(kind, title, html, label) { return { id: D.uid(), t: 'theorem', kind: kind, title: title || '', html: html, label: label || '' }; }
   function base(title, overrides) {
@@ -5451,6 +7841,10 @@ blockquote.pt-quote {
       id: 'lab', name: 'Lab report', icon: '⚗', desc: 'Theory, method, data table, error analysis',
       build: function () {
         var d = base('Lab Report: Measuring g with a Pendulum');
+        var labData = { id: D.uid(), t: 'table', rows: [['L (m)', 'T (s)', 'g (m/s²)'], ['0.25', '1.01', '9.67'], ['0.50', '1.42', '9.79'], ['0.75', '1.74', '9.78'],
+          ['1.00', '2.01', '9.77'], ['1.25', '2.24', '9.84']],
+          align: ['c', 'c', 'c'], header: true, booktabs: true, rules: false,
+          caption: 'Measured periods and the resulting values of g.', label: 'tab:data', placement: 'htbp' };
         d.meta.abstract = 'What was measured, how, the result with its uncertainty, and how it compares with the accepted value.';
         d.blocks = [
           sec('Introduction'),
@@ -5465,15 +7859,64 @@ blockquote.pt-quote {
                 'Repeat for five different lengths.'], true),
           { id: D.uid(), t: 'figure', src: '', filename: '', caption: 'The experimental setup.', width: 0.6, label: 'fig:setup', placement: 'htbp' },
           sec('Results'),
-          { id: D.uid(), t: 'table', rows: [['L (m)', 'T (s)', 'g (m/s²)'], ['0.50', '1.42', '9.79'], ['0.75', '1.74', '9.78'], ['1.00', '2.01', '9.77']],
-            align: ['c', 'c', 'c'], header: true, booktabs: true, rules: false,
-            caption: 'Measured periods and the resulting values of g.', label: 'tab:data', placement: 'htbp' },
+          labData,
+          chart('scatter', {
+            from: labData.id, xcol: 0, ycols: [1], xlabel: 'Length $L$ (m)', ylabel: 'Period $T$ (s)', xmin: '0', xmax: '1.4', ymin: '0',
+            fns: [{ expr: '2pi sqrt(x/9.81)', name: 'theory, $g = 9.81$' }],
+            caption: 'Measured periods against the length, with the curve ' + im('T = 2\\pi\\sqrt{L/g}') + '.', label: 'fig:periods'
+          }),
           para('The uncertainty follows from propagating the errors in ' + im('L') + ' and ' + im('T') + ':'),
           eq(['\\frac{\\delta g}{g} = \\sqrt{\\left(\\frac{\\delta L}{L}\\right)^2 + \\left(2\\frac{\\delta T}{T}\\right)^2}'], ['eq:error']),
           sec('Discussion'),
           para('Compare with the accepted value, and name the largest sources of error.'),
           sec('Conclusion'),
           para('The result, with its uncertainty, in one or two sentences.')
+        ];
+        return d;
+      }
+    },
+    {
+      id: 'data', name: 'Data report', icon: '📊', desc: 'A table of measurements, charts drawn from it, a fitted model',
+      build: function () {
+        var d = base('How Fast Does Coffee Cool?');
+        d.meta.abstract = 'The question, the measurements, the model fitted to them, and what it predicts.';
+        var cooling = { id: D.uid(), t: 'table',
+          rows: [['Time (min)', 'Mug (°C)', 'Thermos (°C)'], ['0', '90', '90'], ['2', '79', '88'], ['4', '70', '86'], ['6', '63', '85'],
+            ['8', '57', '83'], ['10', '52', '82'], ['15', '43', '78'], ['20', '36', '75']],
+          align: ['c', 'c', 'c'], header: true, booktabs: true, rules: false,
+          caption: 'Temperature of the coffee, read every few minutes.', label: 'tab:cooling', placement: 'htbp' };
+        var cost = { id: D.uid(), t: 'table',
+          rows: [['Cup', 'Price', 'Still hot after 1 h'], ['Paper', '0.10', '0'], ['Ceramic', '6', '1'], ['Steel', '18', '4'], ['Thermos', '25', '6']],
+          align: ['l', 'r', 'r'], header: true, booktabs: true, rules: false,
+          caption: 'Cups tested: price and hours the coffee stayed above 60 °C.', label: 'tab:cups', placement: 'htbp' };
+        d.blocks = [
+          sec('Question'),
+          para('What is being measured, and why it is interesting.'),
+          sec('Measurements'),
+          para('Two cups were filled at the same moment and their temperature read every few minutes (Table ' + ref('tab:cooling') + ').'),
+          cooling,
+          chart('scatter', {
+            from: cooling.id, xcol: 0, ycols: [1, 2], xlabel: 'Time $t$ (min)', ylabel: 'Temperature (°C)',
+            fns: [{ expr: '21 + 69e^(-0.075x)', name: 'model for the mug' }],
+            caption: 'Both cups, with the cooling law fitted to the mug.', label: 'fig:cooling'
+          }),
+          sec('Model'),
+          para('Newton’s law of cooling says the temperature difference to the room decays exponentially:'),
+          eq(['T(t) = T_{\\text{room}} + \\left(T_0 - T_{\\text{room}}\\right) e^{-kt}'], ['eq:cooling']),
+          para('With ' + im('T_{\\text{room}} = 21') + ' and ' + im('T_0 = 90') + ', the mug fits ' + im('k \\approx 0.075') +
+            ' per minute (Figure ' + ref('fig:cooling') + '). The curve in a chart is typed as a formula, ' +
+            'and the same formula goes into the LaTeX.'),
+          chart('function', {
+            fns: [{ expr: '69e^(-0.075x)', name: 'mug' }, { expr: '69e^(-0.009x)', name: 'thermos' }],
+            xmin: '0', xmax: '120', ymin: '0', axes: 'box', xlabel: 'Time $t$ (min)', ylabel: '$T - T_{\\text{room}}$ (°C)',
+            caption: 'What the model predicts over two hours.', label: 'fig:model'
+          }),
+          sec('Which cup?'),
+          cost,
+          chart('bar', { from: cost.id, xcol: 0, ycols: [2], ylabel: 'Hours above 60 °C', legend: false,
+            caption: 'Hours each cup kept the coffee hot.', label: 'fig:cups' }),
+          sec('Conclusion'),
+          para('The answer to the question, and how sure the data let you be.')
         ];
         return d;
       }
@@ -5891,6 +8334,7 @@ blockquote.pt-quote {
     if (recording || editor) return;                /* the shortcuts dialog has the keyboard */
     if (PT.palette && PT.palette.isOpen()) return;  /* so does the command palette */
     if (document.querySelector('.dlg-back')) return; /* an in-page confirm/prompt is open */
+    if (document.querySelector('.studio:not(.closing)')) return;   /* so is the chart or table editor */
     if (e.isComposing) return;
     /* AltGr+key types a character (@ \ { } on many layouts), never a shortcut */
     if (e.getModifierState && e.getModifierState('AltGraph')) return;
@@ -7121,7 +9565,7 @@ blockquote.pt-quote {
     });
 
     var paper = $('#paper').cloneNode(true);
-    ['.gutter', '.pt-tailadd', '.pt-addauth', '.pt-xauth', '.pt-figctl', '.pt-tabctl',
+    ['.gutter', '.pt-tailadd', '.pt-addauth', '.pt-xauth', '.pt-figctl', '.pt-tabctl', '.pt-chedit', '.pt-cherr',
       '.pt-codebar', '.pt-rawl', '.pt-bibx', '.pt-bibkey', '.mcaret', '.pt-drop']
       .forEach(function (sel) {
         [].forEach.call(paper.querySelectorAll(sel), function (e) { e.remove(); });
@@ -7632,14 +10076,39 @@ blockquote.pt-quote {
   /* -------------------------------------------------------------------- boot */
   /* Open the store, then the document last worked on (or the newest one, or
      the pre-IndexedDB copy if it could not be moved, or a fresh one). */
+  /* Links into the editor, as the home page makes them:
+       app.html#new=<template>   a new document from that template
+       app.html#doc=<id>         that saved document
+     The hash is taken off once followed, so a reload does not start a
+     second new document. */
+  function linkTarget() {
+    var m = /^#(new|doc)=([\w-]+)$/.exec(location.hash || '');
+    return m ? { kind: m[1], id: m[2] } : null;
+  }
+  function followLink() {
+    var link = linkTarget();
+    if (!link) return;
+    try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* file: */ }
+    if (link.kind === 'doc') { if (link.id !== state.docId) switchTo(link.id); return; }
+    var t = (PT.templates || []).filter(function (x) { return x.id === link.id; })[0];
+    if (t) newFromTemplate(t);
+  }
+
   function boot() {
+    var link = linkTarget();
     S.open().then(function () { return Promise.all([S.current(), S.list()]); }).then(function (r) {
       var cur = r[0], docs = r[1];
-      var pick = docs.filter(function (d) { return d.id === cur; })[0] || docs[0];
+      var want = link && link.kind === 'doc' ? link.id : cur;
+      var pick = docs.filter(function (d) { return d.id === want; })[0] ||
+        docs.filter(function (d) { return d.id === cur; })[0] || docs[0];
       if (pick) return S.load(pick.id).then(function (json) { return { id: pick.id, json: json }; });
       var leg = S.legacy();
       return leg ? { id: S.newId(), json: leg, fresh: true } : null;
-    }).catch(function () { return null; }).then(start);
+    }).catch(function () { return null; }).then(function (got) {
+      start(got);
+      followLink();
+      window.addEventListener('hashchange', followLink);
+    });
   }
 
   function start(got) {

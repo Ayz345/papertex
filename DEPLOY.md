@@ -75,4 +75,4 @@ Say this plainly on the site (an About or FAQ page), and point people to
   TeX Live packages keep their own licences inside the bundles.
 - A short privacy note: nothing is uploaded; the only third-party request is
   the engine host above, and only when someone compiles.
-- A favicon and link-preview metadata in `index.html`.
+- A favicon and link-preview metadata in `app.html` (and the home page).

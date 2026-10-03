@@ -6,7 +6,8 @@ const path = require('path');
 const crypto = require('crypto');
 
 const root = __dirname;
-let html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+/* app.html is the editor; index.html is the home page, built by tools/build-web.js */
+let html = fs.readFileSync(path.join(root, 'app.html'), 'utf8');
 
 html = html.replace(/[ \t]*<link rel="stylesheet" href="([^"]+)">\n?/g, (_, href) => {
   const css = fs.readFileSync(path.join(root, href), 'utf8');
@@ -30,7 +31,7 @@ html = html.replace(/[ \t]*<script src="([^"]+)"><\/script>\n?/g, (_, src) => {
    injected <script> has no matching hash and does not run. 'self' stays for
    the compiler, which is loaded from engine/ only when it is needed. */
 const csp = /(<meta http-equiv="Content-Security-Policy" content="[^"]*script-src 'self'(?: 'wasm-unsafe-eval')?)/;
-if (!csp.test(html)) throw new Error('index.html has no Content-Security-Policy with script-src \'self\'');
+if (!csp.test(html)) throw new Error('app.html has no Content-Security-Policy with script-src \'self\'');
 html = html.replace(csp, (m) => m + ' ' + hashes.join(' '));
 
 fs.writeFileSync(path.join(root, 'papertex.html'), html);

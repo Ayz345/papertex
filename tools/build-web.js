@@ -9,8 +9,11 @@
    compiling the day it goes away. See DEPLOY.md.
 
    Output:
-     index.html            the single-file app (papertex.html), engine location
-                           and Content-Security-Policy set for this deployment
+     index.html            the home page (index.html), with the files it uses
+     app.html              the editor: the single-file build (papertex.html),
+                           engine location and Content-Security-Policy set for
+                           this deployment; hosts serve it at /app
+     about.html            the About page, with the files it uses
      engine/               the compiler's script and worker (+ texlive/ if asked)
      _headers              security and caching headers, in the format Netlify
                            and Cloudflare Pages read; other hosts: copy them over
@@ -68,7 +71,7 @@ const cspMatch = cspRe.exec(html);
 if (!cspMatch) fail('papertex.html has no Content-Security-Policy meta tag');
 const csp = cspMatch[2].replace(/connect-src [^;]*/, 'connect-src \'self\'' + (engineOrigin ? ' ' + engineOrigin : ''));
 html = html.replace(cspRe, (_, a, b, c) => a + csp + c);
-fs.writeFileSync(path.join(out, 'index.html'), html);
+fs.writeFileSync(path.join(out, 'app.html'), html);
 
 /* 3. the compiler, and TeX Live if it is to be served from here */
 for (const f of ['siglum.js', 'siglum.worker.js']) {
@@ -84,12 +87,41 @@ if (withTexlive) {
   copyDir(tl, path.join(out, 'engine', 'texlive'));
 }
 
-/* 3b. the About page, its icon inlined so it stands alone */
-const icon = 'data:image/png;base64,' + fs.readFileSync(path.join(root, 'desktop', 'papertex.png')).toString('base64');
-fs.writeFileSync(path.join(out, 'about.html'),
-  fs.readFileSync(path.join(root, 'about.html'), 'utf8').split('desktop/papertex.png').join(icon));
+/* 3b. the plain pages, home and About, as they are, with every local file
+   they point to (stylesheets, scripts, images, and what the stylesheets
+   point to in turn) */
+const copied = new Set();
+function copyAsset(rel, fromDir) {
+  rel = rel.split(/[?#]/)[0];
+  /* other pages, folders ("./"), other sites and in-page anchors are links, not files */
+  if (!rel || rel === '.' || /^(?:[a-z]+:|\/\/|\/)/i.test(rel) || /(?:\.html|\/)$/i.test(rel)) return;
+  const abs = path.normalize(path.join(fromDir, rel));
+  if (!abs.startsWith(root + path.sep)) fail(rel + ' points outside the project');
+  const key = path.relative(root, abs);
+  if (copied.has(key)) return;
+  if (!fs.existsSync(abs)) fail(key.split(path.sep).join('/') + ' is referenced but does not exist');
+  copied.add(key);
+  fs.mkdirSync(path.dirname(path.join(out, key)), { recursive: true });
+  fs.copyFileSync(abs, path.join(out, key));
+  if (/\.css$/i.test(abs)) {
+    const css = fs.readFileSync(abs, 'utf8');
+    for (const m of css.matchAll(/url\(\s*['"]?([^'")]+)['"]?\s*\)/g)) copyAsset(m[1], path.dirname(abs));
+    for (const m of css.matchAll(/@import\s+['"]([^'"]+)['"]/g)) copyAsset(m[1], path.dirname(abs));
+  }
+}
+for (const page of ['index.html', 'about.html']) {
+  const src = fs.readFileSync(path.join(root, page), 'utf8');
+  fs.writeFileSync(path.join(out, page), src);
+  for (const m of src.matchAll(/\s(?:src|href|poster)="([^"]+)"/g)) copyAsset(m[1], root);
+  for (const m of src.matchAll(/\ssrcset="([^"]+)"/g)) {
+    m[1].split(',').forEach((c) => copyAsset(c.trim().split(/\s+/)[0], root));
+  }
+}
 if (/class="todo"/.test(fs.readFileSync(path.join(out, 'about.html'), 'utf8'))) {
   console.log('\n  NOTE: about.html still has parts for you to write (the dashed boxes).');
+}
+if (/PLACEHOLDER home page/.test(fs.readFileSync(path.join(out, 'index.html'), 'utf8'))) {
+  console.log('\n  NOTE: index.html is still the placeholder home page.');
 }
 
 /* 4. licences of what the app ships */
@@ -97,6 +129,14 @@ fs.mkdirSync(path.join(out, 'LICENSES'), { recursive: true });
 fs.copyFileSync(path.join(root, 'fonts', 'LICENSE-KaTeX.txt'), path.join(out, 'LICENSES', 'KaTeX-fonts.txt'));
 fs.copyFileSync(path.join(root, 'engine', 'LICENSE-siglum.txt'), path.join(out, 'LICENSES', 'siglum-engine.txt'));
 fs.copyFileSync(path.join(root, 'LICENSE'), path.join(out, 'LICENSES', 'PaperTeX.txt'));
+/* the home page's libraries: js/vendor/NAME-LICENSE.txt ships as LICENSES/NAME.txt */
+const vendor = path.join(root, 'js', 'vendor');
+if (fs.existsSync(vendor)) {
+  for (const f of fs.readdirSync(vendor)) {
+    const m = /^(.+?)[-_.]?LICEN[CS]E(?:\.txt|\.md)?$/i.exec(f);
+    if (m) fs.copyFileSync(path.join(vendor, f), path.join(out, 'LICENSES', m[1] + '.txt'));
+  }
+}
 
 /* 5. headers: the same policy as the page, plus what only a header can say */
 const headers = [
@@ -107,9 +147,9 @@ const headers = [
   '  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()',
   '  Cross-Origin-Opener-Policy: same-origin',
   '',
-  '/index.html',
-  '  Cache-Control: no-cache',
-  '',
+  /* pages and their unversioned files: always ask whether they changed */
+  ...['/', '/index.html', '/app', '/app.html', '/about', '/about.html', '/css/*', '/js/*', '/desktop/*']
+    .flatMap((p) => [p, '  Cache-Control: no-cache', '']),
   '/engine/*',
   '  Cache-Control: public, max-age=86400',
   '',
