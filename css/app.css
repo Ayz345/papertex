@@ -49,6 +49,30 @@ button { font-family: inherit; }
   letter-spacing: .085em; text-transform: uppercase;
 }
 .tsep { width: 1px; height: 20px; background: var(--line); margin: 0 6px; }
+
+/* save state, beside the name: quiet when fine, red when not */
+.savestate { font-size: 11px; color: var(--faint); margin-right: 6px; white-space: nowrap; cursor: default; }
+.savestate.saving { color: var(--muted); }
+.savestate.failed, .savestate.volatile { color: var(--danger); font-weight: 600; }
+.savestate.failed::before, .savestate.volatile::before { content: "● "; }
+
+/* the banner under the toolbar */
+.savebar {
+  display: none; position: absolute; top: 54px; left: 50%; transform: translateX(-50%);
+  z-index: 60; width: min(760px, calc(100% - 32px));
+  align-items: center; gap: 10px; padding: 9px 10px 9px 14px; border-radius: 9px;
+  background: #fff8e8; border: 1px solid #f0d9a6; color: #5a430f; font-size: 12.5px; line-height: 1.45;
+  box-shadow: 0 10px 28px -12px rgba(25, 30, 40, .3);
+}
+.savebar.on { display: flex; }
+.savebar.failed, .savebar.volatile { background: #fdeeea; border-color: #f2c3b8; color: #7b2410; }
+.savebar-t { flex: 1 1 auto; }
+.savebar-b {
+  flex: 0 0 auto; border: 1px solid rgba(0, 0, 0, .14); background: rgba(255, 255, 255, .7);
+  border-radius: 6px; padding: 5px 11px; font-size: 12px; cursor: pointer; color: inherit;
+}
+.savebar-b.primary { background: var(--accent-ink); border-color: var(--accent-ink); color: #fff9ee; font-weight: 500; }
+.savebar.failed .savebar-b.primary, .savebar.volatile .savebar-b.primary { background: var(--danger); border-color: var(--danger); }
 .tb {
   border: 1px solid transparent; background: transparent; color: var(--ink-2);
   border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 12.5px;
@@ -248,6 +272,24 @@ body.nopanel .side { margin-right: -380px; }
 .popname { font-weight: 500; }
 .popdesc { font-size: 10.5px; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .popnone { padding: 8px 10px 12px; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+
+/* Open: the documents kept here */
+.popmenu.docmenu { width: 340px; max-height: 460px; }
+.docrow { display: flex; align-items: center; border-radius: 6px; }
+.docrow:hover { background: var(--chrome); }
+.docrow.on .doct::after { content: "  ●"; color: var(--accent-2); font-size: 9px; vertical-align: 2px; }
+.docopen { flex-direction: column; align-items: flex-start; gap: 1px; min-width: 0; }
+.docopen:hover { background: transparent; }
+.doct { font-size: 12.5px; font-weight: 500; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.docm { font-size: 10.5px; color: var(--faint); }
+.docdel {
+  flex: 0 0 auto; border: 0; background: none; color: var(--faint); font-size: 15px; line-height: 1;
+  padding: 4px 9px; border-radius: 5px; cursor: pointer; opacity: 0;
+}
+.docrow:hover .docdel, .docdel:focus-visible { opacity: 1; }
+.docdel:hover { color: var(--danger); background: #fdedea; }
+.docfile { margin-top: 4px; border-top: 1px solid var(--line-2); border-radius: 0 0 6px 6px; padding-top: 9px; font-size: 12.5px; }
+.docfoot { padding: 8px 8px 4px; font-size: 10.5px; color: var(--muted); line-height: 1.45; }
 .poplab { padding: 2px 8px 6px; }
 .poplab input {
   width: 100%; border: 1px solid var(--line); border-radius: 5px; padding: 5px 7px;

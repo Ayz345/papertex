@@ -11,7 +11,7 @@
      are data: URLs; the compiled PDF is a blob:. connect-src names the
      engine host — tools/build-web.js narrows it to this site alone when
      TeX Live is deployed beside the page. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-nCsYqU57DcjyJdeLktuVapNA/VJyB+D3CgjahKkAG30=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-FFom6qq8tNvBDtWKkeXB9k9xIAfAX5n1XPyZ4XVibEQ=' 'sha256-OI1XvI1YDe5z/WgOLZqJHOh6Nij9VeE5vwyJRCkFWKg=' 'sha256-6M3r1xu+SWYvL+yQeuSAv9wY5i4gOD9Mhzy0wi4bPNA=' 'sha256-oji+0n13nqRqXf6T7hCsodCcFbSB6vjz0B+gRtfs3eE=' 'sha256-r4ar0xaMZepl04KR7XVNhhc0Ahx6YLBONtjkvyBCh24=' 'sha256-2Nf8IMEt9AgrBEapUtgndS3BXdMStE29Q8deX0WEE+s=' 'sha256-5VyqioJD5QufI7DMYEa7hKz3ZU3jWUKscvcIHNS4OXg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-nCsYqU57DcjyJdeLktuVapNA/VJyB+D3CgjahKkAG30=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-FFom6qq8tNvBDtWKkeXB9k9xIAfAX5n1XPyZ4XVibEQ=' 'sha256-OI1XvI1YDe5z/WgOLZqJHOh6Nij9VeE5vwyJRCkFWKg=' 'sha256-nu0nbrruuIQRlZrmaasXEIsi/IQbBebJfrJUnEvcyeg=' 'sha256-6M3r1xu+SWYvL+yQeuSAv9wY5i4gOD9Mhzy0wi4bPNA=' 'sha256-oji+0n13nqRqXf6T7hCsodCcFbSB6vjz0B+gRtfs3eE=' 'sha256-r4ar0xaMZepl04KR7XVNhhc0Ahx6YLBONtjkvyBCh24=' 'sha256-2Nf8IMEt9AgrBEapUtgndS3BXdMStE29Q8deX0WEE+s=' 'sha256-/qwyeuNYjB8t+GGALhtrTsg+jA6Tflb/t4rjsksFau4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <!-- Where the compiler's wasm and TeX Live live, if not beside this page
      (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
 <meta name="papertex-engine" content="">
@@ -159,6 +159,30 @@ button { font-family: inherit; }
   letter-spacing: .085em; text-transform: uppercase;
 }
 .tsep { width: 1px; height: 20px; background: var(--line); margin: 0 6px; }
+
+/* save state, beside the name: quiet when fine, red when not */
+.savestate { font-size: 11px; color: var(--faint); margin-right: 6px; white-space: nowrap; cursor: default; }
+.savestate.saving { color: var(--muted); }
+.savestate.failed, .savestate.volatile { color: var(--danger); font-weight: 600; }
+.savestate.failed::before, .savestate.volatile::before { content: "● "; }
+
+/* the banner under the toolbar */
+.savebar {
+  display: none; position: absolute; top: 54px; left: 50%; transform: translateX(-50%);
+  z-index: 60; width: min(760px, calc(100% - 32px));
+  align-items: center; gap: 10px; padding: 9px 10px 9px 14px; border-radius: 9px;
+  background: #fff8e8; border: 1px solid #f0d9a6; color: #5a430f; font-size: 12.5px; line-height: 1.45;
+  box-shadow: 0 10px 28px -12px rgba(25, 30, 40, .3);
+}
+.savebar.on { display: flex; }
+.savebar.failed, .savebar.volatile { background: #fdeeea; border-color: #f2c3b8; color: #7b2410; }
+.savebar-t { flex: 1 1 auto; }
+.savebar-b {
+  flex: 0 0 auto; border: 1px solid rgba(0, 0, 0, .14); background: rgba(255, 255, 255, .7);
+  border-radius: 6px; padding: 5px 11px; font-size: 12px; cursor: pointer; color: inherit;
+}
+.savebar-b.primary { background: var(--accent-ink); border-color: var(--accent-ink); color: #fff9ee; font-weight: 500; }
+.savebar.failed .savebar-b.primary, .savebar.volatile .savebar-b.primary { background: var(--danger); border-color: var(--danger); }
 .tb {
   border: 1px solid transparent; background: transparent; color: var(--ink-2);
   border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 12.5px;
@@ -358,6 +382,24 @@ body.nopanel .side { margin-right: -380px; }
 .popname { font-weight: 500; }
 .popdesc { font-size: 10.5px; color: var(--faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .popnone { padding: 8px 10px 12px; font-size: 11.5px; color: var(--muted); line-height: 1.5; }
+
+/* Open: the documents kept here */
+.popmenu.docmenu { width: 340px; max-height: 460px; }
+.docrow { display: flex; align-items: center; border-radius: 6px; }
+.docrow:hover { background: var(--chrome); }
+.docrow.on .doct::after { content: "  ●"; color: var(--accent-2); font-size: 9px; vertical-align: 2px; }
+.docopen { flex-direction: column; align-items: flex-start; gap: 1px; min-width: 0; }
+.docopen:hover { background: transparent; }
+.doct { font-size: 12.5px; font-weight: 500; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.docm { font-size: 10.5px; color: var(--faint); }
+.docdel {
+  flex: 0 0 auto; border: 0; background: none; color: var(--faint); font-size: 15px; line-height: 1;
+  padding: 4px 9px; border-radius: 5px; cursor: pointer; opacity: 0;
+}
+.docrow:hover .docdel, .docdel:focus-visible { opacity: 1; }
+.docdel:hover { color: var(--danger); background: #fdedea; }
+.docfile { margin-top: 4px; border-top: 1px solid var(--line-2); border-radius: 0 0 6px 6px; padding-top: 9px; font-size: 12.5px; }
+.docfoot { padding: 8px 8px 4px; font-size: 10.5px; color: var(--muted); line-height: 1.45; }
 .poplab { padding: 2px 8px 6px; }
 .poplab input {
   width: 100%; border: 1px solid var(--line); border-radius: 5px; padding: 5px 7px;
@@ -1040,6 +1082,7 @@ blockquote.pt-quote {
 
 <header class="top">
   <div class="brand"><b>PaperTeX</b><i>write on the paper</i></div>
+  <span class="savestate" id="saveState" role="status" aria-live="polite"></span>
 
   <button class="tb" id="btnNew" title="New document"><span class="k">🗎</span>New</button>
   <button class="tb" id="btnOpen" title="Open a saved PaperTeX project">Open</button>
@@ -1060,6 +1103,8 @@ blockquote.pt-quote {
   <button class="tb ghost" id="btnTex" title="Download the .tex file (Ctrl+S)">Export .tex</button>
   <button class="tb primary" id="btnCompile" title="Typeset the document with real LaTeX, here in your browser">Compile PDF</button>
 </header>
+<!-- saving problems, backup reminders: shown by app.js, never silently -->
+<div class="savebar" id="savebar" role="alert"></div>
 
 <div class="wrap">
 
@@ -3408,6 +3453,220 @@ blockquote.pt-quote {
 })();
 </script>
 <script>
+/* js/store.js */
+/* PaperTeX — where documents live between sessions.
+
+   IndexedDB, not localStorage: localStorage holds about 5 MB per site, and a
+   document with a few pasted photos is already past that — at which point
+   every save failed in silence. IndexedDB holds hundreds of megabytes, keeps
+   any number of documents, and its writes can be checked.
+
+   When a browser will not open it (some private windows, a sandboxed copy
+   of the page), the store falls back to localStorage, and failing that to
+   memory — and says so through `kind`, so the app can warn that nothing
+   will outlive the tab.
+
+   Records: { id, title, updated, json, backedUp } — `json` is the document
+   as saved, `backedUp` the last time it was written out to a file. */
+(function () {
+  'use strict';
+
+  var DB = 'papertex', VER = 1, LEGACY = 'papertex.doc.v1';
+  var db = null, kind = 'memory', mem = { docs: {}, meta: {} };
+
+  function req(r) {
+    return new Promise(function (resolve, reject) {
+      r.onsuccess = function () { resolve(r.result); };
+      r.onerror = function () { reject(r.error || new Error('storage request failed')); };
+    });
+  }
+  function tx(store, mode, fn) {
+    return new Promise(function (resolve, reject) {
+      var t = db.transaction(store, mode), out;
+      t.oncomplete = function () { resolve(out); };
+      t.onerror = t.onabort = function () { reject(t.error || new Error('storage transaction failed')); };
+      out = fn(t.objectStore(store));
+      if (out && typeof out.then === 'function') out.then(function (v) { out = v; });
+    });
+  }
+
+  function openIDB() {
+    return new Promise(function (resolve, reject) {
+      if (!window.indexedDB) return reject(new Error('no IndexedDB'));
+      var r;
+      try { r = indexedDB.open(DB, VER); } catch (e) { return reject(e); }
+      r.onupgradeneeded = function () {
+        var d = r.result;
+        if (!d.objectStoreNames.contains('docs')) d.createObjectStore('docs', { keyPath: 'id' });
+        if (!d.objectStoreNames.contains('meta')) d.createObjectStore('meta', { keyPath: 'key' });
+      };
+      r.onsuccess = function () { resolve(r.result); };
+      r.onerror = function () { reject(r.error || new Error('IndexedDB refused')); };
+      r.onblocked = function () { reject(new Error('IndexedDB blocked by another tab')); };
+    });
+  }
+
+  /* ---- three backends behind one interface ---- */
+  var idb = {
+    get: function (id) { return tx('docs', 'readonly', function (s) { return req(s.get(id)); }); },
+    put: function (rec) { return tx('docs', 'readwrite', function (s) { s.put(rec); }); },
+    del: function (id) { return tx('docs', 'readwrite', function (s) { s.delete(id); }); },
+    all: function () { return tx('docs', 'readonly', function (s) { return req(s.getAll()); }); },
+    getMeta: function (k) { return tx('meta', 'readonly', function (s) { return req(s.get(k)); }).then(function (r) { return r ? r.value : undefined; }); },
+    setMeta: function (k, v) { return tx('meta', 'readwrite', function (s) { s.put({ key: k, value: v }); }); }
+  };
+  var LS = 'papertex.store.';
+  var local = {
+    get: function (id) { return Promise.resolve(JSON.parse(localStorage.getItem(LS + 'doc.' + id) || 'null')); },
+    put: function (rec) {
+      return new Promise(function (resolve) {
+        localStorage.setItem(LS + 'doc.' + rec.id, JSON.stringify(rec));   /* throws when full */
+        var ids = JSON.parse(localStorage.getItem(LS + 'ids') || '[]');
+        if (ids.indexOf(rec.id) < 0) { ids.push(rec.id); localStorage.setItem(LS + 'ids', JSON.stringify(ids)); }
+        resolve();
+      });
+    },
+    del: function (id) {
+      localStorage.removeItem(LS + 'doc.' + id);
+      var ids = JSON.parse(localStorage.getItem(LS + 'ids') || '[]').filter(function (x) { return x !== id; });
+      localStorage.setItem(LS + 'ids', JSON.stringify(ids));
+      return Promise.resolve();
+    },
+    all: function () {
+      var ids = JSON.parse(localStorage.getItem(LS + 'ids') || '[]');
+      return Promise.resolve(ids.map(function (id) { return JSON.parse(localStorage.getItem(LS + 'doc.' + id) || 'null'); }).filter(Boolean));
+    },
+    getMeta: function (k) { var v = localStorage.getItem(LS + 'meta.' + k); return Promise.resolve(v == null ? undefined : JSON.parse(v)); },
+    setMeta: function (k, v) { localStorage.setItem(LS + 'meta.' + k, JSON.stringify(v)); return Promise.resolve(); }
+  };
+  var memory = {
+    get: function (id) { return Promise.resolve(mem.docs[id] || null); },
+    put: function (rec) { mem.docs[rec.id] = rec; return Promise.resolve(); },
+    del: function (id) { delete mem.docs[id]; return Promise.resolve(); },
+    all: function () { return Promise.resolve(Object.keys(mem.docs).map(function (k) { return mem.docs[k]; })); },
+    getMeta: function (k) { return Promise.resolve(mem.meta[k]); },
+    setMeta: function (k, v) { mem.meta[k] = v; return Promise.resolve(); }
+  };
+  var be = memory;
+
+  function localWorks() {
+    try { localStorage.setItem(LS + 'probe', '1'); localStorage.removeItem(LS + 'probe'); return true; }
+    catch (e) { return false; }
+  }
+
+  /* The single document the app kept in localStorage before this store
+     existed comes across once, and is removed only after it is safely in. */
+  function migrateLegacy() {
+    var s;
+    try { s = localStorage.getItem(LEGACY); } catch (e) { return Promise.resolve(); }
+    if (!s) return Promise.resolve();
+    var d;
+    try { d = JSON.parse(s); } catch (e) { return Promise.resolve(); }
+    if (!d || !d.blocks) return Promise.resolve();
+    var id = newId();
+    return be.put(record(id, s, d)).then(function () {
+      return be.setMeta('current', id);
+    }).then(function () {
+      try { localStorage.removeItem(LEGACY); } catch (e) { /* it stays as a spare copy */ }
+    }).catch(function () { /* left where it was; legacy() still finds it */ });
+  }
+  function legacy() {
+    try { return localStorage.getItem(LEGACY); } catch (e) { return null; }
+  }
+
+  function newId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+  function titleOf(d) {
+    var t = d && d.meta && d.meta.title ? String(d.meta.title) : '';
+    var div = document.createElement('div');
+    div.innerHTML = PT.sanitize ? PT.sanitize.clean(t) : '';
+    return (div.textContent || '').trim() || 'Untitled document';
+  }
+  function record(id, json, doc, prev) {
+    return { id: id, title: titleOf(doc), updated: Date.now(), json: json, backedUp: prev ? prev.backedUp || 0 : 0 };
+  }
+
+  var opened = null;
+  function open() {
+    if (opened) return opened;
+    opened = openIDB().then(function (d) {
+      db = d; be = idb; kind = 'idb';
+      db.onversionchange = function () { db.close(); };
+    }, function () {
+      if (localWorks()) { be = local; kind = 'local'; }
+      else { be = memory; kind = 'memory'; }
+    }).then(migrateLegacy).then(function () { return kind; });
+    return opened;
+  }
+
+  /* Writes are queued per document, newest wins: a burst of keystrokes is
+     one write, and a slow write is never overtaken by an older one. */
+  var pending = {}, writing = {};
+  function save(id, json, doc) {
+    pending[id] = { json: json, doc: doc };
+    if (writing[id]) return writing[id];
+    writing[id] = (function next() {
+      var job = pending[id];
+      delete pending[id];
+      return be.get(id).then(function (prev) {
+        return be.put(record(id, job.json, job.doc, prev));
+      }).then(function () {
+        if (pending[id]) return next();
+      });
+    })().then(function () { delete writing[id]; }, function (e) { delete writing[id]; delete pending[id]; throw e; });
+    return writing[id];
+  }
+
+  function list() {
+    return be.all().then(function (rs) {
+      return rs.map(function (r) {
+        return { id: r.id, title: r.title, updated: r.updated, backedUp: r.backedUp || 0, size: (r.json || '').length };
+      }).sort(function (a, b) { return b.updated - a.updated; });
+    });
+  }
+  function load(id) { return be.get(id).then(function (r) { return r ? r.json : null; }); }
+  function markBackedUp(id) {
+    return be.get(id).then(function (r) { if (!r) return; r.backedUp = Date.now(); return be.put(r); });
+  }
+
+  /* Ask the browser not to clear this site's data under storage pressure.
+     Chrome and Firefox grant it to sites people use; Safari still removes
+     data of sites unvisited for seven days, which is why backups matter. */
+  function persist() {
+    if (!navigator.storage || !navigator.storage.persist) return Promise.resolve(false);
+    return navigator.storage.persisted().then(function (p) { return p || navigator.storage.persist(); })
+      .catch(function () { return false; });
+  }
+  function estimate() {
+    if (!navigator.storage || !navigator.storage.estimate) return Promise.resolve(null);
+    return Promise.all([navigator.storage.estimate(), navigator.storage.persisted ? navigator.storage.persisted() : false])
+      .then(function (r) { return { usage: r[0].usage, quota: r[0].quota, persisted: !!r[1] }; })
+      .catch(function () { return null; });
+  }
+
+  window.PT = window.PT || {};
+  window.PT.store = {
+    open: open,
+    kind: function () { return kind; },
+    newId: newId,
+    list: list,
+    load: load,
+    save: save,
+    remove: function (id) { return be.del(id); },
+    current: function () { return be.getMeta('current'); },
+    setCurrent: function (id) { return be.setMeta('current', id); },
+    getMeta: function (k) { return be.getMeta(k); },
+    setMeta: function (k, v) { return be.setMeta(k, v); },
+    markBackedUp: markBackedUp,
+    /* the pre-IndexedDB document, if it could not be moved across */
+    legacy: legacy,
+    persist: persist,
+    estimate: estimate,
+    /* is anything still waiting to be written? */
+    busy: function () { return Object.keys(writing).length > 0 || Object.keys(pending).length > 0; }
+  };
+})();
+</script>
+<script>
 /* js/latex.js */
 /* PaperTeX — turns the on-paper document into a .tex source file.
    The document model is the source of truth; LaTeX is generated output. */
@@ -5665,22 +5924,139 @@ blockquote.pt-quote {
   var $$ = function (s, r) { return [].slice.call((r || document).querySelectorAll(s)); };
   function h(t, c, x) { var e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; }
 
-  /* -------------------------------------------------------------- persistence */
-  var KEY = 'papertex.doc.v1';
+  /* -------------------------------------------------------------- persistence
+     Documents live in PT.store (IndexedDB), any number of them. A change is
+     written a moment after it is made; whether that worked is always shown,
+     and a write that fails is never swallowed. */
+  var S = PT.store;
   function serialize(doc) {
     return JSON.stringify(doc, function (k, v) { return k.slice(0, 2) === '__' ? undefined : v; });
   }
-  function save() {
-    try { localStorage.setItem(KEY, serialize(state.doc)); } catch (e) { /* quota: embedded figures are large */ }
+
+  var saveTimer = null;
+  function save(now) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+    if (!state.docId || state.staleTab) return;
+    setSaveState('saving');
+    function run() {
+      saveTimer = null;
+      var id = state.docId;
+      S.save(id, serialize(state.doc), state.doc).then(function () {
+        if (id !== state.docId) return;
+        setSaveState(S.kind() === 'memory' ? 'volatile' : 'saved');
+        announce(id);
+        if (!state.persistAsked) { state.persistAsked = true; S.persist(); }
+        checkBackup();
+      }, function (err) {
+        if (id === state.docId) setSaveState('failed', err);
+      });
+    }
+    if (now) run(); else saveTimer = setTimeout(run, 400);
   }
-  function load() {
-    try {
-      var s = localStorage.getItem(KEY);
-      if (!s) return null;
-      var d = JSON.parse(s);
-      if (!d.blocks || !d.blocks.length) return null;
-      return d;
-    } catch (e) { return null; }
+  function flushSave() { if (saveTimer) save(true); }
+
+  /* A document read from a file is somebody else's data: give it every
+     field the editor relies on, and drop anything that is not a block. */
+  function normalizeDoc(d) {
+    if (!d || typeof d !== 'object' || !Array.isArray(d.blocks)) throw new Error('not a document');
+    var base = D.newDoc();
+    d.meta = Object.assign({}, base.meta, d.meta && typeof d.meta === 'object' ? d.meta : {});
+    d.settings = Object.assign({}, base.settings, d.settings && typeof d.settings === 'object' ? d.settings : {});
+    d.bib = Array.isArray(d.bib) ? d.bib.filter(function (e) { return e && typeof e === 'object'; }) : [];
+    d.blocks = d.blocks.filter(function (b) { return b && typeof b === 'object' && typeof b.t === 'string'; });
+    if (!d.blocks.length) d.blocks = base.blocks;
+    return d;
+  }
+
+  /* --- what the user is told about saving --- */
+  function setSaveState(s, err) {
+    state.saveState = s;
+    var el = $('#saveState');
+    if (el) {
+      el.className = 'savestate ' + s;
+      el.textContent = { saving: 'Saving…', saved: 'Saved', failed: 'Not saved', volatile: 'Not stored' }[s] || '';
+      el.title = {
+        saving: 'Writing your changes to this ' + (NATIVE ? 'computer' : 'browser'),
+        saved: 'Every change is kept in this ' + (NATIVE ? 'app' : 'browser') + ' — open it again any time from Open',
+        failed: 'The last change could not be stored: ' + (err && err.message || 'storage refused'),
+        volatile: 'This page cannot store anything here; your work lasts only as long as the tab'
+      }[s] || '';
+    }
+    if (s === 'failed') showBar('failed', 'Not saved. This ' + (NATIVE ? 'app' : 'browser') + ' refused to store your latest changes' +
+      ' — its storage may be full or switched off. Save project to keep a copy on disk now.');
+    else if (s === 'volatile') showBar('volatile', 'This page cannot store anything, so your work disappears when the tab closes.' +
+      ' Use Save project to keep it.');
+    else if (s === 'saved' && (state.bar === 'failed' || state.bar === 'volatile')) hideBar();
+  }
+  function showBar(kind, text, later) {
+    var bar = $('#savebar');
+    if (!bar) return;
+    state.bar = kind;
+    bar.className = 'savebar on ' + kind;
+    bar.textContent = '';
+    bar.appendChild(h('span', 'savebar-t', text));
+    var act = h('button', 'savebar-b primary', kind === 'stale' ? 'Reload' : 'Save project');
+    act.onclick = function () { if (kind === 'stale') location.reload(); else saveProject(); };
+    bar.appendChild(act);
+    if (later) {
+      var no = h('button', 'savebar-b', 'Later');
+      no.onclick = function () { later(); hideBar(); };
+      bar.appendChild(no);
+    }
+  }
+  function hideBar() { var bar = $('#savebar'); if (bar) bar.className = 'savebar'; state.bar = null; }
+
+  /* A document that exists only in browser storage is one cleared cache
+     away from gone. Once it has real content and has not been written to a
+     file for a week, say so — once a session, and not again for three days
+     after "Later". */
+  function checkBackup() {
+    if (state.backupNudged || state.bar || !state.docId) return;
+    var id = state.docId;
+    if (serialize(state.doc).length < serialize(D.newDoc()).length + 400) return;   /* still the starter text */
+    Promise.all([S.list(), S.getMeta('snooze.' + id)]).then(function (r) {
+      var rec = r[0].filter(function (x) { return x.id === id; })[0], snooze = r[1] || 0;
+      if (!rec || id !== state.docId || state.bar || state.backupNudged) return;
+      var week = 7 * 864e5;
+      if (Date.now() < snooze) return;
+      if (rec.backedUp && (Date.now() - rec.backedUp < week || rec.updated <= rec.backedUp)) return;
+      state.backupNudged = true;
+      showBar('backup', '“' + rec.title + '” is kept only in this ' + (NATIVE ? 'app' : 'browser') +
+        (rec.backedUp ? ', and has changed since you last saved a copy.' : '.') +
+        ' Save project keeps a copy on disk that clearing ' + (NATIVE ? 'app data' : 'the browser') + ' cannot touch.',
+        function () { S.setMeta('snooze.' + id, Date.now() + 3 * 864e5); });
+    });
+  }
+
+  /* Two tabs on one document would overwrite each other's work. The tab
+     that saves tells the others; one still showing the older copy stops
+     saving and offers to reload. */
+  var channel = null;
+  try { channel = new BroadcastChannel('papertex'); } catch (e) { channel = null; }
+  var TAB = Math.random().toString(36).slice(2);
+  function announce(id) { if (channel) channel.postMessage({ saved: id, tab: TAB }); }
+  if (channel) channel.onmessage = function (e) {
+    var m = e.data || {};
+    if (m.tab === TAB || m.saved !== state.docId || state.staleTab) return;
+    state.staleTab = true;
+    clearTimeout(saveTimer);
+    showBar('stale', 'This document was changed in another tab. To keep both from overwriting each other,' +
+      ' this tab has stopped saving — reload it to continue with the latest version.');
+  };
+
+  function saveProject() {
+    flushSave();
+    var id = state.docId;
+    return download(docName() + '.papertex.json', serialize(state.doc), 'application/json')
+      .then(function (r) {
+        if (r === 'saved' || r === 'anchor') {
+          toast('Project saved — reopen it with Open.');
+          S.markBackedUp(id);
+          if (state.bar === 'backup') hideBar();
+        }
+        return r;
+      });
   }
 
   /* -------------------------------------------------------------------- undo */
@@ -6606,6 +6982,112 @@ blockquote.pt-quote {
     if (NATIVE && NATIVE.setShortcuts) NATIVE.setShortcuts(K.menuKeys());
   }
 
+  /* ------------------------------------------------------------- documents */
+  /* Make `d` the document on the page, under store id `id`. Undo history
+     belongs to a document, so it starts afresh. */
+  function showDoc(id, d) {
+    flushSave();
+    state.docId = id;
+    state.staleTab = false;
+    state.backupNudged = false;
+    if (state.bar) hideBar();
+    state.undo = []; state.redo = [];
+    S.setCurrent(id);
+    restore(serialize(d));
+    setSaveState('saved');
+  }
+  function switchTo(id) {
+    if (id === state.docId) return;
+    flushSave();
+    S.load(id).then(function (json) {
+      var d;
+      try { d = normalizeDoc(JSON.parse(json)); } catch (e) { toast('That document could not be read.'); return; }
+      showDoc(id, d);
+      checkBackup();
+    }, function () { toast('That document could not be read.'); });
+  }
+  /* a brand-new entry in the store, shown at once and written at once */
+  function addDocument(d, message) {
+    showDoc(S.newId(), d);
+    save(true);
+    if (message) toast(message);
+  }
+  function deleteDoc(rec) {
+    dialog({
+      title: 'Delete “' + rec.title + '”?',
+      body: 'It is removed from this ' + (NATIVE ? 'app' : 'browser') + ' for good. A project file you saved to disk is not affected.',
+      okLabel: 'Delete'
+    }).then(function (yes) {
+      if (!yes) return;
+      S.remove(rec.id).then(function () {
+        toast('Deleted “' + rec.title + '”.');
+        if (rec.id !== state.docId) return;
+        S.list().then(function (docs) {
+          if (docs.length) switchTo(docs[0].id);
+          else addDocument(D.newDoc());
+        });
+      });
+    });
+  }
+  function relTime(t) {
+    var s = Math.round((Date.now() - t) / 1000);
+    if (s < 60) return 'just now';
+    if (s < 3600) return Math.round(s / 60) + ' min ago';
+    if (s < 86400) return Math.round(s / 3600) + ' h ago';
+    if (s < 7 * 86400) return Math.round(s / 86400) + ' d ago';
+    return new Date(t).toLocaleDateString();
+  }
+  function sizeText(n) { return n < 1e6 ? Math.max(1, Math.round(n / 1024)) + ' kB' : (n / 1048576).toFixed(1) + ' MB'; }
+
+  /* Open: the documents kept here, newest first, and files from disk. */
+  function docsMenu(anchor, openFile) {
+    D.closeAllPop();
+    var m = h('div', 'popmenu docmenu');
+    m.appendChild(h('div', 'popg', 'Documents in this ' + (NATIVE ? 'app' : 'browser')));
+    var listBox = h('div', 'doclist');
+    m.appendChild(listBox);
+    S.list().then(function (docs) {
+      if (!docs.length) listBox.appendChild(h('div', 'popnone', 'None yet.'));
+      docs.forEach(function (d) {
+        var row = h('div', 'docrow' + (d.id === state.docId ? ' on' : ''));
+        var b = h('button', 'popitem docopen');
+        b.appendChild(h('span', 'doct', d.title));
+        b.appendChild(h('span', 'docm', (d.id === state.docId ? 'open now · ' : '') + relTime(d.updated) + ' · ' +
+          sizeText(d.size) + (d.backedUp ? ' · copy saved ' + relTime(d.backedUp) : ' · no copy on disk')));
+        b.onclick = function () { D.closeAllPop(); switchTo(d.id); };
+        var x = h('button', 'docdel', '×');
+        x.title = 'Delete from this ' + (NATIVE ? 'app' : 'browser');
+        x.onclick = function (e) { e.stopPropagation(); D.closeAllPop(); deleteDoc(d); };
+        row.appendChild(b);
+        row.appendChild(x);
+        listBox.appendChild(row);
+      });
+    });
+    var f = h('button', 'popitem docfile', 'Open a project file…');
+    f.onclick = function () { D.closeAllPop(); openFile(); };
+    m.appendChild(f);
+    var foot = h('div', 'docfoot');
+    m.appendChild(foot);
+    var where = { idb: '', local: ' Stored in the small fallback storage — keep a copy on disk.',
+      memory: ' Nothing can be stored here — use Save project.' }[S.kind()];
+    S.estimate().then(function (e) {
+      foot.textContent = (e ? sizeText(e.usage) + ' used. ' + (e.persisted
+        ? 'Protected from automatic clearing.'
+        : 'The ' + (NATIVE ? 'app' : 'browser') + ' may clear this when space runs low — keep copies of what matters.') : '') + where;
+    });
+    document.body.appendChild(m);
+    var r = anchor.getBoundingClientRect();
+    m.style.left = Math.max(8, Math.min(window.innerWidth - m.offsetWidth - 10, r.left + window.scrollX)) + 'px';
+    m.style.top = (r.bottom + window.scrollY + 6) + 'px';
+    setTimeout(function () {
+      document.addEventListener('mousedown', function off(ev) {
+        if (m.contains(ev.target)) return;
+        D.closeAllPop();
+        document.removeEventListener('mousedown', off, true);
+      }, true);
+    }, 0);
+  }
+
   function toast(msg) {
     var t = $('#toast');
     t.textContent = msg;
@@ -6615,9 +7097,25 @@ blockquote.pt-quote {
   }
 
   /* -------------------------------------------------------------------- boot */
+  /* Open the store, then the document last worked on (or the newest one, or
+     the pre-IndexedDB copy if it could not be moved, or a fresh one). */
   function boot() {
-    state.doc = load() || D.newDoc();
+    S.open().then(function () { return Promise.all([S.current(), S.list()]); }).then(function (r) {
+      var cur = r[0], docs = r[1];
+      var pick = docs.filter(function (d) { return d.id === cur; })[0] || docs[0];
+      if (pick) return S.load(pick.id).then(function (json) { return { id: pick.id, json: json }; });
+      var leg = S.legacy();
+      return leg ? { id: S.newId(), json: leg, fresh: true } : null;
+    }).catch(function () { return null; }).then(start);
+  }
+
+  function start(got) {
+    var d = null;
+    if (got && got.json) { try { d = normalizeDoc(JSON.parse(got.json)); } catch (e) { d = null; } }
+    state.docId = d ? got.id : S.newId();
+    state.doc = d || D.newDoc();
     state.lastSnap = serialize(state.doc);
+    S.setCurrent(state.docId);
 
     state.editor = new D.Editor($('#paper'), state.doc, {
       onChange: function (structural) {
@@ -6672,48 +7170,23 @@ blockquote.pt-quote {
     $('#help').addEventListener('click', function (e) { if (e.target === $('#help')) $('#help').classList.remove('on'); });
     $('#helpKeys').onclick = function () { $('#help').classList.remove('on'); K.open(); };
 
+    /* New and Open never replace the document on the page: every document
+       stays in the store, reachable from Open. */
     $('#btnNew').onclick = function () {
-      dialog({
-        title: 'Start a new document?',
-        body: 'This one will be replaced. Undo brings it back, and Save keeps a copy on disk.',
-        okLabel: 'New document'
-      }).then(function (yes) {
-        if (!yes) return;
-        pushUndo();
-        state.doc = D.newDoc();
-        state.lastSnap = serialize(state.doc);
-        state.editor.doc = state.doc;
-        applyPaperVars();
-        state.editor.render();
-        buildSettings();
-        refresh();
-        save();
-        toast('New document started.');
-      });
+      addDocument(D.newDoc(), 'New document started — the previous one is under Open.');
     };
-    $('#btnSave').onclick = function () {
-      download(docName() + '.papertex.json', serialize(state.doc), 'application/json')
-        .then(function (r) { if (r === 'saved' || r === 'anchor') toast('Project saved — reopen it with Open.'); });
-    };
-    function openProject() {
+    $('#btnSave').onclick = saveProject;
+    /* a project file becomes a document of its own */
+    function openText(text) {
+      var d;
+      try { d = normalizeDoc(JSON.parse(text)); } catch (e) { toast('That file is not a PaperTeX document.'); return; }
+      addDocument(d, 'Opened “' + D.stripTags(d.meta.title) + '”.');
+    }
+    function openFile() {
       if (NATIVE) {
-        NATIVE.open().then(function (r) {
-          if (r.status !== 'ok') return;
-          try {
-            var d = JSON.parse(r.text);
-            if (!d.blocks) throw new Error('not a document');
-            pushUndo();
-            restore(JSON.stringify(d));
-            save();
-            toast('Opened “' + D.stripTags(d.meta.title) + '”.');
-          } catch (e) { toast('That file is not a PaperTeX document.'); }
-        });
+        NATIVE.open().then(function (r) { if (r.status === 'ok') openText(r.text); });
         return;
       }
-      browserOpen();
-    }
-    $('#btnOpen').onclick = openProject;
-    function browserOpen() {
       var inp = h('input');
       inp.type = 'file';
       inp.accept = '.json,application/json';
@@ -6721,20 +7194,13 @@ blockquote.pt-quote {
         var f = inp.files[0];
         if (!f) return;
         var fr = new FileReader();
-        fr.onload = function () {
-          try {
-            var d = JSON.parse(fr.result);
-            if (!d.blocks) throw new Error('not a document');
-            pushUndo();
-            restore(JSON.stringify(d));
-            save();
-            toast('Opened “' + D.stripTags(d.meta.title) + '”.');
-          } catch (err) { toast('That file is not a PaperTeX document.'); }
-        };
+        fr.onload = function () { openText(fr.result); };
         fr.readAsText(f);
       };
       inp.click();
     }
+    function openProject() { docsMenu($('#btnOpen'), openFile); }
+    $('#btnOpen').onclick = openProject;
 
     $$('.rtab').forEach(function (t) {
       t.onclick = function () {
@@ -6778,12 +7244,22 @@ blockquote.pt-quote {
     }
 
     window.addEventListener('resize', pageGuides);
-    window.addEventListener('beforeunload', save);
+    /* Leaving: write what is waiting, and if the work cannot be stored at
+       all, let the browser ask before the tab goes. */
+    window.addEventListener('pagehide', flushSave);
+    document.addEventListener('visibilitychange', function () { if (document.hidden) flushSave(); });
+    window.addEventListener('beforeunload', function (e) {
+      flushSave();
+      if (state.saveState === 'failed' || state.saveState === 'volatile') { e.preventDefault(); e.returnValue = ''; }
+    });
 
-    if (!localStorage.getItem('papertex.seen')) {
-      localStorage.setItem('papertex.seen', '1');
-      setTimeout(function () { $('#help').classList.add('on'); }, 500);
-    }
+    if (!d) save(true);              /* a fresh document is in the list from the start */
+    else if (got.fresh) save(true);  /* the old single copy, written into the store */
+    else { setSaveState(S.kind() === 'memory' ? 'volatile' : 'saved'); setTimeout(checkBackup, 4000); }
+
+    var seen = true;
+    try { seen = !!localStorage.getItem('papertex.seen'); localStorage.setItem('papertex.seen', '1'); } catch (e) { seen = true; }
+    if (!seen) setTimeout(function () { $('#help').classList.add('on'); }, 500);
   }
 
   window.PT.app = { state: state, toast: toast, refresh: refresh, insertSymbol: insertSymbol };

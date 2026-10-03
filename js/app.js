@@ -13,22 +13,139 @@
   var $$ = function (s, r) { return [].slice.call((r || document).querySelectorAll(s)); };
   function h(t, c, x) { var e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; }
 
-  /* -------------------------------------------------------------- persistence */
-  var KEY = 'papertex.doc.v1';
+  /* -------------------------------------------------------------- persistence
+     Documents live in PT.store (IndexedDB), any number of them. A change is
+     written a moment after it is made; whether that worked is always shown,
+     and a write that fails is never swallowed. */
+  var S = PT.store;
   function serialize(doc) {
     return JSON.stringify(doc, function (k, v) { return k.slice(0, 2) === '__' ? undefined : v; });
   }
-  function save() {
-    try { localStorage.setItem(KEY, serialize(state.doc)); } catch (e) { /* quota: embedded figures are large */ }
+
+  var saveTimer = null;
+  function save(now) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+    if (!state.docId || state.staleTab) return;
+    setSaveState('saving');
+    function run() {
+      saveTimer = null;
+      var id = state.docId;
+      S.save(id, serialize(state.doc), state.doc).then(function () {
+        if (id !== state.docId) return;
+        setSaveState(S.kind() === 'memory' ? 'volatile' : 'saved');
+        announce(id);
+        if (!state.persistAsked) { state.persistAsked = true; S.persist(); }
+        checkBackup();
+      }, function (err) {
+        if (id === state.docId) setSaveState('failed', err);
+      });
+    }
+    if (now) run(); else saveTimer = setTimeout(run, 400);
   }
-  function load() {
-    try {
-      var s = localStorage.getItem(KEY);
-      if (!s) return null;
-      var d = JSON.parse(s);
-      if (!d.blocks || !d.blocks.length) return null;
-      return d;
-    } catch (e) { return null; }
+  function flushSave() { if (saveTimer) save(true); }
+
+  /* A document read from a file is somebody else's data: give it every
+     field the editor relies on, and drop anything that is not a block. */
+  function normalizeDoc(d) {
+    if (!d || typeof d !== 'object' || !Array.isArray(d.blocks)) throw new Error('not a document');
+    var base = D.newDoc();
+    d.meta = Object.assign({}, base.meta, d.meta && typeof d.meta === 'object' ? d.meta : {});
+    d.settings = Object.assign({}, base.settings, d.settings && typeof d.settings === 'object' ? d.settings : {});
+    d.bib = Array.isArray(d.bib) ? d.bib.filter(function (e) { return e && typeof e === 'object'; }) : [];
+    d.blocks = d.blocks.filter(function (b) { return b && typeof b === 'object' && typeof b.t === 'string'; });
+    if (!d.blocks.length) d.blocks = base.blocks;
+    return d;
+  }
+
+  /* --- what the user is told about saving --- */
+  function setSaveState(s, err) {
+    state.saveState = s;
+    var el = $('#saveState');
+    if (el) {
+      el.className = 'savestate ' + s;
+      el.textContent = { saving: 'Saving…', saved: 'Saved', failed: 'Not saved', volatile: 'Not stored' }[s] || '';
+      el.title = {
+        saving: 'Writing your changes to this ' + (NATIVE ? 'computer' : 'browser'),
+        saved: 'Every change is kept in this ' + (NATIVE ? 'app' : 'browser') + ' — open it again any time from Open',
+        failed: 'The last change could not be stored: ' + (err && err.message || 'storage refused'),
+        volatile: 'This page cannot store anything here; your work lasts only as long as the tab'
+      }[s] || '';
+    }
+    if (s === 'failed') showBar('failed', 'Not saved. This ' + (NATIVE ? 'app' : 'browser') + ' refused to store your latest changes' +
+      ' — its storage may be full or switched off. Save project to keep a copy on disk now.');
+    else if (s === 'volatile') showBar('volatile', 'This page cannot store anything, so your work disappears when the tab closes.' +
+      ' Use Save project to keep it.');
+    else if (s === 'saved' && (state.bar === 'failed' || state.bar === 'volatile')) hideBar();
+  }
+  function showBar(kind, text, later) {
+    var bar = $('#savebar');
+    if (!bar) return;
+    state.bar = kind;
+    bar.className = 'savebar on ' + kind;
+    bar.textContent = '';
+    bar.appendChild(h('span', 'savebar-t', text));
+    var act = h('button', 'savebar-b primary', kind === 'stale' ? 'Reload' : 'Save project');
+    act.onclick = function () { if (kind === 'stale') location.reload(); else saveProject(); };
+    bar.appendChild(act);
+    if (later) {
+      var no = h('button', 'savebar-b', 'Later');
+      no.onclick = function () { later(); hideBar(); };
+      bar.appendChild(no);
+    }
+  }
+  function hideBar() { var bar = $('#savebar'); if (bar) bar.className = 'savebar'; state.bar = null; }
+
+  /* A document that exists only in browser storage is one cleared cache
+     away from gone. Once it has real content and has not been written to a
+     file for a week, say so — once a session, and not again for three days
+     after "Later". */
+  function checkBackup() {
+    if (state.backupNudged || state.bar || !state.docId) return;
+    var id = state.docId;
+    if (serialize(state.doc).length < serialize(D.newDoc()).length + 400) return;   /* still the starter text */
+    Promise.all([S.list(), S.getMeta('snooze.' + id)]).then(function (r) {
+      var rec = r[0].filter(function (x) { return x.id === id; })[0], snooze = r[1] || 0;
+      if (!rec || id !== state.docId || state.bar || state.backupNudged) return;
+      var week = 7 * 864e5;
+      if (Date.now() < snooze) return;
+      if (rec.backedUp && (Date.now() - rec.backedUp < week || rec.updated <= rec.backedUp)) return;
+      state.backupNudged = true;
+      showBar('backup', '“' + rec.title + '” is kept only in this ' + (NATIVE ? 'app' : 'browser') +
+        (rec.backedUp ? ', and has changed since you last saved a copy.' : '.') +
+        ' Save project keeps a copy on disk that clearing ' + (NATIVE ? 'app data' : 'the browser') + ' cannot touch.',
+        function () { S.setMeta('snooze.' + id, Date.now() + 3 * 864e5); });
+    });
+  }
+
+  /* Two tabs on one document would overwrite each other's work. The tab
+     that saves tells the others; one still showing the older copy stops
+     saving and offers to reload. */
+  var channel = null;
+  try { channel = new BroadcastChannel('papertex'); } catch (e) { channel = null; }
+  var TAB = Math.random().toString(36).slice(2);
+  function announce(id) { if (channel) channel.postMessage({ saved: id, tab: TAB }); }
+  if (channel) channel.onmessage = function (e) {
+    var m = e.data || {};
+    if (m.tab === TAB || m.saved !== state.docId || state.staleTab) return;
+    state.staleTab = true;
+    clearTimeout(saveTimer);
+    showBar('stale', 'This document was changed in another tab. To keep both from overwriting each other,' +
+      ' this tab has stopped saving — reload it to continue with the latest version.');
+  };
+
+  function saveProject() {
+    flushSave();
+    var id = state.docId;
+    return download(docName() + '.papertex.json', serialize(state.doc), 'application/json')
+      .then(function (r) {
+        if (r === 'saved' || r === 'anchor') {
+          toast('Project saved — reopen it with Open.');
+          S.markBackedUp(id);
+          if (state.bar === 'backup') hideBar();
+        }
+        return r;
+      });
   }
 
   /* -------------------------------------------------------------------- undo */
@@ -954,6 +1071,112 @@
     if (NATIVE && NATIVE.setShortcuts) NATIVE.setShortcuts(K.menuKeys());
   }
 
+  /* ------------------------------------------------------------- documents */
+  /* Make `d` the document on the page, under store id `id`. Undo history
+     belongs to a document, so it starts afresh. */
+  function showDoc(id, d) {
+    flushSave();
+    state.docId = id;
+    state.staleTab = false;
+    state.backupNudged = false;
+    if (state.bar) hideBar();
+    state.undo = []; state.redo = [];
+    S.setCurrent(id);
+    restore(serialize(d));
+    setSaveState('saved');
+  }
+  function switchTo(id) {
+    if (id === state.docId) return;
+    flushSave();
+    S.load(id).then(function (json) {
+      var d;
+      try { d = normalizeDoc(JSON.parse(json)); } catch (e) { toast('That document could not be read.'); return; }
+      showDoc(id, d);
+      checkBackup();
+    }, function () { toast('That document could not be read.'); });
+  }
+  /* a brand-new entry in the store, shown at once and written at once */
+  function addDocument(d, message) {
+    showDoc(S.newId(), d);
+    save(true);
+    if (message) toast(message);
+  }
+  function deleteDoc(rec) {
+    dialog({
+      title: 'Delete “' + rec.title + '”?',
+      body: 'It is removed from this ' + (NATIVE ? 'app' : 'browser') + ' for good. A project file you saved to disk is not affected.',
+      okLabel: 'Delete'
+    }).then(function (yes) {
+      if (!yes) return;
+      S.remove(rec.id).then(function () {
+        toast('Deleted “' + rec.title + '”.');
+        if (rec.id !== state.docId) return;
+        S.list().then(function (docs) {
+          if (docs.length) switchTo(docs[0].id);
+          else addDocument(D.newDoc());
+        });
+      });
+    });
+  }
+  function relTime(t) {
+    var s = Math.round((Date.now() - t) / 1000);
+    if (s < 60) return 'just now';
+    if (s < 3600) return Math.round(s / 60) + ' min ago';
+    if (s < 86400) return Math.round(s / 3600) + ' h ago';
+    if (s < 7 * 86400) return Math.round(s / 86400) + ' d ago';
+    return new Date(t).toLocaleDateString();
+  }
+  function sizeText(n) { return n < 1e6 ? Math.max(1, Math.round(n / 1024)) + ' kB' : (n / 1048576).toFixed(1) + ' MB'; }
+
+  /* Open: the documents kept here, newest first, and files from disk. */
+  function docsMenu(anchor, openFile) {
+    D.closeAllPop();
+    var m = h('div', 'popmenu docmenu');
+    m.appendChild(h('div', 'popg', 'Documents in this ' + (NATIVE ? 'app' : 'browser')));
+    var listBox = h('div', 'doclist');
+    m.appendChild(listBox);
+    S.list().then(function (docs) {
+      if (!docs.length) listBox.appendChild(h('div', 'popnone', 'None yet.'));
+      docs.forEach(function (d) {
+        var row = h('div', 'docrow' + (d.id === state.docId ? ' on' : ''));
+        var b = h('button', 'popitem docopen');
+        b.appendChild(h('span', 'doct', d.title));
+        b.appendChild(h('span', 'docm', (d.id === state.docId ? 'open now · ' : '') + relTime(d.updated) + ' · ' +
+          sizeText(d.size) + (d.backedUp ? ' · copy saved ' + relTime(d.backedUp) : ' · no copy on disk')));
+        b.onclick = function () { D.closeAllPop(); switchTo(d.id); };
+        var x = h('button', 'docdel', '×');
+        x.title = 'Delete from this ' + (NATIVE ? 'app' : 'browser');
+        x.onclick = function (e) { e.stopPropagation(); D.closeAllPop(); deleteDoc(d); };
+        row.appendChild(b);
+        row.appendChild(x);
+        listBox.appendChild(row);
+      });
+    });
+    var f = h('button', 'popitem docfile', 'Open a project file…');
+    f.onclick = function () { D.closeAllPop(); openFile(); };
+    m.appendChild(f);
+    var foot = h('div', 'docfoot');
+    m.appendChild(foot);
+    var where = { idb: '', local: ' Stored in the small fallback storage — keep a copy on disk.',
+      memory: ' Nothing can be stored here — use Save project.' }[S.kind()];
+    S.estimate().then(function (e) {
+      foot.textContent = (e ? sizeText(e.usage) + ' used. ' + (e.persisted
+        ? 'Protected from automatic clearing.'
+        : 'The ' + (NATIVE ? 'app' : 'browser') + ' may clear this when space runs low — keep copies of what matters.') : '') + where;
+    });
+    document.body.appendChild(m);
+    var r = anchor.getBoundingClientRect();
+    m.style.left = Math.max(8, Math.min(window.innerWidth - m.offsetWidth - 10, r.left + window.scrollX)) + 'px';
+    m.style.top = (r.bottom + window.scrollY + 6) + 'px';
+    setTimeout(function () {
+      document.addEventListener('mousedown', function off(ev) {
+        if (m.contains(ev.target)) return;
+        D.closeAllPop();
+        document.removeEventListener('mousedown', off, true);
+      }, true);
+    }, 0);
+  }
+
   function toast(msg) {
     var t = $('#toast');
     t.textContent = msg;
@@ -963,9 +1186,25 @@
   }
 
   /* -------------------------------------------------------------------- boot */
+  /* Open the store, then the document last worked on (or the newest one, or
+     the pre-IndexedDB copy if it could not be moved, or a fresh one). */
   function boot() {
-    state.doc = load() || D.newDoc();
+    S.open().then(function () { return Promise.all([S.current(), S.list()]); }).then(function (r) {
+      var cur = r[0], docs = r[1];
+      var pick = docs.filter(function (d) { return d.id === cur; })[0] || docs[0];
+      if (pick) return S.load(pick.id).then(function (json) { return { id: pick.id, json: json }; });
+      var leg = S.legacy();
+      return leg ? { id: S.newId(), json: leg, fresh: true } : null;
+    }).catch(function () { return null; }).then(start);
+  }
+
+  function start(got) {
+    var d = null;
+    if (got && got.json) { try { d = normalizeDoc(JSON.parse(got.json)); } catch (e) { d = null; } }
+    state.docId = d ? got.id : S.newId();
+    state.doc = d || D.newDoc();
     state.lastSnap = serialize(state.doc);
+    S.setCurrent(state.docId);
 
     state.editor = new D.Editor($('#paper'), state.doc, {
       onChange: function (structural) {
@@ -1020,48 +1259,23 @@
     $('#help').addEventListener('click', function (e) { if (e.target === $('#help')) $('#help').classList.remove('on'); });
     $('#helpKeys').onclick = function () { $('#help').classList.remove('on'); K.open(); };
 
+    /* New and Open never replace the document on the page: every document
+       stays in the store, reachable from Open. */
     $('#btnNew').onclick = function () {
-      dialog({
-        title: 'Start a new document?',
-        body: 'This one will be replaced. Undo brings it back, and Save keeps a copy on disk.',
-        okLabel: 'New document'
-      }).then(function (yes) {
-        if (!yes) return;
-        pushUndo();
-        state.doc = D.newDoc();
-        state.lastSnap = serialize(state.doc);
-        state.editor.doc = state.doc;
-        applyPaperVars();
-        state.editor.render();
-        buildSettings();
-        refresh();
-        save();
-        toast('New document started.');
-      });
+      addDocument(D.newDoc(), 'New document started — the previous one is under Open.');
     };
-    $('#btnSave').onclick = function () {
-      download(docName() + '.papertex.json', serialize(state.doc), 'application/json')
-        .then(function (r) { if (r === 'saved' || r === 'anchor') toast('Project saved — reopen it with Open.'); });
-    };
-    function openProject() {
+    $('#btnSave').onclick = saveProject;
+    /* a project file becomes a document of its own */
+    function openText(text) {
+      var d;
+      try { d = normalizeDoc(JSON.parse(text)); } catch (e) { toast('That file is not a PaperTeX document.'); return; }
+      addDocument(d, 'Opened “' + D.stripTags(d.meta.title) + '”.');
+    }
+    function openFile() {
       if (NATIVE) {
-        NATIVE.open().then(function (r) {
-          if (r.status !== 'ok') return;
-          try {
-            var d = JSON.parse(r.text);
-            if (!d.blocks) throw new Error('not a document');
-            pushUndo();
-            restore(JSON.stringify(d));
-            save();
-            toast('Opened “' + D.stripTags(d.meta.title) + '”.');
-          } catch (e) { toast('That file is not a PaperTeX document.'); }
-        });
+        NATIVE.open().then(function (r) { if (r.status === 'ok') openText(r.text); });
         return;
       }
-      browserOpen();
-    }
-    $('#btnOpen').onclick = openProject;
-    function browserOpen() {
       var inp = h('input');
       inp.type = 'file';
       inp.accept = '.json,application/json';
@@ -1069,20 +1283,13 @@
         var f = inp.files[0];
         if (!f) return;
         var fr = new FileReader();
-        fr.onload = function () {
-          try {
-            var d = JSON.parse(fr.result);
-            if (!d.blocks) throw new Error('not a document');
-            pushUndo();
-            restore(JSON.stringify(d));
-            save();
-            toast('Opened “' + D.stripTags(d.meta.title) + '”.');
-          } catch (err) { toast('That file is not a PaperTeX document.'); }
-        };
+        fr.onload = function () { openText(fr.result); };
         fr.readAsText(f);
       };
       inp.click();
     }
+    function openProject() { docsMenu($('#btnOpen'), openFile); }
+    $('#btnOpen').onclick = openProject;
 
     $$('.rtab').forEach(function (t) {
       t.onclick = function () {
@@ -1126,12 +1333,22 @@
     }
 
     window.addEventListener('resize', pageGuides);
-    window.addEventListener('beforeunload', save);
+    /* Leaving: write what is waiting, and if the work cannot be stored at
+       all, let the browser ask before the tab goes. */
+    window.addEventListener('pagehide', flushSave);
+    document.addEventListener('visibilitychange', function () { if (document.hidden) flushSave(); });
+    window.addEventListener('beforeunload', function (e) {
+      flushSave();
+      if (state.saveState === 'failed' || state.saveState === 'volatile') { e.preventDefault(); e.returnValue = ''; }
+    });
 
-    if (!localStorage.getItem('papertex.seen')) {
-      localStorage.setItem('papertex.seen', '1');
-      setTimeout(function () { $('#help').classList.add('on'); }, 500);
-    }
+    if (!d) save(true);              /* a fresh document is in the list from the start */
+    else if (got.fresh) save(true);  /* the old single copy, written into the store */
+    else { setSaveState(S.kind() === 'memory' ? 'volatile' : 'saved'); setTimeout(checkBackup, 4000); }
+
+    var seen = true;
+    try { seen = !!localStorage.getItem('papertex.seen'); localStorage.setItem('papertex.seen', '1'); } catch (e) { seen = true; }
+    if (!seen) setTimeout(function () { $('#help').classList.add('on'); }, 500);
   }
 
   window.PT.app = { state: state, toast: toast, refresh: refresh, insertSymbol: insertSymbol };
