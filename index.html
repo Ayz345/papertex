@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- The home page. Scripts only from this site (GSAP is self-hosted in
+     js/vendor), no inline scripts; inline style attributes are allowed
+     because the animations write transforms through element styles.
+     Fonts are the editor's own Computer Modern faces (css/fonts.css, data:). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>PaperTeX — write on the page, get the LaTeX</title>
+<meta name="description" content="A free LaTeX editor in your browser: write on a page that looks like the PDF, and get clean, compilable LaTeX. No account, nothing uploaded.">
+<meta property="og:title" content="PaperTeX — write on the page, get the LaTeX">
+<meta property="og:description" content="A free LaTeX editor in your browser: write on a page that looks like the PDF, and get clean, compilable LaTeX. No account, nothing uploaded.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#e4e2de">
+<link rel="icon" href="desktop/papertex.png">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/landing.css">
+<script src="js/landing-boot.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="progress" aria-hidden="true"><span class="progress__bar"></span></div>
+
+<!-- ================================================================ nav -->
+<header class="nav" id="top">
+  <div class="nav__in">
+    <a class="brand" href="./" aria-label="PaperTeX home">
+      <img src="desktop/papertex.png" alt="" width="32" height="32">
+      <span>PaperTeX</span>
+    </a>
+    <nav class="nav__links" aria-label="Main">
+      <a href="#try">Try it</a>
+      <a href="#plot">Charts</a>
+      <a href="#how">How it works</a>
+      <a href="#templates">Templates</a>
+      <a href="#desktop">Desktop app</a>
+      <a href="about.html">About</a>
+      <span class="nav__ind" aria-hidden="true"></span>
+    </nav>
+    <a class="btn btn--solid btn--sm" href="app.html" data-magnetic>
+      <span>Open the editor</span>
+      <svg class="btn__arrow" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+    </a>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- =============================================================== hero -->
+<section class="hero">
+  <div class="wrap hero__grid">
+    <div class="hero__copy">
+      <p class="pill" data-hero><span>Free</span><i aria-hidden="true">·</i><span>Runs in your browser</span><i aria-hidden="true">·</i><span>Nothing uploaded</span></p>
+      <h1 class="hero__title" data-split>You write on the page. <em>It writes the LaTeX.</em></h1>
+      <p class="hero__lead" data-hero>A LaTeX editor with no LaTeX in it. Headings, equations, charts, tables and citations are edited on a page that looks like the finished PDF — and clean, compilable <code>.tex</code> is written for you as you go.</p>
+      <div class="hero__cta" data-hero>
+        <a class="btn btn--solid btn--lg" href="app.html" data-magnetic>
+          <span>Start writing — it’s free</span>
+          <svg class="btn__arrow" width="17" height="17" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+        </a>
+        <a class="btn btn--ghost btn--lg" href="#try"><span>Try a formula first</span></a>
+      </div>
+      <p class="hero__note" data-hero>No account, no sign-up. Your documents stay on your computer.</p>
+    </div>
+
+    <div class="hero__demo" id="heroDemo">
+      <div class="tilt" id="heroTilt">
+        <article class="sheet hero__sheet" data-hero-sheet>
+          <header class="doc__head">
+            <div class="doc__title">On the Gaussian Integral</div>
+            <div class="doc__author">A. Student</div>
+            <div class="doc__date">October 2026</div>
+          </header>
+          <div class="doc__h"><span>1</span> Introduction</div>
+          <p class="doc__p">The integral of a Gaussian over the whole real line has a closed form, which we state in equation (1) and prove in Section 2.</p>
+
+          <div class="eqbox" id="eqbox">
+            <div class="eqbox__tag">
+              <span class="eqbox__state" id="eqState">Editing</span>
+              <kbd class="eqbox__keys" id="eqKeys"></kbd>
+            </div>
+            <div class="eq" aria-hidden="true">
+              <span class="eq__int" id="eqInt">
+                <span class="eq__lim"><span class="slot" id="slotUp"></span><span class="lim" id="limUp">∞</span></span>
+                <span class="eq__sign">∫</span>
+                <span class="eq__lim"><span class="slot" id="slotLo"></span><span class="lim" id="limLo">−∞</span></span>
+              </span>
+              <span class="eq__body" id="eqBody"><i class="mi">e</i><span class="eq__sup"><span>−</span><i class="mi">x</i><span class="eq__sup2">2</span></span></span>
+              <span class="eq__rest" id="eqRest">
+                <span class="eq__dx"><i class="mi">dx</i></span>
+                <span class="eq__rel">=</span>
+                <span class="eq__sqrt"><span>√</span><span class="eq__rad" id="eqRad"><i class="mi">π</i></span></span>
+              </span>
+              <span class="caret" id="eqCaret"></span>
+              <span class="eq__num">(1)</span>
+            </div>
+            <p class="sr-only">Equation 1: the integral of e to the minus x squared, from minus infinity to infinity, equals the square root of pi.</p>
+          </div>
+
+          <p class="doc__p">Squaring both sides turns the problem into a double integral over the plane, which polar coordinates make elementary.</p>
+        </article>
+
+        <div class="code hero__code" data-hero-code>
+          <div class="code__bar">
+            <span class="code__file">main.tex</span>
+            <span class="code__live"><i></i>written as you type</span>
+          </div>
+          <pre class="code__body" role="region" tabindex="0" aria-label="LaTeX source of the sample page"><span class="k">\section</span>{Introduction}
+The integral of a Gaussian over the whole
+real line has a closed form, which we state
+in equation~<span class="k">\eqref</span>{eq:gauss} and prove in ...
+<span class="k">\begin</span>{equation}
+<span class="code__hl">  <span id="tx0"></span><span id="tx1"></span><span id="tx2"></span><span id="tx3"></span><span id="tx4"></span><span id="tx5"></span><span id="tx6"></span><span class="caret caret--code"></span></span>
+  <span class="k">\label</span>{eq:gauss}
+<span class="k">\end</span>{equation}</pre>
+        </div>
+      </div>
+
+      <div class="hero__controls">
+        <button class="btn btn--quiet btn--sm" type="button" id="heroPlay">
+          <svg class="i-pause" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="2" width="3.5" height="12" rx="1"/><rect x="9.5" y="2" width="3.5" height="12" rx="1"/></svg>
+          <svg class="i-play" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z"/></svg>
+          <span id="heroPlayLabel">Pause</span>
+        </button>
+        <button class="btn btn--quiet btn--sm" type="button" id="heroReplay">
+          <svg class="i-replay" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 8a5.5 5.5 0 1 0 1.6-3.9"/><path d="M2.5 2.5v3h3"/></svg>
+          <span>Replay</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================== recent documents (if any) -->
+<section class="recent" id="recent" aria-labelledby="recentTitle" hidden>
+  <div class="wrap">
+    <div class="recent__head">
+      <h2 id="recentTitle">Continue where you left off</h2>
+      <span>Saved in this browser — only you can see these</span>
+    </div>
+    <div class="recent__list" id="recentList"></div>
+  </div>
+</section>
+
+<!-- ============================================================ try it -->
+<section class="band try" id="try">
+  <div class="wrap try__grid">
+    <div class="try__copy">
+      <p class="eyebrow" data-reveal>Try it here</p>
+      <h2 class="h2" data-split>Type the name of what you want.</h2>
+      <p class="lead" data-reveal>No backslashes, no braces. <code>alpha</code> becomes α, <code>x1</code> becomes x₁, <code>-&gt;</code> becomes →, and the LaTeX writes itself underneath.</p>
+      <p class="small" data-reveal>This box is a small sample. In the editor, <code>int</code>, <code>frac</code> and <code>matrix</code> build real structures you fill in with ↵ and Tab.</p>
+    </div>
+
+    <div class="try__box" data-reveal>
+      <label class="try__label" for="tryInput">Your formula</label>
+      <div class="try__field">
+        <input id="tryInput" type="text" value="alpha^2 + x1 -> inf" maxlength="80" spellcheck="false" autocomplete="off" autocapitalize="off">
+        <button class="iconbtn" type="button" id="tryClear" aria-label="Clear the formula">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>
+        </button>
+      </div>
+      <div class="try__out" id="tryOut" aria-hidden="true"></div>
+      <div class="try__tex">
+        <span class="try__texlabel">LaTeX</span>
+        <code id="tryTex"></code>
+        <button class="btn btn--tiny" type="button" id="tryCopy"><span>Copy</span></button>
+        <span class="sr-only" role="status" id="tryStatus"></span>
+      </div>
+      <div class="chips">
+        <span class="chips__label">Examples</span>
+        <button class="chip" type="button" data-ex="alpha^2 + beta^2 = 1">alpha^2 + beta^2 = 1</button>
+        <button class="chip" type="button" data-ex="x1 + x2 -> inf">x1 + x2 -&gt; inf</button>
+        <button class="chip" type="button" data-ex="sum a_n &lt;= 1">sum a_n &lt;= 1</button>
+        <button class="chip" type="button" data-ex="e^(-x^2/2)">e^(-x^2/2)</button>
+        <button class="chip" type="button" data-ex="sin theta != 0">sin theta != 0</button>
+        <button class="chip" type="button" data-ex="sqrt(2) +- 0.1">sqrt(2) +- 0.1</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== function plot, typed as you scroll -->
+<section class="plot" id="plot">
+  <div class="wrap plot__head">
+    <p class="eyebrow" data-reveal>Charts</p>
+    <h2 class="h2" data-split>Type a function. Watch it draw.</h2>
+    <p class="lead" data-reveal>A <b>Function plot</b> takes what you’d write on paper and draws it on the page — then exports real pgfplots, so the PDF matches. Keep scrolling to type.</p>
+  </div>
+
+  <div class="plot__stage" id="plotStage">
+    <div class="wrap plot__grid">
+      <div class="plot__side">
+        <div class="fp">
+          <div class="fp__head"><span class="fp__badge">Function plot</span><span class="fp__hint">as you’d write it</span></div>
+          <div class="fp__row is-active" id="fpRow1">
+            <span class="fp__y">y =</span>
+            <span class="fp__in"><span id="fpText1"></span><span class="caret"></span></span>
+          </div>
+          <div class="fp__row" id="fpRow2">
+            <span class="fp__y">y =</span>
+            <span class="fp__in"><span id="fpText2"></span><span class="caret"></span></span>
+            <span class="fp__tag">dashed</span>
+          </div>
+          <div class="fp__math" id="fpMath" aria-hidden="true"></div>
+        </div>
+
+        <ol class="steps" id="plotSteps">
+          <li class="is-on"><span class="steps__dot"></span>A wave</li>
+          <li><span class="steps__dot"></span>Damp it</li>
+          <li><span class="steps__dot"></span>Add the envelope</li>
+        </ol>
+
+        <pre class="code code__body plot__tex" id="plotTex" role="region" tabindex="0" aria-label="pgfplots LaTeX for Figure 2"></pre>
+      </div>
+
+      <figure class="sheet plot__paper">
+        <svg class="plot__svg" viewBox="0 0 520 320" role="img" aria-labelledby="plotCap">
+          <defs>
+            <clipPath id="clipCurve"><rect id="clipCurveRect" x="0" y="0" width="0" height="320"/></clipPath>
+            <clipPath id="clipEnv"><rect id="clipEnvRect" x="0" y="0" width="0" height="320"/></clipPath>
+          </defs>
+          <g class="plot__grid-lines" id="plotGridLines"></g>
+          <g class="plot__axes">
+            <path d="M50 160H500"/>
+            <path d="M50 30V290"/>
+          </g>
+          <g class="plot__ticks" id="plotTicks"></g>
+          <g clip-path="url(#clipEnv)">
+            <path class="plot__env" id="fpEnv" d=""/>
+            <path class="plot__env" id="fpEnvNeg" d=""/>
+          </g>
+          <g clip-path="url(#clipCurve)">
+            <path class="plot__curve" id="fpCurve" d=""/>
+          </g>
+          <circle class="plot__pen" id="fpPen" r="5" cx="50" cy="160"/>
+        </svg>
+        <figcaption id="plotCap">Figure 2: <span id="plotCapText">y = sin 2x on 0 ≤ x ≤ 12.</span></figcaption>
+      </figure>
+    </div>
+  </div>
+</section>
+
+<!-- ===================================== chart from a table, live model -->
+<section class="data" id="data">
+  <div class="wrap data__grid">
+    <div class="data__copy">
+      <p class="eyebrow" data-reveal>Tables &amp; data</p>
+      <h2 class="h2" data-split>Paste the data. Fit the model.</h2>
+      <p class="lead" data-reveal>Paste cells from Excel or Sheets, import a CSV, then make a line, scatter or bar chart from the table — with a fitted curve on top. Switch the type or tune the model and the LaTeX follows.</p>
+      <ul class="ticks" data-reveal>
+        <li>Spreadsheet paste and CSV import</li>
+        <li>One click from a table to a chart</li>
+        <li><b>A full-window editor for every chart and table</b> — series colours, error bars, fits, axes and legend; sorting, totals and table styles. Every change shows on the page and in the LaTeX at once.</li>
+      </ul>
+    </div>
+
+    <div class="data__demo" data-reveal>
+      <div class="data__controls">
+        <div class="seg" role="group" aria-label="Chart type" id="chartSeg">
+          <span class="seg__thumb" aria-hidden="true"></span>
+          <button type="button" data-mode="fit" aria-pressed="true">Scatter + fit</button>
+          <button type="button" data-mode="line" aria-pressed="false">Line</button>
+          <button type="button" data-mode="bar" aria-pressed="false">Bar</button>
+        </div>
+        <div class="range" id="kWrap">
+          <label for="kRange">Time constant</label>
+          <input id="kRange" type="range" min="4" max="14" step="0.5" value="11">
+          <output id="kOut" for="kRange">11 min</output>
+        </div>
+      </div>
+
+      <div class="sheet data__sheet">
+        <div class="data__table">
+          <div class="data__cap">Table 1: Cooling of water.</div>
+          <table>
+            <thead><tr><th><i>t</i> (min)</th><th><i>T</i> (°C)</th></tr></thead>
+            <tbody id="dataRows">
+              <tr><td>0</td><td>80</td></tr>
+              <tr><td>2</td><td>67</td></tr>
+              <tr><td>4</td><td>57</td></tr>
+              <tr><td>6</td><td>48</td></tr>
+              <tr><td>8</td><td>43</td></tr>
+              <tr><td>10</td><td>37</td></tr>
+            </tbody>
+          </table>
+          <div class="rms" id="rmsBox">
+            <span>Fit error (RMS)</span>
+            <b id="rmsVal">—</b>
+            <em id="rmsNote">Drag the slider to fit</em>
+          </div>
+        </div>
+        <figure class="data__fig">
+          <svg class="data__svg" viewBox="0 0 360 230" role="img" aria-labelledby="dataCap">
+            <defs><clipPath id="clipFit"><rect id="clipFitRect" x="50" y="0" width="0" height="230"/></clipPath></defs>
+            <g class="plot__axes"><path d="M44 20V190H344"/></g>
+            <g class="plot__ticks" id="dataTicks"></g>
+            <g id="dataBars"></g>
+            <polyline class="data__line" id="dataLine" points=""/>
+            <g clip-path="url(#clipFit)"><polyline class="data__fit" id="dataFit" points=""/></g>
+            <g id="dataPts"></g>
+            <g class="data__legend" id="dataLegend">
+              <circle cx="232" cy="38" r="3"/><text x="242" y="42">measured</text>
+              <path d="M224 58h16"/><text x="246" y="62" class="it">20 + 60e<tspan dy="-5" font-size="8.5" id="legendK">−t/11</tspan></text>
+            </g>
+          </svg>
+          <figcaption id="dataCap">Figure 1: <span id="dataCapText">Measured temperature and the fitted model.</span></figcaption>
+        </figure>
+      </div>
+
+      <pre class="code code__body data__tex" id="dataTex" role="region" tabindex="0" aria-label="pgfplots LaTeX for Figure 1"></pre>
+    </div>
+  </div>
+</section>
+
+<!-- ======================================================= how it works -->
+<section class="how" id="how">
+  <div class="wrap">
+    <p class="eyebrow" data-reveal>How it works</p>
+    <h2 class="h2" data-split>The document is the truth. LaTeX is the output.</h2>
+    <ol class="how__steps" id="howSteps">
+      <li class="how__line" aria-hidden="true"><span id="howLine"></span></li>
+      <li class="how__step">
+        <span class="how__num">1</span>
+        <h3>Write on the page</h3>
+        <p>Headings, equations, figures, tables and citations are edited directly on a sheet set in Computer Modern — exactly what the PDF will look like. There is no source pane to type into.</p>
+      </li>
+      <li class="how__step">
+        <span class="how__num">2</span>
+        <h3>The LaTeX writes itself</h3>
+        <p>A clean <code>.tex</code> file is generated from what you do — labels, environments and references, the way you would write them by hand.</p>
+      </li>
+      <li class="how__step">
+        <span class="how__num">3</span>
+        <h3>Compile, or take it anywhere</h3>
+        <p>Typeset with real TeX Live, running in your browser. Or hand the source to Overleaf, a journal, or your own TeX installation.</p>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- ========================================================= templates -->
+<section class="templates" id="templates">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <p class="eyebrow" data-reveal>Templates</p>
+        <h2 class="h2" data-split>Start from something that already works.</h2>
+      </div>
+      <a class="link-arrow" href="app.html#new=blank" data-reveal><span>Or start with a blank page</span><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+    </div>
+    <div class="tpl-grid" id="tplGrid">
+      <!-- filled from PT.home.templates(); these links are the no-script fallback -->
+      <a class="tpl" href="app.html#new=article"><span class="tpl__name">Article</span></a>
+      <a class="tpl" href="app.html#new=homework"><span class="tpl__name">Homework</span></a>
+      <a class="tpl" href="app.html#new=lab"><span class="tpl__name">Lab report</span></a>
+      <a class="tpl" href="app.html#new=data"><span class="tpl__name">Data report</span></a>
+      <a class="tpl" href="app.html#new=notes"><span class="tpl__name">Lecture notes</span></a>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================== privacy -->
+<section class="privacy" id="privacy">
+  <div class="privacy__glow" aria-hidden="true"></div>
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="h2" data-split>Your documents never leave your computer.</h2>
+      <a class="link-arrow link-arrow--light" href="about.html#privacy" data-reveal><span>Read the privacy details</span><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+    </div>
+    <div class="privacy__grid">
+      <div class="privacy__item" data-reveal>
+        <svg class="draw" width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6l7-3z"/><path pathLength="1" d="M9 12l2 2 4-4"/></svg>
+        <h3>Nothing is uploaded</h3>
+        <p>Editing, exporting and compiling all happen in your browser. When you compile, the engine is downloaded to you — your document isn’t sent anywhere.</p>
+      </div>
+      <div class="privacy__item" data-reveal>
+        <svg class="draw" width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><circle pathLength="1" cx="12" cy="8" r="4"/><path pathLength="1" d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/><path pathLength="1" d="M3 3l18 18"/></svg>
+        <h3>No account, no cookies, no tracking</h3>
+        <p>PaperTeX doesn’t know who you are. Open the page and start writing.</p>
+      </div>
+      <div class="privacy__item" data-reveal>
+        <svg class="draw" width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M5 3h11l3 3v15H5z"/><path pathLength="1" d="M8 3v6h8V3"/><path pathLength="1" d="M8 21v-7h8v7"/></svg>
+        <h3>Keep a copy that lasts</h3>
+        <p>Work lives in your browser’s storage, which clean-ups can erase. <em>Save project</em> writes a file to your disk that nothing can touch.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================== desktop -->
+<section class="desktop" id="desktop">
+  <div class="wrap desktop__grid">
+    <div class="desktop__copy">
+      <p class="eyebrow" data-reveal>Desktop app</p>
+      <h2 class="h2" data-split>Prefer an app? Same editor, no browser.</h2>
+      <ul class="ticks" data-reveal>
+        <li><b>Compiles fully offline</b> — TeX Live ships inside the installer.</li>
+        <li><b>Export writes a folder</b> — the <code>.tex</code> and every figure side by side.</li>
+        <li><b>Real Save dialogs</b> and a native menu.</li>
+      </ul>
+    </div>
+    <div class="desktop__card" data-reveal>
+      <div class="os" id="osList">
+        <div class="os__item" data-os="windows"><span class="os__name">Windows</span><span class="os__fmt">Installer</span></div>
+        <div class="os__item" data-os="mac"><span class="os__name">macOS</span><span class="os__fmt">.dmg</span></div>
+        <div class="os__item" data-os="linux"><span class="os__name">Linux</span><span class="os__fmt">AppImage</span></div>
+      </div>
+      <p class="desktop__soon"><span class="dot"></span>Installers are on the way. Until then, PaperTeX works fully in the browser.</p>
+      <a class="btn btn--solid btn--lg desktop__cta" href="app.html" data-magnetic><span>Open it in the browser</span><svg class="btn__arrow" width="17" height="17" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ============================================================ footer -->
+<footer class="foot">
+  <div class="wrap foot__grid">
+    <div class="foot__brand">
+      <a class="brand" href="./"><img src="desktop/papertex.png" alt="" width="28" height="28"><span>PaperTeX</span></a>
+      <p>You write on the page. It writes the LaTeX.</p>
+    </div>
+    <nav class="foot__nav" aria-label="Footer">
+      <div>
+        <h3>Product</h3>
+        <a href="app.html">Open the editor</a>
+        <a href="#templates">Templates</a>
+        <a href="#desktop">Desktop app</a>
+      </div>
+      <div>
+        <h3>PaperTeX</h3>
+        <a href="about.html">About</a>
+        <a href="about.html#privacy">Privacy</a>
+        <a href="about.html#licence">Licence &amp; credits</a>
+      </div>
+    </nav>
+    <button class="btn btn--quiet btn--sm foot__top" type="button" id="toTop">
+      <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4"/></svg>
+      <span>Back to top</span>
+    </button>
+  </div>
+  <div class="wrap foot__line">Made by Ayaz Büyükterzi · Open source under the MIT licence</div>
+</footer>
+
+<script src="js/vendor/gsap.min.js"></script>
+<script src="js/vendor/ScrollTrigger.min.js"></script>
+<script src="js/sanitize.js"></script>
+<script src="js/store.js"></script>
+<script src="js/templates.js"></script>
+<script src="js/home.js"></script>
+<script src="js/landing.js"></script>
+</body>
+</html>
