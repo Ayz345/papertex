@@ -15,7 +15,13 @@
 <!-- Where the compiler's wasm and TeX Live live, if not beside this page
      (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
 <meta name="papertex-engine" content="">
-<title>PaperTeX</title>
+<title>PaperTeX — write on the page, get the LaTeX</title>
+<meta name="description" content="A free LaTeX editor in your browser: write on a page that looks like the PDF, and get clean, compilable LaTeX. No account, nothing uploaded.">
+<meta property="og:title" content="PaperTeX — write on the page, get the LaTeX">
+<meta property="og:description" content="A free LaTeX editor in your browser: write on a page that looks like the PDF, and get clean, compilable LaTeX. No account, nothing uploaded.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#e4e2de">
+<link rel="icon" href="desktop/papertex.png">
 <link rel="stylesheet" href="css/fonts.css">
 <link rel="stylesheet" href="css/app.css">
 <link rel="stylesheet" href="css/paper.css">
@@ -23,7 +29,7 @@
 <body>
 
 <header class="top">
-  <div class="brand"><b>PaperTeX</b><i>write on the paper</i></div>
+  <a class="brand" href="about.html" target="_blank" rel="noopener" title="About PaperTeX — privacy, licence, who made it"><b>PaperTeX</b><i>write on the paper</i></a>
   <span class="savestate" id="saveState" role="status" aria-live="polite"></span>
 
   <button class="tb" id="btnNew" title="New document"><span class="k">🗎</span>New</button>
@@ -161,6 +167,8 @@
       <kbd>Compile</kbd><span>Typesets it with real LaTeX in your browser — nothing is uploaded. First run downloads the engine</span>
     </div>
 
+    <p class="helpabout"><a href="about.html" target="_blank" rel="noopener">About PaperTeX</a> — who made it,
+      privacy (nothing you write is uploaded), and licences.</p>
     <button class="helpclose" id="helpClose">Start writing</button>
   </div>
 </div>

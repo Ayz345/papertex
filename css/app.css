@@ -42,7 +42,10 @@ button { font-family: inherit; }
   background: var(--panel); border-bottom: 1px solid var(--line);
   position: relative; z-index: 40; flex: 0 0 auto;
 }
-.brand { display: flex; align-items: baseline; gap: 7px; padding-right: 10px; margin-right: 2px; }
+.brand { display: flex; align-items: baseline; gap: 7px; padding-right: 10px; margin-right: 2px; text-decoration: none; color: inherit; }
+.brand:hover b { color: var(--accent); }
+.helpabout { margin: 22px 0 0; font-size: 12.5px; color: var(--muted); }
+.helpabout a { color: var(--accent); }
 .brand b { font-size: 14.5px; font-weight: 650; letter-spacing: -.012em; color: var(--ink); }
 .brand i {
   font-style: normal; font-size: 9.5px; color: var(--faint);
@@ -93,11 +96,19 @@ button { font-family: inherit; }
 .spacer { flex: 1 1 auto; }
 /* the toolbar earns its width back on narrow screens */
 @media (max-width: 1280px) { .brand i { display: none; } }
+/* a phone: the toolbar scrolls sideways rather than pushing the page wider */
+@media (max-width: 760px) {
+  .top { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+  .top::-webkit-scrollbar { display: none; }
+  .top > * { flex: 0 0 auto; }
+}
 @media (max-width: 1120px) { .tb.ghost#btnOverleaf { font-size: 0; padding: 6px 9px; }
   .tb.ghost#btnOverleaf::before { content: "Overleaf ↗"; font-size: 12.5px; } }
 
 /* ------------------------------------------------------------------- layout */
-.wrap { display: flex; height: calc(100% - 46px); }
+/* clipped: a tucked-away side panel sits past the right edge, and must not
+   make the page wider (on a phone that zooms everything out) */
+.wrap { display: flex; height: calc(100% - 46px); overflow: hidden; }
 
 /* palette rail (left) */
 .pal {
@@ -150,6 +161,7 @@ body.nopal .pal { margin-left: -234px; }
   position: relative; flex: 1 1 auto; overflow: auto; padding: 28px 28px 140px;
   background: var(--desk);
 }
+@media (max-width: 760px) { .stage { padding: 12px 12px 120px; } }
 
 /* source panel (right) */
 .side {
@@ -410,8 +422,9 @@ body.nopanel .side { margin-right: -380px; }
   position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 12px);
   background: var(--ink); color: #eef0f3; padding: 9px 15px; border-radius: 8px;
   font-size: 12.5px; box-shadow: 0 10px 30px -8px rgba(0, 0, 0, .4);
+  width: max-content; box-sizing: border-box;
   opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
-  z-index: 200; max-width: 60ch;
+  z-index: 200; max-width: min(60ch, calc(100vw - 24px));
 }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
 

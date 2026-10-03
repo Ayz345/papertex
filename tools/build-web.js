@@ -74,6 +74,8 @@ fs.writeFileSync(path.join(out, 'index.html'), html);
 for (const f of ['siglum.js', 'siglum.worker.js']) {
   fs.copyFileSync(path.join(root, 'engine', f), path.join(out, 'engine', f));
 }
+/* babel's language files, fetched at compile time for non-English documents */
+copyDir(path.join(root, 'engine', 'texmf', 'babel'), path.join(out, 'engine', 'texmf', 'babel'));
 if (withTexlive) {
   const tl = path.join(root, 'engine', 'texlive');
   if (!fs.existsSync(path.join(tl, 'bundles', 'file-manifest.json'))) {
@@ -82,10 +84,19 @@ if (withTexlive) {
   copyDir(tl, path.join(out, 'engine', 'texlive'));
 }
 
+/* 3b. the About page, its icon inlined so it stands alone */
+const icon = 'data:image/png;base64,' + fs.readFileSync(path.join(root, 'desktop', 'papertex.png')).toString('base64');
+fs.writeFileSync(path.join(out, 'about.html'),
+  fs.readFileSync(path.join(root, 'about.html'), 'utf8').split('desktop/papertex.png').join(icon));
+if (/class="todo"/.test(fs.readFileSync(path.join(out, 'about.html'), 'utf8'))) {
+  console.log('\n  NOTE: about.html still has parts for you to write (the dashed boxes).');
+}
+
 /* 4. licences of what the app ships */
 fs.mkdirSync(path.join(out, 'LICENSES'), { recursive: true });
 fs.copyFileSync(path.join(root, 'fonts', 'LICENSE-KaTeX.txt'), path.join(out, 'LICENSES', 'KaTeX-fonts.txt'));
 fs.copyFileSync(path.join(root, 'engine', 'LICENSE-siglum.txt'), path.join(out, 'LICENSES', 'siglum-engine.txt'));
+fs.copyFileSync(path.join(root, 'LICENSE'), path.join(out, 'LICENSES', 'PaperTeX.txt'));
 
 /* 5. headers: the same policy as the page, plus what only a header can say */
 const headers = [

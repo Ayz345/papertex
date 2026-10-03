@@ -1267,6 +1267,16 @@
     });
 
     M.setAutoWords(state.doc.settings.autoMath !== false);
+    /* A phone or a narrow window: the palette and the LaTeX panel would
+       leave no room for the page, so start with them tucked away (the
+       toolbar buttons bring them back) and the page fitted to the width. */
+    /* the layout width, not innerWidth: a phone browser zooms out to fit a
+       page that is still full-size at this point, and innerWidth then
+       reports the zoomed-out width */
+    var vw = Math.min(window.innerWidth, document.documentElement.clientWidth || window.innerWidth);
+    if (vw < 900) document.body.classList.add('nopal', 'nopanel');
+    /* the page is 794 px at 100%; the desk around it is 28 px a side, 12 on a phone */
+    if (vw < 840) state.zoom = Math.max(0.38, Math.min(1, (vw - (vw <= 760 ? 28 : 60)) / 794));
     applyPaperVars();
     state.editor.render();
     if (document.fonts && document.fonts.ready) {
@@ -1395,6 +1405,9 @@
     var seen = true;
     try { seen = !!localStorage.getItem('papertex.seen'); localStorage.setItem('papertex.seen', '1'); } catch (e) { seen = true; }
     if (!seen) setTimeout(function () { $('#help').classList.add('on'); }, 500);
+    else if (window.innerWidth < 760 || (window.matchMedia && matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches)) {
+      toast('PaperTeX is made for a computer with a keyboard — on a phone you can read and make small edits.');
+    }
   }
 
   window.PT.app = { state: state, toast: toast, refresh: refresh, insertSymbol: insertSymbol };

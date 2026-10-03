@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "description": "Write on the paper, get the LaTeX",
+  "license": "MIT",
+  "author": "Ayaz Büyükterzi",
   "scripts": {
     "desktop": "electron desktop/main.js",
     "build": "node build.js",

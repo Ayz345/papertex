@@ -13,6 +13,10 @@ html = html.replace(/[ \t]*<link rel="stylesheet" href="([^"]+)">\n?/g, (_, href
   return '<style>\n/* ' + href + ' */\n' + css + '</style>\n';
 });
 
+/* the favicon too: the single file must not need anything beside it */
+const iconUrl = 'data:image/png;base64,' + fs.readFileSync(path.join(root, 'desktop', 'papertex.png')).toString('base64');
+html = html.replace(/(<link rel="icon" href=")desktop\/papertex\.png(")/, (_, a, b) => a + iconUrl + b);
+
 const hashes = [];
 html = html.replace(/[ \t]*<script src="([^"]+)"><\/script>\n?/g, (_, src) => {
   const js = fs.readFileSync(path.join(root, src), 'utf8');

@@ -1,0 +1,44 @@
+{
+  "turkish": [
+    "turkish.ldf"
+  ],
+  "ngerman": [
+    "austrian.ldf",
+    "babel-german.def",
+    "german-at-1901.ldf",
+    "german-at.ldf",
+    "german-austria-1901.ldf",
+    "german-austria.ldf",
+    "german-ch-1901.ldf",
+    "german-ch.ldf",
+    "german-de-1901.ldf",
+    "german-de.ldf",
+    "german-germany-1901.ldf",
+    "german-germany.ldf",
+    "german-switzerland-1901.ldf",
+    "german-switzerland.ldf",
+    "german.ldf",
+    "germanb.ldf",
+    "naustrian.ldf",
+    "ngerman.ldf",
+    "ngermanb.ldf",
+    "nswissgerman.ldf",
+    "swissgerman.ldf"
+  ],
+  "french": [
+    "french.ldf",
+    "french3.ldf"
+  ],
+  "spanish": [
+    "spanish.ldf"
+  ],
+  "italian": [
+    "italian.ldf"
+  ],
+  "portuguese": [
+    "brazil.ldf",
+    "brazilian.ldf",
+    "portuges.ldf",
+    "portuguese.ldf"
+  ]
+}

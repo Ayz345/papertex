@@ -21,7 +21,16 @@ fs.copyFileSync(path.join(root, 'start-papertex.cmd'), path.join(stage, 'start-p
 for (const f of ['siglum.js', 'siglum.worker.js', 'LICENSE-siglum.txt']) {
   fs.copyFileSync(path.join(root, 'engine', f), path.join(stage, 'engine', f));
 }
+/* babel's language files, fetched at compile time for non-English documents */
+fs.mkdirSync(path.join(stage, 'engine', 'texmf', 'babel'), { recursive: true });
+for (const f of fs.readdirSync(path.join(root, 'engine', 'texmf', 'babel'))) {
+  fs.copyFileSync(path.join(root, 'engine', 'texmf', 'babel', f), path.join(stage, 'engine', 'texmf', 'babel', f));
+}
 fs.copyFileSync(path.join(root, 'fonts', 'LICENSE-KaTeX.txt'), path.join(stage, 'LICENSE-KaTeX-fonts.txt'));
+fs.copyFileSync(path.join(root, 'LICENSE'), path.join(stage, 'LICENSE.txt'));
+const icon = 'data:image/png;base64,' + fs.readFileSync(path.join(root, 'desktop', 'papertex.png')).toString('base64');
+fs.writeFileSync(path.join(stage, 'about.html'),
+  fs.readFileSync(path.join(root, 'about.html'), 'utf8').split('desktop/papertex.png').join(icon));
 
 fs.rmSync(zip, { force: true });
 /* .NET's zip classes are always present on Windows and need no extra

@@ -138,11 +138,43 @@
     return null;
   }
 
+  /* babel's language files are not in the engine's TeX Live either. They
+     live beside the compiler (engine/texmf/babel/, from tools/fetch-babel.js)
+     and are fetched only for a document set in that language. */
+  var babelCache = {};
+  function fetchText(url) {
+    if (!babelCache[url]) {
+      babelCache[url] = fetch(url).then(function (r) {
+        if (!r.ok) throw new Error(url + ': ' + r.status);
+        return r.text();
+      });
+      babelCache[url].catch(function () { delete babelCache[url]; });
+    }
+    return babelCache[url];
+  }
+  function babelFiles(tex) {
+    var m = /\\usepackage\[([A-Za-z]+)\]\{babel\}/.exec(tex);
+    if (!m) return Promise.resolve({});
+    var base = CFG.script.replace(/[^/]*$/, '') + 'texmf/babel/';
+    return fetchText(base + 'manifest.json').then(function (txt) {
+      var names = (JSON.parse(txt)[m[1]] || []);
+      return Promise.all(names.map(function (n) { return fetchText(base + n); })).then(function (bodies) {
+        var files = {};
+        names.forEach(function (n, i) { files[n] = bodies[i]; });
+        return files;
+      });
+    }).catch(function () { return {}; });   /* then TeX says which file it missed */
+  }
+
   function compile(tex, doc, onProgress) {
     var logs = [];
     return getCompiler(onProgress).then(function (c) {
       c.onLog = function (m) { logs.push(String(m)); };
-      return c.compile(tex, { additionalFiles: sidecarFiles(tex, doc) });
+      return babelFiles(tex).then(function (lang) {
+        var files = sidecarFiles(tex, doc);
+        Object.keys(lang).forEach(function (k) { files[k] = lang[k]; });
+        return c.compile(tex, { additionalFiles: files });
+      });
     }).then(function (r) {
       if (r.success && r.pdf) return { pdf: r.pdf };
       /* TeX's own log (document.log) comes back as texLog — see the patch

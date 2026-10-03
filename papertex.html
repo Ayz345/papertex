@@ -11,11 +11,17 @@
      are data: URLs; the compiled PDF is a blob:. connect-src names the
      engine host — tools/build-web.js narrows it to this site alone when
      TeX Live is deployed beside the page. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-nCsYqU57DcjyJdeLktuVapNA/VJyB+D3CgjahKkAG30=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-rYmUfC1bRf1MC2OYZgmryvMELReyz6J1wfPWRUiKJjA=' 'sha256-OI1XvI1YDe5z/WgOLZqJHOh6Nij9VeE5vwyJRCkFWKg=' 'sha256-NDf/P5kaLbBnWK42+ZOHaGbFggbtZ8Ko1Fpmm9ZxAqI=' 'sha256-DrmNT/aFR7qmsfPb8kPX7nLMAr0kEo5vZbUiNXtTKS8=' 'sha256-nt+HEqlM6KFPRxpUBGPKQ/qqp7BiHip9Uq46tGqSUz8=' 'sha256-TN9SaTGAHK+83BxemLZqeTqS9HgUlxrFayqccj1qads=' 'sha256-qqNK5hz/xQaXfdmUyTvC3k3L9ENybSZk/dBEHFpiOnY=' 'sha256-5yNKBiJcGfTMesfu/uvAm/VXO5lpi1gCM87otMLrQqk=' 'sha256-y9lXdNHKpNXIYQ1raFdQua8Dr6uJyAW2+49IrZVkGcc=' 'sha256-aOSjqN4do88mQivTl+9IPhC/pOUU5C2TR3lWiUhu3vg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-nCsYqU57DcjyJdeLktuVapNA/VJyB+D3CgjahKkAG30=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-rYmUfC1bRf1MC2OYZgmryvMELReyz6J1wfPWRUiKJjA=' 'sha256-OI1XvI1YDe5z/WgOLZqJHOh6Nij9VeE5vwyJRCkFWKg=' 'sha256-NDf/P5kaLbBnWK42+ZOHaGbFggbtZ8Ko1Fpmm9ZxAqI=' 'sha256-DrmNT/aFR7qmsfPb8kPX7nLMAr0kEo5vZbUiNXtTKS8=' 'sha256-nt+HEqlM6KFPRxpUBGPKQ/qqp7BiHip9Uq46tGqSUz8=' 'sha256-TN9SaTGAHK+83BxemLZqeTqS9HgUlxrFayqccj1qads=' 'sha256-wjNRZIcaUh3uovpfTRPrkDz9zUKuNVLc6O2QfoAueHo=' 'sha256-5yNKBiJcGfTMesfu/uvAm/VXO5lpi1gCM87otMLrQqk=' 'sha256-y9lXdNHKpNXIYQ1raFdQua8Dr6uJyAW2+49IrZVkGcc=' 'sha256-eyBSmac0CYg/fuNAx2pl49kP2MzkbiRygW5k/3Ypphg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <!-- Where the compiler's wasm and TeX Live live, if not beside this page
      (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
 <meta name="papertex-engine" content="">
-<title>PaperTeX</title>
+<title>PaperTeX — write on the page, get the LaTeX</title>
+<meta name="description" content="A free LaTeX editor in your browser: write on a page that looks like the PDF, and get clean, compilable LaTeX. No account, nothing uploaded.">
+<meta property="og:title" content="PaperTeX — write on the page, get the LaTeX">
+<meta property="og:description" content="A free LaTeX editor in your browser: write on a page that looks like the PDF, and get clean, compilable LaTeX. No account, nothing uploaded.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#e4e2de">
+<link rel="icon" href="data:image/png;base64,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">
 <style>
 /* css/fonts.css */
 /* PaperTeX — embedded Computer Modern.
@@ -152,7 +158,10 @@ button { font-family: inherit; }
   background: var(--panel); border-bottom: 1px solid var(--line);
   position: relative; z-index: 40; flex: 0 0 auto;
 }
-.brand { display: flex; align-items: baseline; gap: 7px; padding-right: 10px; margin-right: 2px; }
+.brand { display: flex; align-items: baseline; gap: 7px; padding-right: 10px; margin-right: 2px; text-decoration: none; color: inherit; }
+.brand:hover b { color: var(--accent); }
+.helpabout { margin: 22px 0 0; font-size: 12.5px; color: var(--muted); }
+.helpabout a { color: var(--accent); }
 .brand b { font-size: 14.5px; font-weight: 650; letter-spacing: -.012em; color: var(--ink); }
 .brand i {
   font-style: normal; font-size: 9.5px; color: var(--faint);
@@ -203,11 +212,19 @@ button { font-family: inherit; }
 .spacer { flex: 1 1 auto; }
 /* the toolbar earns its width back on narrow screens */
 @media (max-width: 1280px) { .brand i { display: none; } }
+/* a phone: the toolbar scrolls sideways rather than pushing the page wider */
+@media (max-width: 760px) {
+  .top { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+  .top::-webkit-scrollbar { display: none; }
+  .top > * { flex: 0 0 auto; }
+}
 @media (max-width: 1120px) { .tb.ghost#btnOverleaf { font-size: 0; padding: 6px 9px; }
   .tb.ghost#btnOverleaf::before { content: "Overleaf ↗"; font-size: 12.5px; } }
 
 /* ------------------------------------------------------------------- layout */
-.wrap { display: flex; height: calc(100% - 46px); }
+/* clipped: a tucked-away side panel sits past the right edge, and must not
+   make the page wider (on a phone that zooms everything out) */
+.wrap { display: flex; height: calc(100% - 46px); overflow: hidden; }
 
 /* palette rail (left) */
 .pal {
@@ -260,6 +277,7 @@ body.nopal .pal { margin-left: -234px; }
   position: relative; flex: 1 1 auto; overflow: auto; padding: 28px 28px 140px;
   background: var(--desk);
 }
+@media (max-width: 760px) { .stage { padding: 12px 12px 120px; } }
 
 /* source panel (right) */
 .side {
@@ -520,8 +538,9 @@ body.nopanel .side { margin-right: -380px; }
   position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 12px);
   background: var(--ink); color: #eef0f3; padding: 9px 15px; border-radius: 8px;
   font-size: 12.5px; box-shadow: 0 10px 30px -8px rgba(0, 0, 0, .4);
+  width: max-content; box-sizing: border-box;
   opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
-  z-index: 200; max-width: 60ch;
+  z-index: 200; max-width: min(60ch, calc(100vw - 24px));
 }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
 
@@ -1119,7 +1138,7 @@ blockquote.pt-quote {
 <body>
 
 <header class="top">
-  <div class="brand"><b>PaperTeX</b><i>write on the paper</i></div>
+  <a class="brand" href="about.html" target="_blank" rel="noopener" title="About PaperTeX — privacy, licence, who made it"><b>PaperTeX</b><i>write on the paper</i></a>
   <span class="savestate" id="saveState" role="status" aria-live="polite"></span>
 
   <button class="tb" id="btnNew" title="New document"><span class="k">🗎</span>New</button>
@@ -1257,6 +1276,8 @@ blockquote.pt-quote {
       <kbd>Compile</kbd><span>Typesets it with real LaTeX in your browser — nothing is uploaded. First run downloads the engine</span>
     </div>
 
+    <p class="helpabout"><a href="about.html" target="_blank" rel="noopener">About PaperTeX</a> — who made it,
+      privacy (nothing you write is uploaded), and licences.</p>
     <button class="helpclose" id="helpClose">Start writing</button>
   </div>
 </div>
@@ -5625,11 +5646,43 @@ blockquote.pt-quote {
     return null;
   }
 
+  /* babel's language files are not in the engine's TeX Live either. They
+     live beside the compiler (engine/texmf/babel/, from tools/fetch-babel.js)
+     and are fetched only for a document set in that language. */
+  var babelCache = {};
+  function fetchText(url) {
+    if (!babelCache[url]) {
+      babelCache[url] = fetch(url).then(function (r) {
+        if (!r.ok) throw new Error(url + ': ' + r.status);
+        return r.text();
+      });
+      babelCache[url].catch(function () { delete babelCache[url]; });
+    }
+    return babelCache[url];
+  }
+  function babelFiles(tex) {
+    var m = /\\usepackage\[([A-Za-z]+)\]\{babel\}/.exec(tex);
+    if (!m) return Promise.resolve({});
+    var base = CFG.script.replace(/[^/]*$/, '') + 'texmf/babel/';
+    return fetchText(base + 'manifest.json').then(function (txt) {
+      var names = (JSON.parse(txt)[m[1]] || []);
+      return Promise.all(names.map(function (n) { return fetchText(base + n); })).then(function (bodies) {
+        var files = {};
+        names.forEach(function (n, i) { files[n] = bodies[i]; });
+        return files;
+      });
+    }).catch(function () { return {}; });   /* then TeX says which file it missed */
+  }
+
   function compile(tex, doc, onProgress) {
     var logs = [];
     return getCompiler(onProgress).then(function (c) {
       c.onLog = function (m) { logs.push(String(m)); };
-      return c.compile(tex, { additionalFiles: sidecarFiles(tex, doc) });
+      return babelFiles(tex).then(function (lang) {
+        var files = sidecarFiles(tex, doc);
+        Object.keys(lang).forEach(function (k) { files[k] = lang[k]; });
+        return c.compile(tex, { additionalFiles: files });
+      });
     }).then(function (r) {
       if (r.success && r.pdf) return { pdf: r.pdf };
       /* TeX's own log (document.log) comes back as texLog — see the patch
@@ -7611,6 +7664,16 @@ blockquote.pt-quote {
     });
 
     M.setAutoWords(state.doc.settings.autoMath !== false);
+    /* A phone or a narrow window: the palette and the LaTeX panel would
+       leave no room for the page, so start with them tucked away (the
+       toolbar buttons bring them back) and the page fitted to the width. */
+    /* the layout width, not innerWidth: a phone browser zooms out to fit a
+       page that is still full-size at this point, and innerWidth then
+       reports the zoomed-out width */
+    var vw = Math.min(window.innerWidth, document.documentElement.clientWidth || window.innerWidth);
+    if (vw < 900) document.body.classList.add('nopal', 'nopanel');
+    /* the page is 794 px at 100%; the desk around it is 28 px a side, 12 on a phone */
+    if (vw < 840) state.zoom = Math.max(0.38, Math.min(1, (vw - (vw <= 760 ? 28 : 60)) / 794));
     applyPaperVars();
     state.editor.render();
     if (document.fonts && document.fonts.ready) {
@@ -7739,6 +7802,9 @@ blockquote.pt-quote {
     var seen = true;
     try { seen = !!localStorage.getItem('papertex.seen'); localStorage.setItem('papertex.seen', '1'); } catch (e) { seen = true; }
     if (!seen) setTimeout(function () { $('#help').classList.add('on'); }, 500);
+    else if (window.innerWidth < 760 || (window.matchMedia && matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches)) {
+      toast('PaperTeX is made for a computer with a keyboard — on a phone you can read and make small edits.');
+    }
   }
 
   window.PT.app = { state: state, toast: toast, refresh: refresh, insertSymbol: insertSymbol };
