@@ -36,7 +36,8 @@ fs.writeFileSync(path.join(stage, 'about.html'),
     .split('href="app.html"').join('href="papertex.html"')
     .replace(/href="\.\/(?:#[^"]*)?"/g, 'href="papertex.html"'));
 const page = path.join(stage, 'papertex.html');
-fs.writeFileSync(page, fs.readFileSync(page, 'utf8').replace('<a class="brand" href="./"', '<a class="brand" href="about.html"'));
+fs.writeFileSync(page, fs.readFileSync(page, 'utf8')
+  .replace(/<a\b[^>]*\bclass="brand"[^>]*>/, (tag) => tag.replace('href="./"', 'href="about.html"')));
 
 fs.rmSync(zip, { force: true });
 /* .NET's zip classes are always present on Windows and need no extra

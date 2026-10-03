@@ -87,7 +87,7 @@ button { font: inherit; color: inherit; }
 .motion [data-split] { visibility: hidden; }
 
 /* without GSAP the demos show their finished state: no empty limit boxes */
-.no-js .slot, .no-js .hero__controls { display: none; }
+.no-js .slot { display: none; }
 .no-js .hero__demo, .no-js .hero__demo * { animation: none !important; }   /* no pause control here, so nothing blinks */
 
 /* Pause in the hero stops everything in it, CSS blinks and pulses included */
@@ -142,7 +142,7 @@ button { font: inherit; color: inherit; }
 .btn--quiet { background: rgba(255, 254, 251, .6); color: #3d4148; box-shadow: 0 0 0 1px rgba(30, 28, 24, .08); }
 .btn--quiet:hover { background: #fff; color: var(--ink-strong); }
 .btn--quiet svg { fill: currentColor; }
-.btn--quiet .i-replay, .foot__top svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.foot__top svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .btn--sm { min-height: 44px; padding: 0 14px; font-size: 14px; }
 .btn--lg { min-height: 54px; padding: 0 24px; font-size: 16.5px; border-radius: 10px; }
 .btn--tiny {
@@ -322,10 +322,6 @@ button { font: inherit; color: inherit; }
 .code__hl { display: inline-block; min-width: calc(100% + 36px); margin: 0 -18px; padding: 0 18px; background: rgba(240, 198, 124, .13); color: #f6dca8; }
 .hero__code { align-self: flex-end; width: 88%; margin-top: -44px; margin-right: 0; transform: translateZ(40px); }
 
-.hero__controls { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
-.hero__controls .i-play { display: none; }
-.hero__controls [data-paused] .i-pause { display: none; }
-.hero__controls [data-paused] .i-play { display: block; }
 
 /* ----------------------------------------------------------------- recent */
 .recent { padding: 0 0 72px; margin-top: -24px; }   /* clears the hero controls' 70px scroll drift */
@@ -431,6 +427,7 @@ button { font: inherit; color: inherit; }
 .fp__math .t--var { font-family: var(--math); font-style: italic; }
 .fp__math .t--big { font-family: var(--big); }
 .fp__tag { font-size: 11.5px; color: var(--muted); border: 1px dashed #b3aea5; border-radius: 4px; padding: 1px 6px; }
+.plot__stage.is-paused .caret { animation-play-state: paused; }
 .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 18px; }
 .steps li { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); transition: color .3s ease; }
 .steps__dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px #b3aea5; transition: background-color .3s ease, box-shadow .3s ease, transform .3s var(--spring); }
@@ -601,7 +598,7 @@ button { font: inherit; color: inherit; }
 .desktop__soon { margin: 0; display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ink-2); }
 .dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: live-amber 2s ease-out 2; }
 /* carets outside the hero's pause control settle after a few blinks */
-.fp__row .caret, .tpl__caret { animation-iteration-count: 4; }   /* stops within 5 s (WCAG 2.2.2) */
+.tpl__caret { animation-iteration-count: 4; }   /* stops within 5 s (WCAG 2.2.2) */
 @keyframes live-amber { 0% { box-shadow: 0 0 0 0 rgba(154, 91, 6, .5); } 70%, 100% { box-shadow: 0 0 0 8px rgba(154, 91, 6, 0); } }
 .desktop__cta { align-self: flex-start; }
 
@@ -639,7 +636,6 @@ button { font: inherit; color: inherit; }
   .plot__grid { flex-direction: column; align-items: stretch; gap: 18px; }
   .plot__side { display: contents; }
   .plot__paper { order: 1; flex: none; width: 100%; max-width: 560px; align-self: center; }
-  .steps { order: 2; }
   .plot__tex { order: 3; }
 }
 @media (max-width: 960px) {

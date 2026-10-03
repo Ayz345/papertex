@@ -93,6 +93,22 @@
       var lt = toks[toks.length - 1];
       return !lt || lt.kind === 'op' || lt.kind === 'big' || lt.text === '(' || lt.text === ',';
     }
+    // Scripts hang off the thing before them as one group, so x_1^2 stacks and
+    // a big operator can carry its bounds: ∑ and lim above and below, ∫ at its side.
+    function attach(toks, c, kids, lv, fresh) {
+      var lt = toks[toks.length - 1];
+      var sc = !fresh && lt && lt.kind === 'scripts' ? lt : null;
+      if (!sc) {
+        var nuc = !fresh && lt ? lt : null;
+        sc = { kind: 'scripts', text: '', lv: lv, sh: 0, over: false, sup: [], sub: [],
+               tall: !!(nuc && nuc.kind === 'big'),
+               limits: !!(nuc && ((nuc.kind === 'big' && nuc.text !== '∫') || (nuc.kind === 'fn' && nuc.text === 'lim'))) };
+        toks.push(sc);
+      }
+      Array.prototype.push.apply(c === '^' ? sc.sup : sc.sub, kids);
+      sc.text = keyOf(sc.sup) + '|' + keyOf(sc.sub);       // lets the drawing tell what changed
+    }
+    function keyOf(list) { return list.map(function (t) { return t.kind === 'scripts' ? '[' + t.text + ']' : t.text; }).join(''); }
     function seq(lv, sh, stop) {
       var toks = [], tex = [], used = '', depth = 0;  // `used`: scripts the current nucleus already has
       while (i < str.length) {
@@ -103,11 +119,11 @@
         if (isScr(c)) {
           i++;
           // x^a^b would be a double superscript; x'^2 is fine, the prime joins the superscript
-          if (used.indexOf(c) >= 0 && !(c === '^' && tex[tex.length - 1] === "'")) { tex.push('{}'); used = ''; }
+          var gapped = false;
+          if (used.indexOf(c) >= 0 && !(c === '^' && tex[tex.length - 1] === "'")) { tex.push('{}'); used = ''; gapped = true; }
           used += c;
-          var up = c === '^';
-          var g = group(lv + 1, sh + (up ? (lv === 0 ? 11 : 7) : (lv === 0 ? -7 : -4)), c);
-          toks = toks.concat(g.toks);
+          var g = group(lv + 1, 0, c);
+          attach(toks, c, g.toks, lv, gapped);
           tex.push(c + wrap(g.tex));
           continue;
         }
@@ -135,11 +151,12 @@
       }
       var used = u.scr || '';
       while (kind && i < str.length && str[i] === kind) {
-        var c2 = str[i++], up2 = c2 === '^';
-        var g2 = group(lv + 1, sh + (up2 ? 7 : -4), c2);
+        var c2 = str[i++];
+        var g2 = group(lv + 1, 0, c2);
         var gap = used.indexOf(c2) >= 0 ? '{}' : '';
         used = gap ? c2 : used + c2;
-        u = { toks: u.toks.concat(g2.toks), tex: u.tex + gap + c2 + wrap(g2.tex) };
+        attach(u.toks, c2, g2.toks, lv, !!gap);
+        u = { toks: u.toks, tex: u.tex + gap + c2 + wrap(g2.tex) };
       }
       return u;
     }
@@ -184,7 +201,7 @@
           tex = w;
         }
         if (d) {                                       // x1 is x_1
-          toks.push(tok(d, 'num', lv + 1, sh + (lv === 0 ? -7 : -4)));
+          attach(toks, '_', [tok(d, 'num', lv + 1, 0)], lv, false);
           tex += '_' + wrap(d);
         }
         return { toks: toks, tex: tex, scr: d ? '_' : '' };
@@ -200,26 +217,66 @@
   }
 
   /* Draw tokens into `box`. Tokens from the first one that changed onward
-     pop in, so typing "alph" → "alpha" makes the α arrive, not the line. */
+     pop in, so typing "alph" → "alpha" makes the α arrive, not the line.
+     Scripts are drawn stacked: beside their nucleus, or above and below it
+     for ∑, ∏ and lim, as TeX sets them in a display. */
+  var SIZES = [1, 0.7, 0.5];
+  function drawTok(t, base) {
+    var size = base * SIZES[Math.min(t.lv, 2)];
+    if (t.kind === 'scripts') {
+      var el = h('span', 't t--scripts' + (t.over ? ' t--over' : ''));
+      el.style.cssText = 'display:inline-flex;flex-direction:column;align-items:flex-start;line-height:1;padding-right:.08em' + (t.tall ? ';margin-left:-.05em;padding-left:.18em' : '');
+      var up = h('span', 't__up'), dn = h('span', 't__dn');
+      t.sup.forEach(function (c) { up.appendChild(drawTok(c, base)); });
+      t.sub.forEach(function (c) { dn.appendChild(drawTok(c, base)); });
+      if (t.sup.length) el.appendChild(up);
+      if (t.sub.length) el.appendChild(dn);
+      // the box's baseline is its first row's: raise a superscript, drop a lone subscript
+      var both = t.sup.length && t.sub.length;
+      var lift = t.tall ? 0.78 : both ? 0.34 : 0.42;
+      el.style.verticalAlign = r1((t.sup.length ? lift : -0.24) * size) + 'px';
+      if (both) dn.style.marginTop = r1((t.tall ? 0.62 : -0.06) * size) + 'px';
+      return el;
+    }
+    var s2 = h('span', 't t--' + t.kind + (t.over ? ' t--over' : ''), t.text);
+    s2.style.fontSize = r1(size * (t.kind === 'big' ? 1.05 : 1)) + 'px';
+    if (t.kind === 'op') s2.style.padding = t.lv === 0 ? '0 .22em' : '0 .1em';
+    if (t.kind === 'fn') s2.style.paddingRight = '.14em';
+    if (t.kind === 'big') s2.style.padding = '0 .12em';
+    return s2;
+  }
   function renderMath(box, toks, prev, base, animate) {
-    var SIZES = [1, 0.7, 0.5];
     var first = 0;
     while (first < toks.length && prev && prev[first] &&
            prev[first].text === toks[first].text && prev[first].kind === toks[first].kind &&
            prev[first].lv === toks[first].lv && prev[first].over === toks[first].over) first++;
     box.textContent = '';
-    var fresh = [];
+    // one inline line inside the (flex) box, so vertical offsets of scripts apply
+    var line = h('span', 'mline');
+    line.style.cssText = 'display:inline-block;max-width:100%;line-height:1.25;text-align:center';
+    box.appendChild(line);
+    var nodes = [];
     toks.forEach(function (t, n) {
-      var el = h('span', 't t--' + t.kind + (t.over ? ' t--over' : ''), t.text);
-      var size = base * SIZES[Math.min(t.lv, 2)] * (t.kind === 'big' ? 1.05 : 1);
-      el.style.fontSize = r1(size) + 'px';
-      el.style.verticalAlign = r1(t.sh * base / 30) + 'px';
-      if (t.kind === 'op') el.style.padding = t.lv === 0 ? '0 .22em' : '0 .1em';
-      if (t.kind === 'fn') el.style.paddingRight = '.14em';
-      if (t.kind === 'big') el.style.padding = '0 .12em';
-      box.appendChild(el);
-      if (n >= first) fresh.push(el);
+      var el = drawTok(t, base);
+      var before = nodes[n - 1];
+      if (t.kind === 'scripts' && t.limits && before) {
+        // bounds above and below: the nucleus moves into a centred column with them
+        var col = h('span', 't t--limits');
+        col.style.cssText = 'display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.05;margin:0 .1em';
+        var up = el.querySelector('.t__up'), dn = el.querySelector('.t__dn');
+        col.appendChild(up || h('span'));
+        col.appendChild(before);
+        col.appendChild(dn || h('span'));
+        if (dn && up) dn.style.marginTop = '0';
+        line.appendChild(col);
+        nodes[n - 1] = col; nodes[n] = null;
+        return;
+      }
+      line.appendChild(el);
+      nodes[n] = el;
     });
+    var fresh = [];
+    nodes.forEach(function (el, n) { if (el && n >= Math.max(0, first - 1) && (n >= first || (toks[n + 1] && toks[n + 1].limits && n + 1 >= first))) fresh.push(el); });
     if (animate && MOTION && fresh.length && fresh.length <= 12) {
       gsap.fromTo(fresh, { yPercent: 45, scale: 0.55, autoAlpha: 0 },
         { yPercent: 0, scale: 1, autoAlpha: 1, duration: 0.42, ease: 'back.out(2.4)', stagger: 0.035, overwrite: true });
@@ -285,8 +342,7 @@
       .fromTo('[data-hero]', { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: 0.8, stagger: 0.1 }, 0.35)
       .fromTo('[data-hero-sheet]', { autoAlpha: 0, y: 80, rotateX: 14, transformOrigin: '50% 100%' },
         { autoAlpha: 1, y: 0, rotateX: 0, duration: 1.2, ease: 'expo.out' }, 0.2)
-      .fromTo('[data-hero-code]', { autoAlpha: 0, x: 70, z: 40 }, { autoAlpha: 1, x: 0, z: 40, duration: 1.1, ease: 'expo.out' }, 0.55)
-      .fromTo('.hero__controls', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.6 }, 1.1);
+      .fromTo('[data-hero-code]', { autoAlpha: 0, x: 70, z: 40 }, { autoAlpha: 1, x: 0, z: 40, duration: 1.1, ease: 'expo.out' }, 0.55);
   }
 
   /* =====================================================================
@@ -391,7 +447,6 @@
     var eq = box.querySelector('.eq');
     var TX = ['\\int_{', '-\\infty', '}^{', '\\infty', '}', ' e^{-x^2}', '\\,dx = \\sqrt{\\pi}'];
     var tx = TX.map(function (_, n) { return $('#tx' + n); });
-    var playBtn = $('#heroPlay'), playLabel = $('#heroPlayLabel'), replayBtn = $('#heroReplay');
 
     function caretAfter(el) {
       if (el) el.after(caret); else eq.insertBefore(caret, intG);
@@ -423,7 +478,6 @@
       box.classList.add('is-done');
       state.textContent = '✓ Done';
       caret.style.visibility = 'hidden';
-      $('.hero__controls').style.display = 'none';
       return null;
     }
 
@@ -486,27 +540,22 @@
       .set([intG, body, rest], { y: 0 }, 11.9)
       .to({}, { duration: 0.1 }, 11.9);
 
-    // Plays only once started (after the entrance), never while paused by the
-    // visitor or scrolled away. Pause also stops the blinking caret and pulses.
-    var started = false, userPaused = false, offscreen = false;
+    // Plays only once started (after the entrance), never while scrolled away;
+    // holding the pointer over it stops it, carets and pulses included.
+    var started = false, held = false, offscreen = false;
     var demoEl = $('#heroDemo');
     function sync() {
-      tl.paused(!started || userPaused || offscreen);
-      demoEl.classList.toggle('is-paused', userPaused);
-      if (userPaused) playBtn.setAttribute('data-paused', '');
-      else playBtn.removeAttribute('data-paused');
-      playLabel.textContent = userPaused ? 'Play' : 'Pause';
+      tl.paused(!started || held || offscreen);
+      demoEl.classList.toggle('is-paused', held);
     }
-    playBtn.addEventListener('click', function () { started = true; userPaused = !userPaused; sync(); });
-    replayBtn.addEventListener('click', function () { started = true; userPaused = false; tl.restart(); sync(); });
 
-    if (!MOTION) {                                   // reduced motion: the finished equation, play on request
+    if (!MOTION) {                                   // reduced motion: the finished equation, standing still
       tl.seek('done', false);
-      started = true;
-      userPaused = true;
-      sync();
+      tl.pause();
       return tl;
     }
+    demoEl.addEventListener('mouseenter', function () { held = true; sync(); });
+    demoEl.addEventListener('mouseleave', function () { held = false; sync(); });
     ST.create({
       trigger: demoEl, start: 'top bottom', end: 'bottom top',
       onToggle: function (self) { offscreen = !self.isActive; sync(); }
@@ -514,7 +563,7 @@
     reset();
     gsap.set(hidden0, { autoAlpha: 0 });
     gsap.set(rad, { '--bar': 0 });
-    tl.start = function () { started = true; if (!userPaused) tl.restart(); sync(); };
+    tl.start = function () { started = true; tl.restart(); sync(); };
     if (startNow) tl.start();
 
     // the page tilts toward the pointer, and drifts as you scroll away
@@ -531,7 +580,7 @@
       demo.addEventListener('mouseleave', function () { rx(0); ry(0); });
     }
     // as you scroll away the page lifts and the code card slides off it, never over the text
-    gsap.to(['.hero__code', '.hero__controls'], { y: 70, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
+    gsap.to('.hero__code', { y: 70, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
     gsap.to('.hero__sheet', { y: -30, ease: 'none', scrollTrigger: { trigger: '.hero', start: 'top top', end: 'bottom top', scrub: true } });
     return tl;
   }
@@ -629,16 +678,17 @@
   }
 
   /* =====================================================================
-     plot — a Function plot typed and drawn as you scroll
+     plot — Function plots that type and draw themselves: each example
+     plays once it is on screen, pauses when it leaves, then the next one
+     follows.
      ===================================================================== */
   function setupPlot() {
     var stage = $('#plotStage');
     if (!stage) return;
     var curve = $('#fpCurve'), env = $('#fpEnv'), envNeg = $('#fpEnvNeg'), pen = $('#fpPen');
     var clipC = $('#clipCurveRect'), clipE = $('#clipEnvRect');
-    var row1 = $('#fpRow1'), row2 = $('#fpRow2'), text1 = $('#fpText1'), text2 = $('#fpText2');
+    var rows = { 1: $('#fpRow1'), 2: $('#fpRow2') }, texts = { 1: $('#fpText1'), 2: $('#fpText2') };
     var mathBox = $('#fpMath'), texBox = $('#plotTex'), cap = $('#plotCapText');
-    var steps = $$('#plotSteps li');
 
     var X0 = 50, X1 = 500, XMAX = 12, YC = 160, AMP = 110;
     function X(x) { return X0 + (X1 - X0) * x / XMAX; }
@@ -651,7 +701,6 @@
       }
       return d;
     }
-    function wave(m) { return function (x) { return Math.sin(2 * x) * (1 - m + m * Math.exp(-x / 4)); }; }
 
     // grid, axes ticks: drawn once
     var grid = $('#plotGridLines'), ticks = $('#plotTicks');
@@ -665,66 +714,89 @@
       ticks.appendChild(s('path', { d: 'M' + (X0 - 5) + ' ' + Y(p[0]) + 'h5' }));
       var t = s('text', { x: X0 - 9, y: Y(p[0]) + 4, 'text-anchor': 'end' }); t.textContent = p[1]; ticks.appendChild(t);
     });
-    env.setAttribute('d', path(function (x) { return Math.exp(-x / 4); }));
-    envNeg.setAttribute('d', path(function (x) { return -Math.exp(-x / 4); }));
 
-    var S1A = 'sin(2x)', S1 = 'sin(2x) * e^(-x/4)', S2 = '+-e^(-x/4)';
-    var TEX = [
-      ['\\begin', '{axis}[domain=0:12, samples=200]'],
-      null,
-      ['\\end', '{axis}']
+    /* Each example is a few steps. A step types a formula into row 1 (solid)
+       or row 2 (dashed). Typing onto the end of row 1's formula morphs its
+       curve; a new row draws in. `pgf` is what pgfplots is given. */
+    function ex(f) { return Math.exp(f); }
+    var SCENES = [
+      { name: 'Damped wave', caption: 'A damped wave, y = sin 2x · e^(−x/4), inside its envelope.', steps: [
+        { row: 1, text: 'sin(2x)', fn: function (x) { return Math.sin(2 * x); }, pgf: 'sin(deg(2*x))' },
+        { row: 1, text: 'sin(2x) * e^(-x/4)', fn: function (x) { return Math.sin(2 * x) * ex(-x / 4); }, pgf: 'sin(deg(2*x))*exp(-x/4)' },
+        { row: 2, text: '+-e^(-x/4)', mirror: true, fn: function (x) { return ex(-x / 4); }, pgf: 'exp(-x/4)' }
+      ] },
+      { name: 'Bell curve', caption: 'Two Gaussians centred at 6: the dashed one is narrower.', steps: [
+        { row: 1, text: 'e^(-(x-6)^2/4)', fn: function (x) { return ex(-(x - 6) * (x - 6) / 4); }, pgf: 'exp(-(x-6)^2/4)' },
+        { row: 2, text: 'e^(-(x-6)^2)', fn: function (x) { return ex(-(x - 6) * (x - 6)); }, pgf: 'exp(-(x-6)^2)' }
+      ] },
+      { name: 'S-curve', caption: 'Logistic growth, and the straight line it overtakes.', steps: [
+        { row: 1, text: '1/(1 + e^(-(x-6)))', fn: function (x) { return 1 / (1 + ex(-(x - 6))); }, pgf: '1/(1+exp(-(x-6)))' },
+        { row: 2, text: 'x/12', fn: function (x) { return x / 12; }, pgf: 'x/12' }
+      ] },
+      { name: 'Wave packet', caption: 'A wave packet: sin 4x under a Gaussian envelope.', steps: [
+        { row: 1, text: 'sin(4x)', fn: function (x) { return Math.sin(4 * x); }, pgf: 'sin(deg(4*x))' },
+        { row: 1, text: 'sin(4x) * e^(-(x-6)^2/4)', fn: function (x) { return Math.sin(4 * x) * ex(-(x - 6) * (x - 6) / 4); }, pgf: 'sin(deg(4*x))*exp(-(x-6)^2/4)' },
+        { row: 2, text: '+-e^(-(x-6)^2/4)', mirror: true, fn: function (x) { return ex(-(x - 6) * (x - 6) / 4); }, pgf: 'exp(-(x-6)^2/4)' }
+      ] }
     ];
-    var PLOTS = {
-      1: [['  \\addplot', '[thick] {sin(deg(2*x))};']],
-      2: [['  \\addplot', '[thick] {sin(deg(2*x))*exp(-x/4)};']],
-      3: [['  \\addplot', '[thick] {sin(deg(2*x))*exp(-x/4)};'], ['  \\addplot', '[dashed] {exp(-x/4)};'], ['  \\addplot', '[dashed] {-exp(-x/4)};']]
-    };
-    var CAPS = ['y = sin 2x, typed as you scroll.', 'y = sin 2x on 0 ≤ x ≤ 12.', 'A damped wave, y = sin 2x · e^(−x/4).', 'The damped wave and its envelope ±e^(−x/4).'];
 
-    var last = { t1: null, t2: null, m: null, tex: null, step: null, math: null };
-    var mathPrev = null;
-    function line(cmd, rest, fresh) {
-      var div = h('div', fresh ? 'fresh' : null);
-      div.appendChild(h('span', 'k', cmd));
-      div.appendChild(document.createTextNode(rest));
-      return div;
+    // the one state everything is drawn from; reset in place, so tweens can hold on to it
+    var S = {};
+    function fresh() {
+      return { t1: '', t2: '', active: 1, fn1: null, from1: null, m: 1, d1: 0, v1: 0, fn2: null, mirror: false, d2: 0, v2: 0, tex1: null, tex2: null };
     }
-    function setTex(n) {
+    var last = {}, mathPrev = null;
+
+    function texLine(cmd, rest) {
+      var d = h('div');
+      d.appendChild(h('span', 'k', cmd));
+      d.appendChild(document.createTextNode(rest));
+      return d;
+    }
+    function renderTex(flash) {
+      var before = texBox.children.length;
       texBox.textContent = '';
-      texBox.appendChild(line(TEX[0][0], TEX[0][1]));
-      var adds = [];
-      (PLOTS[n] || []).forEach(function (p, k) {
-        var el = line(p[0], p[1], true);
-        texBox.appendChild(el);
-        if (n === 3 ? k > 0 : true) adds.push(el);
-      });
-      texBox.appendChild(line(TEX[2][0], TEX[2][1]));
-      if (MOTION && adds.length) gsap.fromTo(adds, { backgroundColor: 'rgba(240,198,124,.35)', x: -8 }, { backgroundColor: 'rgba(240,198,124,0)', x: 0, duration: 0.9, ease: 'power2.out', stagger: 0.1 });
-      cap.textContent = CAPS[n];
+      texBox.appendChild(texLine('\\begin', '{axis}[domain=0:12, samples=200]'));
+      if (S.tex1) texBox.appendChild(texLine('  \\addplot', '[thick] {' + S.tex1 + '};'));
+      if (S.tex2) {
+        texBox.appendChild(texLine('  \\addplot', '[dashed] {' + S.tex2 + '};'));
+        if (S.mirror) texBox.appendChild(texLine('  \\addplot', '[dashed] {-' + S.tex2 + '};'));
+      }
+      texBox.appendChild(texLine('\\end', '{axis}'));
+      if (flash && MOTION) {
+        var lines = Array.prototype.slice.call(texBox.children, 1, -1);
+        var fresh2 = texBox.children.length > before ? lines.slice(-(texBox.children.length - before)) : lines.slice(-1);
+        gsap.fromTo(fresh2, { backgroundColor: 'rgba(240,198,124,.35)', x: -8 }, { backgroundColor: 'rgba(240,198,124,0)', x: 0, duration: 0.9, ease: 'power2.out', stagger: 0.1 });
+      }
     }
 
-    var P = { c1: 0, d1: 0, c2: 0, m: 0, d2: 0 };
     function render(animate) {
-      var t1 = S1.slice(0, Math.round(P.c1)), t2 = S2.slice(0, Math.round(P.c2));
-      if (t1 !== last.t1) { text1.textContent = t1; last.t1 = t1; }
-      if (t2 !== last.t2) { text2.textContent = t2; last.t2 = t2; }
-      var onRow2 = P.c2 > 0;
-      row1.classList.toggle('is-active', !onRow2);
-      row2.classList.toggle('is-active', onRow2);
-      row2.classList.toggle('fp__row--off', !onRow2);
+      [1, 2].forEach(function (r) {
+        if (S['t' + r] !== last['t' + r]) { texts[r].textContent = S['t' + r]; last['t' + r] = S['t' + r]; }
+        rows[r].classList.toggle('is-active', S.active === r);
+      });
+      rows[2].classList.toggle('fp__row--off', S.active === 1 && !S.t2);
 
-      var shown = onRow2 ? t2 : t1;
+      var shown = S['t' + S.active];
       if (shown !== last.math) {
         last.math = shown;
         if (!shown) { mathBox.textContent = ''; mathPrev = []; }
         else mathPrev = renderMath(mathBox, convert('y = ' + shown).toks, mathPrev, 26, animate);
       }
 
-      if (P.m !== last.m) { curve.setAttribute('d', path(wave(P.m))); last.m = P.m; }
-      clipC.setAttribute('width', P.d1 >= 1 ? 520 : X0 + (X1 - X0) * P.d1);
-      clipE.setAttribute('width', P.d2 >= 1 ? 520 : X0 + (X1 - X0) * P.d2);
+      var f1 = null;
+      if (S.fn1) f1 = S.from1 && S.m < 1 ? (function (a, b, m) { return function (x) { return a(x) * (1 - m) + b(x) * m; }; })(S.from1, S.fn1, S.m) : S.fn1;
+      var k1 = S.v1 + ':' + S.m;
+      if (k1 !== last.k1) { last.k1 = k1; curve.setAttribute('d', f1 ? path(f1) : ''); }
+      if (S.v2 !== last.v2) {
+        last.v2 = S.v2;
+        env.setAttribute('d', S.fn2 ? path(S.fn2) : '');
+        envNeg.setAttribute('d', S.fn2 && S.mirror ? path(function (x) { return -S.fn2(x); }) : '');
+      }
+      clipC.setAttribute('width', S.d1 >= 1 ? 520 : X0 + (X1 - X0) * S.d1);
+      clipE.setAttribute('width', S.d2 >= 1 ? 520 : X0 + (X1 - X0) * S.d2);
 
-      var drawing = (P.d1 > 0 && P.d1 < 1) ? [P.d1, wave(P.m)] : (P.d2 > 0 && P.d2 < 1) ? [P.d2, function (x) { return Math.exp(-x / 4); }] : null;
+      var drawing = (S.d1 > 0 && S.d1 < 1 && f1) ? [S.d1, f1] : (S.d2 > 0 && S.d2 < 1 && S.fn2) ? [S.d2, S.fn2] : null;
       if (drawing) {
         var x = XMAX * drawing[0];
         pen.setAttribute('cx', r1(X(x)));
@@ -732,43 +804,91 @@
         pen.style.opacity = 1;
       } else pen.style.opacity = 0;
 
-      var tex = P.d2 > 0 ? 3 : P.m > 0 ? 2 : P.d1 > 0 ? 1 : 0;
-      if (tex !== last.tex) { last.tex = tex; setTex(tex); }
-      var step = P.c2 > 0 ? 2 : P.c1 > S1A.length ? 1 : 0;
-      if (step !== last.step) {
-        last.step = step;
-        steps.forEach(function (li, k) { li.classList.toggle('is-on', k === step); });
-      }
     }
 
-    if (!MOTION) {                                   // reduced motion or no GSAP: the finished figure
-      P.c1 = S1.length; P.d1 = 1; P.m = 1; P.c2 = S2.length; P.d2 = 1;
+    // a step's formula is typed onto row 1's previous one when it continues it
+    function continues(sc, k) {
+      for (var j = k - 1; j >= 0; j--) if (sc.steps[j].row === sc.steps[k].row) return sc.steps[k].text.indexOf(sc.steps[j].text) === 0 ? sc.steps[j].text : '';
+      return '';
+    }
+    function commit(st, morph) {
+      if (morph) { S.from1 = S.fn1; S.fn1 = st.fn; S.m = 0; S.v1++; }
+      else if (st.row === 1) { S.fn1 = st.fn; S.from1 = null; S.m = 1; S.d1 = 0; S.v1++; }
+      else { S.fn2 = st.fn; S.mirror = !!st.mirror; S.d2 = 0; S.v2++; }
+    }
+    function begin(i) {
+      Object.assign(S, fresh());
+      last = {};
+      current = i;
+      cap.textContent = SCENES[i].caption;
+      renderTex(false);
+    }
+
+    // the finished example, with no motion (reduced motion, no GSAP)
+    function showFinal(i) {
+      begin(i);
+      var sc = SCENES[i];
+      sc.steps.forEach(function (st, k) {
+        var morph = !!continues(sc, k) && st.row === 1;
+        S['t' + st.row] = st.text;
+        S.active = st.row;
+        commit(st, morph);
+        S.m = 1; S['d' + st.row] = 1; S['tex' + st.row] = st.pgf;
+      });
       render(false);
-      return;
+      renderTex(false);
     }
 
-    var tl = gsap.timeline({ paused: true, defaults: { ease: 'none' }, onUpdate: function () { render(true); } });
-    tl.to(P, { c1: S1A.length, duration: 1 })
-      .to(P, { d1: 1, duration: 1.3 })
-      .to(P, { c1: S1.length, duration: 1.4 }, '+=0.2')
-      .to(P, { m: 1, duration: 1.3, ease: 'power1.inOut' })
-      .to(P, { c2: S2.length, duration: 1.1 }, '+=0.2')
-      .to(P, { d2: 1, duration: 1.2 })
-      .to({}, { duration: 0.6 });
+    var fadeEls = [curve, env, envNeg, mathBox, texts[1], texts[2]];
+    function build(i) {
+      var sc = SCENES[i];
+      var t = gsap.timeline({ paused: true, onUpdate: function () { render(true); }, onComplete: function () { play((i + 1) % SCENES.length); } });
+      t.call(function () { begin(i); gsap.set(fadeEls, { opacity: 1 }); }, null, 0).to({}, { duration: 0.4 });
+      sc.steps.forEach(function (st, k) {
+        var r = st.row, prev = continues(sc, k), morph = !!prev && r === 1;
+        var o = { n: prev.length };
+        t.call(function () { S.active = r; })
+          .to(o, { n: st.text.length, duration: Math.max(0.3, (st.text.length - prev.length) * 0.075), ease: 'none',
+                   onUpdate: function () { S['t' + r] = st.text.slice(0, Math.round(o.n)); } })
+          .call(function () { commit(st, morph); }, null, '+=0.15');
+        if (morph) t.to(S, { m: 1, duration: 1.3, ease: 'power1.inOut' });
+        else { var v = {}; v['d' + r] = 1; v.duration = 1.4; v.ease = 'power1.inOut'; t.to(S, v); }
+        t.call(function () { S['tex' + r] = st.pgf; renderTex(true); }).to({}, { duration: 0.45 });
+      });
+      t.addLabel('shown').to({}, { duration: 2.6 })
+        .to(fadeEls, { opacity: 0, duration: 0.45, ease: 'power1.in' });
+      return t;
+    }
 
+    // plays while on screen; holding the pointer over it stops it, to read or look closer
+    var tl = null, current = -1, visible = false, held = false;
+    function sync() {
+      if (tl) tl.paused(!visible || held);
+      stage.classList.toggle('is-paused', held);
+    }
+    function play(i) {
+      if (tl) tl.kill();
+      if (!MOTION) { tl = null; showFinal(i); return; }
+      tl = build(i);
+      tl.play(0);
+      sync();
+    }
+
+    if (!MOTION) { showFinal(0); return; }           // reduced motion or no GSAP: the first example, finished
+    stage.addEventListener('mouseenter', function () { held = true; sync(); });
+    stage.addEventListener('mouseleave', function () { held = false; sync(); });
+
+    Object.assign(S, fresh());
     render(false);
-
-    // Pinned only where the two columns sit side by side and the stage fits the
-    // screen. refreshPriority keeps the pin measured first whenever matchMedia
-    // re-creates it, so every trigger below it accounts for its 2600px.
-    var mm = gsap.matchMedia();
-    mm.add('(min-width: 1024px) and (min-height: 640px)', function () {
-      ST.create({ trigger: stage, start: 'top 64px', end: '+=2600', pin: true, scrub: 0.6, animation: tl, anticipatePin: 1, refreshPriority: 1 });
-    });
-    // narrower or shorter: the chart sits right under the typing box, and the
-    // drawing follows the chart itself through the screen
-    mm.add('not all and (min-width: 1024px) and (min-height: 640px)', function () {   // the exact complement: no gap at fractional sizes
-      ST.create({ trigger: '.plot__paper', start: 'top 80%', end: 'top 25%', scrub: 0.6, animation: tl, refreshPriority: 1 });
+    renderTex(false);
+    // starts drawing when you see it, stops when you scroll away
+    ST.create({
+      trigger: stage, start: 'top 80%', end: 'bottom 20%',
+      onToggle: function (self) {
+        visible = self.isActive;
+        if (visible && !tl) play(0);
+        sync();
+      }
     });
   }
 
@@ -1162,7 +1282,6 @@
     return;
   }
 
-  // the pinned section first: every trigger below it is measured after its spacer
   setupPlot();
   setupNav();
   setupButtons();

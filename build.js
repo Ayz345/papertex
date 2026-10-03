@@ -17,6 +17,12 @@ html = html.replace(/[ \t]*<link rel="stylesheet" href="([^"]+)">\n?/g, (_, href
 /* the favicon too: the single file must not need anything beside it */
 const iconUrl = 'data:image/png;base64,' + fs.readFileSync(path.join(root, 'desktop', 'papertex.png')).toString('base64');
 html = html.replace(/(<link rel="icon" href=")desktop\/papertex\.png(")/, (_, a, b) => a + iconUrl + b);
+/* and any image the page itself shows, such as the logo in the top bar */
+const MIME = { png: 'image/png', svg: 'image/svg+xml', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp' };
+html = html.replace(/(<img\b[^>]*?\ssrc=")([^"]+?\.(png|svg|jpe?g|gif|webp))(")/gi, (m, a, src, ext, b) => {
+  if (/^(?:data:|[a-z]+:\/\/)/i.test(src)) return m;
+  return a + 'data:' + MIME[ext.toLowerCase()] + ';base64,' + fs.readFileSync(path.join(root, src)).toString('base64') + b;
+});
 
 const hashes = [];
 html = html.replace(/[ \t]*<script src="([^"]+)"><\/script>\n?/g, (_, src) => {
