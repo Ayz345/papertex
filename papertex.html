@@ -3,6 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- What this page may load and run. Scripts only from this site (the
+     single-file build adds the hashes of its inline scripts), plus
+     'wasm-unsafe-eval', which lets the compiler instantiate WebAssembly
+     without allowing eval() of JavaScript;
+     style attributes are how the maths is laid out; fonts and pasted images
+     are data: URLs; the compiled PDF is a blob:. connect-src names the
+     engine host — tools/build-web.js narrows it to this site alone when
+     TeX Live is deployed beside the page. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-nCsYqU57DcjyJdeLktuVapNA/VJyB+D3CgjahKkAG30=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-FFom6qq8tNvBDtWKkeXB9k9xIAfAX5n1XPyZ4XVibEQ=' 'sha256-OI1XvI1YDe5z/WgOLZqJHOh6Nij9VeE5vwyJRCkFWKg=' 'sha256-6M3r1xu+SWYvL+yQeuSAv9wY5i4gOD9Mhzy0wi4bPNA=' 'sha256-oji+0n13nqRqXf6T7hCsodCcFbSB6vjz0B+gRtfs3eE=' 'sha256-r4ar0xaMZepl04KR7XVNhhc0Ahx6YLBONtjkvyBCh24=' 'sha256-2Nf8IMEt9AgrBEapUtgndS3BXdMStE29Q8deX0WEE+s=' 'sha256-5VyqioJD5QufI7DMYEa7hKz3ZU3jWUKscvcIHNS4OXg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<!-- Where the compiler's wasm and TeX Live live, if not beside this page
+     (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
+<meta name="papertex-engine" content="">
 <title>PaperTeX</title>
 <style>
 /* css/fonts.css */
@@ -3264,6 +3276,138 @@ blockquote.pt-quote {
 })();
 </script>
 <script>
+/* js/sanitize.js */
+/* PaperTeX — the gate rich text passes through.
+
+   A document is data: it comes back from local storage, from a project file
+   someone sent you, from an undo snapshot. Its paragraphs are stored as HTML,
+   and HTML from a file must never reach the page as-is — an <img onerror>
+   in a shared project would run as soon as it was opened. So everything that
+   becomes markup goes through clean() first, which keeps exactly what the
+   editor itself produces and nothing else:
+
+     b strong i em u s strike code tt sup sub mark br div p   — no attributes
+     a            — href only, and only http(s), mailto or #anchor
+     span.imath   — a formula: its tree (data-m) only, re-drawn on render
+     span.xref    — a reference: kind and label only
+     span.ftnote  — a footnote: its text only
+
+   Unknown elements are unwrapped (their text kept); elements that carry code
+   or load things — script, style, iframe, img, svg, form controls … — are
+   removed with their contents. Parsing happens in a separate, inert document,
+   where nothing loads and nothing runs. */
+(function () {
+  'use strict';
+
+  var KEEP = {
+    b: 1, strong: 1, i: 1, em: 1, u: 1, s: 1, strike: 1, code: 1, tt: 1,
+    sup: 1, sub: 1, mark: 1, br: 1, div: 1, p: 1, a: 1, span: 1
+  };
+  var DROP = {
+    script: 1, style: 1, iframe: 1, frame: 1, frameset: 1, object: 1, embed: 1,
+    applet: 1, link: 1, meta: 1, base: 1, title: 1, template: 1, noscript: 1,
+    svg: 1, math: 1, img: 1, picture: 1, video: 1, audio: 1, source: 1, track: 1,
+    canvas: 1, form: 1, input: 1, button: 1, textarea: 1, select: 1, option: 1,
+    portal: 1, slot: 1
+  };
+  var XREF_KINDS = { ref: 1, eqref: 1, pageref: 1, cite: 1 };
+  var EMPTY_ROW = '{"t":"row","k":[]}';
+
+  function parse(html) {
+    return new DOMParser().parseFromString('<!DOCTYPE html><body>' + (html || ''), 'text/html').body;
+  }
+
+  /* only links that go somewhere ordinary */
+  function safeHref(v) {
+    v = String(v || '').trim();
+    return /^(https?:\/\/|mailto:|#)/i.test(v) ? v : '';
+  }
+  /* a label or citation key goes into \ref{…}: nothing that ends the group */
+  function safeLabel(v) {
+    return String(v || '').replace(/[{}\\%#$^&~\u0000-\u001f]/g, '').slice(0, 200);
+  }
+  function safeTree(v) {
+    try {
+      var t = JSON.parse(v);
+      if (t && t.t === 'row' && Array.isArray(t.k)) return JSON.stringify(t);
+    } catch (e) { /* fall through */ }
+    return EMPTY_ROW;
+  }
+
+  function cleanNode(el, doc) {
+    var kids = [].slice.call(el.childNodes);
+    kids.forEach(function (n) {
+      if (n.nodeType === 3) return;
+      if (n.nodeType !== 1) { n.remove(); return; }
+      var tag = n.tagName.toLowerCase();
+      if (DROP[tag]) { n.remove(); return; }
+      if (!KEEP[tag]) {
+        cleanNode(n, doc);
+        while (n.firstChild) el.insertBefore(n.firstChild, n);
+        n.remove();
+        return;
+      }
+      var cls = ' ' + (n.getAttribute('class') || '') + ' ';
+      var keep = {};
+      if (tag === 'a') {
+        var href = safeHref(n.getAttribute('href'));
+        if (href) keep.href = href;
+      } else if (tag === 'span' && cls.indexOf(' imath ') >= 0) {
+        keep['class'] = 'imath';
+        keep.contenteditable = 'false';
+        keep['data-m'] = safeTree(n.getAttribute('data-m'));
+        n.textContent = '';           /* the renderer draws it again from the tree */
+      } else if (tag === 'span' && cls.indexOf(' xref ') >= 0) {
+        var kind = n.getAttribute('data-kind');
+        keep['class'] = 'xref';
+        keep.contenteditable = 'false';
+        keep['data-kind'] = XREF_KINDS[kind] ? kind : 'ref';
+        keep['data-label'] = safeLabel(n.getAttribute('data-label'));
+        n.textContent = n.textContent;  /* text only */
+      } else if (tag === 'span' && cls.indexOf(' ftnote ') >= 0) {
+        keep['class'] = 'ftnote';
+        keep['data-text'] = String(n.getAttribute('data-text') || '').slice(0, 5000);
+        n.textContent = n.textContent;
+      } else if (tag === 'span') {
+        /* a plain span is styling the browser left behind: keep its text */
+        cleanNode(n, doc);
+        while (n.firstChild) el.insertBefore(n.firstChild, n);
+        n.remove();
+        return;
+      }
+      [].slice.call(n.attributes).forEach(function (a) { n.removeAttribute(a.name); });
+      Object.keys(keep).forEach(function (k) { n.setAttribute(k, keep[k]); });
+      if (tag !== 'span' || !keep['class']) cleanNode(n, doc);
+    });
+  }
+
+  function clean(html) {
+    if (!html) return '';
+    var body = parse(html);
+    cleanNode(body, body.ownerDocument);
+    return body.innerHTML;
+  }
+
+  /* Pasted or dropped images are stored as data URLs; anything else — a
+     remote address that would report who opened the file, a javascript: URL
+     — is refused. */
+  function safeImageSrc(v) {
+    v = String(v || '');
+    return /^data:image\/(png|jpe?g|gif|webp|bmp|svg\+xml);base64,[A-Za-z0-9+/=\s]+$/i.test(v) ? v : '';
+  }
+
+  window.PT = window.PT || {};
+  window.PT.sanitize = {
+    clean: clean,
+    /* an inert, cleaned tree to read from (the LaTeX writer walks it) */
+    parse: function (html) { return parse(clean(html)); },
+    href: safeHref,
+    label: safeLabel,
+    imageSrc: safeImageSrc
+  };
+})();
+</script>
+<script>
 /* js/latex.js */
 /* PaperTeX — turns the on-paper document into a .tex source file.
    The document model is the source of truth; LaTeX is generated output. */
@@ -3289,8 +3433,8 @@ blockquote.pt-quote {
 
   /* ---- inline HTML (a paragraph's rich text) -> LaTeX ---- */
   function inline(html, use) {
-    var box = document.createElement('div');
-    box.innerHTML = html || '';
+    /* an inert, cleaned copy: nothing in it can load or run */
+    var box = PT.sanitize.parse(html);
     return walk(box, use).replace(/[ \t]+\n/g, '\n').replace(/ {2,}/g, ' ');
   }
 
@@ -3310,7 +3454,7 @@ blockquote.pt-quote {
         continue;
       }
       if (cls.indexOf('xref') >= 0) {
-        var kind = n.dataset.kind || 'ref', lab = n.dataset.label || '';
+        var kind = n.dataset.kind || 'ref', lab = PT.sanitize.label(n.dataset.label);
         if (kind === 'cite') { out += '\\cite{' + lab + '}'; use.cite = true; }
         else if (kind === 'eqref') { out += '\\eqref{' + lab + '}'; use.amsmath = true; }
         else if (kind === 'pageref') out += '\\pageref{' + lab + '}';
@@ -3330,10 +3474,14 @@ blockquote.pt-quote {
         case 'sub': out += wrap('\\textsubscript', n, use); use.fixltx = true; break;
         case 'mark': out += wrap('\\hl', n, use); use.soul = true; break;
         case 'br': out += '\\\\\n'; break;
-        case 'a':
+        case 'a': {
+          /* braces would end the argument early; % and # must be escaped */
+          var href = PT.sanitize.href(n.getAttribute('href')).replace(/[{}\\]/g, '').replace(/[%#]/g, '\\$&');
+          if (!href) { out += walk(n, use); break; }
           use.hyperref = true;
-          out += '\\href{' + (n.getAttribute('href') || '') + '}{' + walk(n, use) + '}';
+          out += '\\href{' + href + '}{' + walk(n, use) + '}';
           break;
+        }
         case 'div': case 'p': out += walk(n, use) + '\n'; break;
         default: out += walk(n, use);
       }
@@ -3890,7 +4038,7 @@ blockquote.pt-quote {
     e.contentEditable = 'true';
     e.spellcheck = false;
     if (plain) e.textContent = value || '';
-    else e.innerHTML = value || '';
+    else e.innerHTML = PT.sanitize.clean(value);   /* stored HTML is data, never markup as-is */
     e.addEventListener('input', function () { onChange(plain ? e.textContent : e.innerHTML); });
     e.addEventListener('keydown', function (ev) {
       if (plain && ev.key === 'Enter') { ev.preventDefault(); }
@@ -3911,7 +4059,7 @@ blockquote.pt-quote {
     var e = h(tag, cls);
     e.contentEditable = 'true';
     e.spellcheck = true;
-    e.innerHTML = value || '';
+    e.innerHTML = PT.sanitize.clean(value);   /* stored HTML is data, never markup as-is */
     e.__rich = true;   /* takes formatting and inline formulas (see app.js richHost) */
     e.addEventListener('input', function () {
       /* "$" opens an inline formula right where you are */
@@ -4321,11 +4469,16 @@ blockquote.pt-quote {
     var fw = h('figure', 'pt-fig');
     var holder = h('div', 'pt-figimg');
     holder.contentEditable = 'false';
-    if (b.src) {
+    var src = PT.sanitize.imageSrc(b.src);
+    if (src) {
       var img = h('img');
-      img.src = b.src;
+      img.src = src;
       img.style.width = Math.round(b.width * 100) + '%';
       holder.appendChild(img);
+    } else if (b.src) {
+      /* only embedded images are shown: a remote address in a shared file
+         would tell its owner who opened it */
+      holder.appendChild(h('div', 'pt-drop', 'This figure points outside the document and was not loaded. Click to choose the image.'));
     } else {
       var drop = h('div', 'pt-drop');
       drop.innerHTML = '<div class="pt-dropi">🖼</div><div>Click to choose an image, or drop one here</div>' +
@@ -4876,16 +5029,36 @@ blockquote.pt-quote {
 
   var scriptPromise = null, compiler = null, assetsChecked = false;
 
-  /* The desktop build can carry TeX Live with it. If those files are present,
-     use them and never touch the network — see tools/fetch-texlive.js. */
+  /* Where the wasm engine and TeX Live come from, first match wins:
+       1. <meta name="papertex-engine" content="https://your.host/tl2025"> —
+          a deployment that hosts them elsewhere says so here;
+       2. engine/texlive/ beside the page — tools/fetch-texlive.js puts them
+          there, for the desktop app and for a site that serves them itself;
+       3. the public CDN, as a last resort.
+     CFG.source records which, for the error message when it fails. */
+  CFG.source = 'cdn';
   function useLocalAssetsIfPresent() {
-    if (assetsChecked || !window.papertexNative) return Promise.resolve();
+    if (assetsChecked) return Promise.resolve();
     assetsChecked = true;
-    return window.papertexNative.engineAssets().then(function (r) {
-      if (!r || !r.local) return;
+    var meta = document.querySelector('meta[name="papertex-engine"]');
+    var base = meta && meta.content.trim().replace(/\/+$/, '');
+    if (base) {
+      CFG.wasm = base + '/busytex.wasm';
+      CFG.bundles = base + '/bundles';
+      CFG.source = base;
+      return Promise.resolve();
+    }
+    function local() {
       CFG.wasm = 'engine/texlive/busytex.wasm';
       CFG.bundles = 'engine/texlive/bundles';
-    }, function () { /* keep the defaults */ });
+      CFG.source = 'local';
+    }
+    if (window.papertexNative) {
+      return window.papertexNative.engineAssets().then(function (r) { if (r && r.local) local(); },
+        function () { /* keep the defaults */ });
+    }
+    return fetch('engine/texlive/bundles/file-manifest.json', { method: 'HEAD', cache: 'no-store' })
+      .then(function (r) { if (r.ok) local(); }, function () { /* not served here */ });
   }
 
   function loadScript(src) {
@@ -5744,6 +5917,9 @@ blockquote.pt-quote {
       dialog({ title: 'Link', input: '', placeholder: 'https://…', okLabel: 'Add link' })
         .then(function (u) {
           if (!u) return;
+          u = u.trim();
+          if (!/^[a-z][a-z0-9+.-]*:/i.test(u) && !/^#/.test(u)) u = (/@/.test(u) && !/\//.test(u) ? 'mailto:' : 'https://') + u;
+          if (!PT.sanitize.href(u)) { toast('Only web addresses (https://…) and email links can be linked.'); return; }
           var s = window.getSelection();
           s.removeAllRanges();
           s.addRange(saved);
@@ -6037,8 +6213,12 @@ blockquote.pt-quote {
     try { w = window.open('', '_blank'); } catch (e) { w = null; }
     if (w && w.document) {
       w.document.open();
-      w.document.write(printableHTML());
+      w.document.write(printableHTML(false));
       w.document.close();
+      try {
+        (w.document.fonts ? w.document.fonts.ready : Promise.resolve())
+          .then(function () { setTimeout(function () { w.print(); }, 250); });
+      } catch (e) { /* the tab is open; printing from it still works */ }
       toast('Opened a printable copy in a new tab — choose “Save as PDF” there.');
       return;
     }
@@ -6065,7 +6245,7 @@ blockquote.pt-quote {
 
   /* The page as a standalone document: styles and fonts inlined, editing
      furniture stripped, and it opens its own print dialog. */
-  function printableHTML() {
+  function printableHTML(selfPrinting) {
     var css = '';
     [].forEach.call(document.styleSheets, function (ss) {
       try {
@@ -6090,20 +6270,28 @@ blockquote.pt-quote {
     paper.style.setProperty('--fs', parseFloat(state.doc.settings.fontsize) * (96 / 72) + 'px');
 
     var title = D.stripTags(state.doc.meta.title) || 'Document';
+    /* the margin comes from the document, so from whoever wrote the file:
+       only a plain length goes into the stylesheet */
+    var margin = /^\d+(\.\d+)?(cm|mm|in|pt)$/.test(state.doc.settings.margin) ? state.doc.settings.margin : '2.5cm';
     return '<!DOCTYPE html>\n<html><head><meta charset="utf-8">\n<title>' +
       title.replace(/[<&]/g, '') + '</title>\n<style>\n' + css + '\n</style>\n' +
       '<style>\n' +
       '  body { background:#fff; margin:0; overflow:visible; }\n' +
       '  .paper { margin:0 auto; box-shadow:none; width:auto; max-width:none;\n' +
-      '           padding:' + state.doc.settings.margin + ' !important; }\n' +
+      '           padding:' + margin + ' !important; }\n' +
       '  /* a zero page margin leaves the browser no room to draw its\n' +
       '     URL-and-date header, so the sheet prints clean */\n' +
       '  @page { size:' + (PAGESIZE[state.doc.settings.paper] || 'A4') + '; margin:0; }\n' +
       '</style>\n</head>\n<body>\n' + paper.outerHTML + '\n' +
-      '<script>\n' +
-      '  (document.fonts ? document.fonts.ready : Promise.resolve())\n' +
-      '    .then(function(){ setTimeout(function(){ window.print(); }, 250); });\n' +
-      '<\/script>\n</body></html>\n';
+      /* A downloaded copy prints itself when opened. A copy written into a
+         new tab does not carry a script: that tab inherits this page's
+         Content-Security-Policy, so this page asks it to print instead. */
+      (selfPrinting === false ? '' :
+        '<script>\n' +
+        '  (document.fonts ? document.fonts.ready : Promise.resolve())\n' +
+        '    .then(function(){ setTimeout(function(){ window.print(); }, 250); });\n' +
+        '<\/script>\n') +
+      '</body></html>\n';
   }
   function dataURLToBytes(u) {
     var parts = String(u).split(','), bin = atob(parts[1]);

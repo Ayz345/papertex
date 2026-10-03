@@ -3,6 +3,7 @@
    Produces papertex.html (double-click it, or host it anywhere). */
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const root = __dirname;
 let html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
@@ -12,10 +13,21 @@ html = html.replace(/[ \t]*<link rel="stylesheet" href="([^"]+)">\n?/g, (_, href
   return '<style>\n/* ' + href + ' */\n' + css + '</style>\n';
 });
 
+const hashes = [];
 html = html.replace(/[ \t]*<script src="([^"]+)"><\/script>\n?/g, (_, src) => {
   const js = fs.readFileSync(path.join(root, src), 'utf8');
-  return '<script>\n/* ' + src + ' */\n' + js + '</script>\n';
+  if (/<\/script/i.test(js)) throw new Error(src + ' contains "</script" — escape it as "<\\/script"');
+  const body = '\n/* ' + src + ' */\n' + js;
+  hashes.push("'sha256-" + crypto.createHash('sha256').update(body, 'utf8').digest('base64') + "'");
+  return '<script>' + body + '</script>\n';
 });
+
+/* Inline scripts are allowed by their exact hashes, never wholesale: an
+   injected <script> has no matching hash and does not run. 'self' stays for
+   the compiler, which is loaded from engine/ only when it is needed. */
+const csp = /(<meta http-equiv="Content-Security-Policy" content="[^"]*script-src 'self'(?: 'wasm-unsafe-eval')?)/;
+if (!csp.test(html)) throw new Error('index.html has no Content-Security-Policy with script-src \'self\'');
+html = html.replace(csp, (m) => m + ' ' + hashes.join(' '));
 
 fs.writeFileSync(path.join(root, 'papertex.html'), html);
 

@@ -22,8 +22,8 @@
 
   /* ---- inline HTML (a paragraph's rich text) -> LaTeX ---- */
   function inline(html, use) {
-    var box = document.createElement('div');
-    box.innerHTML = html || '';
+    /* an inert, cleaned copy: nothing in it can load or run */
+    var box = PT.sanitize.parse(html);
     return walk(box, use).replace(/[ \t]+\n/g, '\n').replace(/ {2,}/g, ' ');
   }
 
@@ -43,7 +43,7 @@
         continue;
       }
       if (cls.indexOf('xref') >= 0) {
-        var kind = n.dataset.kind || 'ref', lab = n.dataset.label || '';
+        var kind = n.dataset.kind || 'ref', lab = PT.sanitize.label(n.dataset.label);
         if (kind === 'cite') { out += '\\cite{' + lab + '}'; use.cite = true; }
         else if (kind === 'eqref') { out += '\\eqref{' + lab + '}'; use.amsmath = true; }
         else if (kind === 'pageref') out += '\\pageref{' + lab + '}';
@@ -63,10 +63,14 @@
         case 'sub': out += wrap('\\textsubscript', n, use); use.fixltx = true; break;
         case 'mark': out += wrap('\\hl', n, use); use.soul = true; break;
         case 'br': out += '\\\\\n'; break;
-        case 'a':
+        case 'a': {
+          /* braces would end the argument early; % and # must be escaped */
+          var href = PT.sanitize.href(n.getAttribute('href')).replace(/[{}\\]/g, '').replace(/[%#]/g, '\\$&');
+          if (!href) { out += walk(n, use); break; }
           use.hyperref = true;
-          out += '\\href{' + (n.getAttribute('href') || '') + '}{' + walk(n, use) + '}';
+          out += '\\href{' + href + '}{' + walk(n, use) + '}';
           break;
+        }
         case 'div': case 'p': out += walk(n, use) + '\n'; break;
         default: out += walk(n, use);
       }

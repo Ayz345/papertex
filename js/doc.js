@@ -344,7 +344,7 @@
     e.contentEditable = 'true';
     e.spellcheck = false;
     if (plain) e.textContent = value || '';
-    else e.innerHTML = value || '';
+    else e.innerHTML = PT.sanitize.clean(value);   /* stored HTML is data, never markup as-is */
     e.addEventListener('input', function () { onChange(plain ? e.textContent : e.innerHTML); });
     e.addEventListener('keydown', function (ev) {
       if (plain && ev.key === 'Enter') { ev.preventDefault(); }
@@ -365,7 +365,7 @@
     var e = h(tag, cls);
     e.contentEditable = 'true';
     e.spellcheck = true;
-    e.innerHTML = value || '';
+    e.innerHTML = PT.sanitize.clean(value);   /* stored HTML is data, never markup as-is */
     e.__rich = true;   /* takes formatting and inline formulas (see app.js richHost) */
     e.addEventListener('input', function () {
       /* "$" opens an inline formula right where you are */
@@ -775,11 +775,16 @@
     var fw = h('figure', 'pt-fig');
     var holder = h('div', 'pt-figimg');
     holder.contentEditable = 'false';
-    if (b.src) {
+    var src = PT.sanitize.imageSrc(b.src);
+    if (src) {
       var img = h('img');
-      img.src = b.src;
+      img.src = src;
       img.style.width = Math.round(b.width * 100) + '%';
       holder.appendChild(img);
+    } else if (b.src) {
+      /* only embedded images are shown: a remote address in a shared file
+         would tell its owner who opened it */
+      holder.appendChild(h('div', 'pt-drop', 'This figure points outside the document and was not loaded. Click to choose the image.'));
     } else {
       var drop = h('div', 'pt-drop');
       drop.innerHTML = '<div class="pt-dropi">🖼</div><div>Click to choose an image, or drop one here</div>' +

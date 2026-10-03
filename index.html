@@ -3,6 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- What this page may load and run. Scripts only from this site (the
+     single-file build adds the hashes of its inline scripts), plus
+     'wasm-unsafe-eval', which lets the compiler instantiate WebAssembly
+     without allowing eval() of JavaScript;
+     style attributes are how the maths is laid out; fonts and pasted images
+     are data: URLs; the compiled PDF is a blob:. connect-src names the
+     engine host — tools/build-web.js narrows it to this site alone when
+     TeX Live is deployed beside the page. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<!-- Where the compiler's wasm and TeX Live live, if not beside this page
+     (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
+<meta name="papertex-engine" content="">
 <title>PaperTeX</title>
 <link rel="stylesheet" href="css/fonts.css">
 <link rel="stylesheet" href="css/app.css">
@@ -150,6 +162,7 @@
 <script src="js/symbols.js"></script>
 <script src="js/texmf.js"></script>
 <script src="js/math.js"></script>
+<script src="js/sanitize.js"></script>
 <script src="js/latex.js"></script>
 <script src="js/doc.js"></script>
 <script src="js/compile.js"></script>

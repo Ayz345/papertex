@@ -265,6 +265,9 @@
       dialog({ title: 'Link', input: '', placeholder: 'https://…', okLabel: 'Add link' })
         .then(function (u) {
           if (!u) return;
+          u = u.trim();
+          if (!/^[a-z][a-z0-9+.-]*:/i.test(u) && !/^#/.test(u)) u = (/@/.test(u) && !/\//.test(u) ? 'mailto:' : 'https://') + u;
+          if (!PT.sanitize.href(u)) { toast('Only web addresses (https://…) and email links can be linked.'); return; }
           var s = window.getSelection();
           s.removeAllRanges();
           s.addRange(saved);
@@ -558,8 +561,12 @@
     try { w = window.open('', '_blank'); } catch (e) { w = null; }
     if (w && w.document) {
       w.document.open();
-      w.document.write(printableHTML());
+      w.document.write(printableHTML(false));
       w.document.close();
+      try {
+        (w.document.fonts ? w.document.fonts.ready : Promise.resolve())
+          .then(function () { setTimeout(function () { w.print(); }, 250); });
+      } catch (e) { /* the tab is open; printing from it still works */ }
       toast('Opened a printable copy in a new tab — choose “Save as PDF” there.');
       return;
     }
@@ -586,7 +593,7 @@
 
   /* The page as a standalone document: styles and fonts inlined, editing
      furniture stripped, and it opens its own print dialog. */
-  function printableHTML() {
+  function printableHTML(selfPrinting) {
     var css = '';
     [].forEach.call(document.styleSheets, function (ss) {
       try {
@@ -611,20 +618,28 @@
     paper.style.setProperty('--fs', parseFloat(state.doc.settings.fontsize) * (96 / 72) + 'px');
 
     var title = D.stripTags(state.doc.meta.title) || 'Document';
+    /* the margin comes from the document, so from whoever wrote the file:
+       only a plain length goes into the stylesheet */
+    var margin = /^\d+(\.\d+)?(cm|mm|in|pt)$/.test(state.doc.settings.margin) ? state.doc.settings.margin : '2.5cm';
     return '<!DOCTYPE html>\n<html><head><meta charset="utf-8">\n<title>' +
       title.replace(/[<&]/g, '') + '</title>\n<style>\n' + css + '\n</style>\n' +
       '<style>\n' +
       '  body { background:#fff; margin:0; overflow:visible; }\n' +
       '  .paper { margin:0 auto; box-shadow:none; width:auto; max-width:none;\n' +
-      '           padding:' + state.doc.settings.margin + ' !important; }\n' +
+      '           padding:' + margin + ' !important; }\n' +
       '  /* a zero page margin leaves the browser no room to draw its\n' +
       '     URL-and-date header, so the sheet prints clean */\n' +
       '  @page { size:' + (PAGESIZE[state.doc.settings.paper] || 'A4') + '; margin:0; }\n' +
       '</style>\n</head>\n<body>\n' + paper.outerHTML + '\n' +
-      '<script>\n' +
-      '  (document.fonts ? document.fonts.ready : Promise.resolve())\n' +
-      '    .then(function(){ setTimeout(function(){ window.print(); }, 250); });\n' +
-      '<\/script>\n</body></html>\n';
+      /* A downloaded copy prints itself when opened. A copy written into a
+         new tab does not carry a script: that tab inherits this page's
+         Content-Security-Policy, so this page asks it to print instead. */
+      (selfPrinting === false ? '' :
+        '<script>\n' +
+        '  (document.fonts ? document.fonts.ready : Promise.resolve())\n' +
+        '    .then(function(){ setTimeout(function(){ window.print(); }, 250); });\n' +
+        '<\/script>\n') +
+      '</body></html>\n';
   }
   function dataURLToBytes(u) {
     var parts = String(u).split(','), bin = atob(parts[1]);
