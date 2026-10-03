@@ -1,0 +1,7 @@
+# Source is LF everywhere; only the Windows launcher wants CRLF.
+* text=auto eol=lf
+*.cmd text eol=crlf
+*.woff2 binary
+*.ico binary
+*.png binary
+*.zip binary

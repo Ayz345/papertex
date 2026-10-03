@@ -1,0 +1,59 @@
+{
+  "name": "papertex",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Write on the paper, get the LaTeX",
+  "scripts": {
+    "desktop": "electron desktop/main.js",
+    "build": "node build.js",
+    "build:engine": "node tools/bundle-engine.js",
+    "build:texmf": "node tools/bundle-texmf.js",
+    "fonts": "node tools/genfonts.js",
+    "fetch-texlive": "node tools/fetch-texlive.js",
+    "package": "node tools/package-app.js",
+    "dist": "electron-builder",
+    "icon": "python tools/make-icon.py",
+    "shortcut": "node tools/make-shortcut.js"
+  },
+  "dependencies": {
+    "@siglum/engine": "^0.1.4",
+    "esbuild": "^0.28.2"
+  },
+  "devDependencies": {
+    "electron": "^41.7.1"
+  },
+  "main": "desktop/main.js",
+  "build": {
+    "appId": "org.papertex.app",
+    "productName": "PaperTeX",
+    "files": [
+      "index.html",
+      "css/**",
+      "js/**",
+      "engine/**",
+      "fonts/**",
+      "desktop/**",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "desktop/papertex.ico"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "desktop/papertex.png"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "icon": "desktop/papertex.png"
+    },
+    "directories": {
+      "output": "dist"
+    }
+  }
+}

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>PaperTeX math check</title>
+<!-- Development aid: every formula rendered by PaperTeX (left) beside KaTeX
+     (right) at the same size, in both display and inline style. KaTeX uses
+     the same Computer Modern faces and TeX's own spacing rules, so it is a fair
+     reference for where limits, scripts and bars should land.
+     Serve the folder and open http://localhost:8777/tools/mathcheck.html -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
+<script>
+  /* always the current source, never a cached copy */
+  var v = '?v=' + Date.now();
+  document.write('<link rel="stylesheet" href="../css/fonts.css' + v + '">' +
+    '<link rel="stylesheet" href="../css/paper.css' + v + '">' +
+    '<script src="../js/symbols.js' + v + '"><\/script>' +
+    '<script src="../js/math.js' + v + '"><\/script>');
+</script>
+<!-- after paper.css: both use class names like .mfrac, and KaTeX's own
+     rules must win inside the reference column -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.css">
+<style>
+  body { margin: 0; background: #eee; font: 13px system-ui, sans-serif; }
+  .paper { min-height: 0; width: auto; margin: 16px; padding: 16px 24px; text-align: left; }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { border-bottom: 1px solid #eee; padding: 10px 12px; vertical-align: middle; }
+  th { font: 600 11px system-ui, sans-serif; text-align: left; color: #776; }
+  td.src { font: 11px Consolas, monospace; color: #776; width: 22%; }
+  td.pt, td.kx { width: 26%; white-space: nowrap; }
+  .katex { font-size: 1em; }
+  /* PaperTeX's .mfrac rule is unscoped and KaTeX uses the same class name */
+  .katex .mfrac { display: inline; vertical-align: baseline; padding: 0; }
+  .guide td.pt, .guide td.kx { background: linear-gradient(transparent calc(50% - .5px), rgba(200,0,0,.25) calc(50% - .5px), rgba(200,0,0,.25) calc(50% + .5px), transparent calc(50% + .5px)); }
+</style>
+</head>
+<body>
+<div class="paper">
+  <table id="t">
+    <tr><th>source</th><th>PaperTeX display</th><th>KaTeX display</th><th>PaperTeX inline</th><th>KaTeX inline</th></tr>
+  </table>
+</div>
+<script>
+var CASES = [
+  '\\int_{-\\infty}^{\\infty} e^{-x^2}\\,dx',
+  '\\int_0^1 f(x)\\,dx',
+  '\\int_a^b x\\,dx',
+  '\\iint_D f\\,dA',
+  '\\oint_C F\\cdot dr',
+  '\\int_{0}^{\\frac{\\pi}{2}} \\sin x\\,dx',
+  '\\int f\\,dx',
+  '\\sum_{n=1}^{\\infty} \\frac{1}{n^2}',
+  '\\prod_{k=1}^{n} k',
+  '\\lim_{x\\to 0} \\frac{\\sin x}{x}',
+  'x^2 + y_1 + z_i^2',
+  'e^{-x^2}',
+  '\\frac{a}{b} + \\frac{1}{2}',
+  '\\sqrt{x} + \\sqrt[3]{y}',
+  '\\left( \\frac{a}{b} \\right)',
+  '\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}',
+  '\\binom{n}{k}',
+  '\\hat{x} + \\vec{v} + \\bar{y}',
+  'x^{y^{z}} + a_{i_{j}}',
+  '\\sqrt{\\frac{a}{b}}',
+  '\\sqrt[n]{x^2+1}',
+  '\\overline{AB} + \\underline{x}',
+  '\\tilde{a} + \\dot{x} + \\ddot{y} + \\hat{f}',
+  '\\left[ \\frac{1}{2} \\right] + \\left\\{ x \\right\\}',
+  '\\begin{cases} x & x > 0 \\\\ -x & x \\le 0 \\end{cases}',
+  '\\max_{i} a_i',
+  '\\sum_{i=1}^{n} i^2 = \\frac{n(n+1)(2n+1)}{6}',
+  'f(x) = -x, \\quad a = -b',
+  '\\frac{\\partial f}{\\partial x}',
+  '\\sin^2 x + \\cos^2 x = 1',
+  'e^{i\\pi} + 1 = 0',
+  '\\int_0^\\infty \\frac{dx}{1+x^2}'
+];
+var M = PT.math, t = document.getElementById('t');
+CASES.forEach(function (tex) {
+  var tr = document.createElement('tr');
+  var src = document.createElement('td'); src.className = 'src'; src.textContent = tex; tr.appendChild(src);
+  ['display', 'inline'].forEach(function (mode) {
+    var pt = document.createElement('td'); pt.className = 'pt';
+    var box = document.createElement('span');
+    box.className = mode === 'inline' ? 'imath' : 'mfield';
+    pt.appendChild(document.createTextNode('A '));
+    pt.appendChild(box);
+    pt.appendChild(document.createTextNode(' B'));
+    var kx = document.createElement('td'); kx.className = 'kx';
+    var kb = document.createElement('span');
+    kx.appendChild(document.createTextNode('A '));
+    kx.appendChild(kb);
+    kx.appendChild(document.createTextNode(' B'));
+    tr.appendChild(pt); tr.appendChild(kx);
+    pt.__go = function () { M.renderStatic(box, M.parseTex(tex), mode === 'display'); };
+    katex.render((mode === 'display' ? '\\displaystyle ' : '') + tex, kb, { throwOnError: false });
+  });
+  t.appendChild(tr);
+});
+document.fonts.ready.then(function () {
+  [].forEach.call(document.querySelectorAll('td.pt'), function (td) { td.__go(); });
+});
+
+/* inkOf('(' ...): for the given characters, where their ink really is —
+   top and bottom relative to the cell's baseline and horizontal extent,
+   in em — in each column. For glyphs whose text boxes differ between the
+   two (different faces, stretched delimiters), where compare() cannot. */
+function inkOf(chars, mode) {
+  var cv = document.createElement('canvas').getContext('2d');
+  function bl(e) { var m = document.createElement('span'); m.style.cssText = 'display:inline-block;width:0;height:0;vertical-align:baseline'; e.appendChild(m); var y = m.getBoundingClientRect().top; m.remove(); return y; }
+  var col = mode === 'inline' ? 3 : 1, out = [];
+  [].slice.call(document.querySelectorAll('#t tr'), 1).forEach(function (tr) {
+    var tds = tr.querySelectorAll('td'), line = [];
+    [col, col + 1].forEach(function (c) {
+      var td = tds[c], base = bl(td), fs = parseFloat(getComputedStyle(td).fontSize);
+      var A = document.createRange(); A.selectNodeContents(td.firstChild); var ax = A.getBoundingClientRect().right;
+      var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT), n, got = [];
+      while ((n = w.nextNode())) {
+        var s = n.nodeValue.trim();
+        if (chars.indexOf(s) < 0 || n.parentElement.closest('.katex-mathml')) continue;
+        var pe = n.parentElement, cs = getComputedStyle(pe);
+        var r = document.createRange(); r.selectNodeContents(n); var rc = r.getBoundingClientRect();
+        /* baseline of the glyph, scale of any transform */
+        var b = bl(pe), k = 1;
+        var tf = pe.closest('.mdelim, .msign');
+        if (tf && tf.style.transform) { var m = /scaleY\(([\d.]+)\)/.exec(tf.style.transform); if (m) k = +m[1]; }
+        cv.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+        var mt = cv.measureText(s);
+        got.push(s + ' ' + ((base - (b - mt.actualBoundingBoxAscent * k)) / fs).toFixed(2) + '/' +
+          ((base - (b + mt.actualBoundingBoxDescent * k)) / fs).toFixed(2) + ' x' + ((rc.left - ax) / fs).toFixed(2) + '-' + ((rc.right - ax) / fs).toFixed(2));
+      }
+      line.push((c === col ? 'PT ' : 'KX ') + got.join(', '));
+    });
+    if (line.join('').length > 8) out.push(tds[0].textContent + '\n    ' + line.join('\n    '));
+  });
+  return out.join('\n');
+}
+
+/* compare('display' | 'inline', tolerance em): for every glyph that appears
+   in both renderings, how far PaperTeX's baseline (db, + = higher) and left
+   edge (dx, after aligning the first common glyph) differ from KaTeX's, and
+   the size ratio. Lists only the glyphs off by more than the tolerance. */
+function compare(mode, tol) {
+  tol = tol || 0.06;
+  function rr(n) { var r = document.createRange(); r.selectNodeContents(n); return r.getBoundingClientRect(); }
+  function texts(td) {
+    var w = document.createTreeWalker(td, NodeFilter.SHOW_TEXT, { acceptNode: function (n) {
+      return n.parentElement.closest('.katex-mathml') || !n.textContent.trim() ? 2 : 1; } });
+    var a = [], n; while ((n = w.nextNode())) a.push(n); return a;
+  }
+  var col = mode === 'inline' ? 3 : 1, out = [];
+  [].slice.call(document.querySelectorAll('#t tr'), 1).forEach(function (tr) {
+    var tds = tr.querySelectorAll('td'), fs = parseFloat(getComputedStyle(tds[col]).fontSize);
+    function list(td) {
+      var ns = texts(td), A = rr(ns[0]), B = rr(ns[ns.length - 1]), cnt = {};
+      var items = ns.slice(1, -1).filter(function (n) {
+        var s = n.textContent.trim(); return [...s].length === 1 || /^[a-z]+$/.test(s);
+      }).map(function (n) {
+        var c = n.textContent.trim(), r = rr(n); cnt[c] = (cnt[c] || 0) + 1;
+        return { key: c + '#' + cnt[c], b: (A.bottom - r.bottom) / fs, x: (r.left - A.right) / fs, h: r.height / fs };
+      });
+      return { items: items, w: (B.left - A.right) / fs };
+    }
+    var P = list(tds[col]), K = list(tds[col + 1]), km = {};
+    K.items.forEach(function (i) { km[i.key] = i; });
+    var ref = P.items.filter(function (i) { return km[i.key]; })[0], dx0 = ref ? km[ref.key].x - ref.x : 0;
+    var bad = P.items.filter(function (i) { return km[i.key]; }).map(function (i) {
+      var q = km[i.key];
+      return { c: i.key, db: i.b - q.b, dx: i.x + dx0 - q.x, sz: i.h / q.h };
+    }).filter(function (d) { return Math.abs(d.db) > tol || Math.abs(d.dx) > 2 * tol || Math.abs(d.sz - 1) > 0.05; });
+    out.push(tds[0].textContent + '   width ' + P.w.toFixed(2) + ' vs ' + K.w.toFixed(2) +
+      (bad.length ? '\n    ' + bad.map(function (d) {
+        return d.c + ' db' + d.db.toFixed(2) + ' dx' + d.dx.toFixed(2) + ' sz' + d.sz.toFixed(2);
+      }).join('; ') : '   ok'));
+  });
+  return out.join('\n');
+}
+</script>
+</body>
+</html>
