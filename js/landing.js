@@ -13,6 +13,7 @@
      hero                   the Gaussian integral typing itself
      try                    live formula box, examples typed in, copy
      plot                   a function typed and drawn as you scroll
+     gallery                pie, histogram, polar, bars, 3D, log axis, area
      data                   table → chart, chart type, fitted model
      how, templates, recent, privacy, desktop, footer */
 (function () {
@@ -628,7 +629,7 @@
       input.focus();
     });
 
-    $$('.chip').forEach(function (chip) {
+    $$('.chip[data-ex]').forEach(function (chip) {
       chip.addEventListener('click', function () {
         var text = chip.getAttribute('data-ex');
         stopAuto();
@@ -893,6 +894,520 @@
   }
 
   /* =====================================================================
+     gallery — seven more chart kinds. Each draws itself when it comes
+     into view, answers the pointer, and keeps its LaTeX in step.
+     ===================================================================== */
+  function setupGallery() {
+    if (!$('.gal')) return;
+
+    // tween a plain state object, or (no motion) jump straight to the end
+    function tw(targets, vars, draw) {
+      if (MOTION) { var v = Object.assign({}, vars); if (draw) v.onUpdate = draw; return gsap.to(targets, v); }
+      [].concat(targets).forEach(function (t, i) {
+        for (var k in vars) if (k in t) t[k] = typeof vars[k] === 'function' ? vars[k](i, t) : vars[k];
+      });
+      if (draw) draw();
+      if (vars.onComplete) vars.onComplete();
+      return null;
+    }
+    function onSee(el, fn) {
+      if (MOTION) ST.create({ trigger: el, start: 'top 85%', once: true, onEnter: fn });
+      else fn();
+    }
+    function watch(el, fn) {
+      if (MOTION) ST.create({ trigger: el, start: 'top bottom', end: 'bottom top', onToggle: function (self) { fn(self.isActive); } });
+    }
+    function hold(el, fn) {
+      el.addEventListener('mouseenter', function () { fn(true); });
+      el.addEventListener('mouseleave', function () { fn(false); });
+    }
+    function tex(pre, lines, flash) {
+      pre.textContent = '';
+      lines.forEach(function (l) {
+        var d = h('div');
+        if (l[0]) d.appendChild(h('span', 'k', l[0]));
+        d.appendChild(document.createTextNode(l[1]));
+        pre.appendChild(d);
+      });
+      if (flash && MOTION) { pre.classList.remove('flash'); void pre.offsetWidth; pre.classList.add('flash'); }
+    }
+    // a row of chips where one is chosen
+    function pick(group, attr, fn) {
+      var btns = $$('[data-' + attr + ']', group);
+      function mark(v) {
+        btns.forEach(function (b) {
+          var on = b.getAttribute('data-' + attr) === String(v);
+          b.classList.toggle('is-on', on);
+          b.setAttribute('aria-pressed', on ? 'true' : 'false');
+        });
+      }
+      btns.forEach(function (b) {
+        b.addEventListener('click', function () { var v = b.getAttribute('data-' + attr); mark(v); fn(v); });
+      });
+      return mark;
+    }
+    function vbX(svg, e, width) {           // pointer → viewBox x
+      var r = svg.getBoundingClientRect();
+      return (e.clientX - r.left) * width / r.width;
+    }
+
+    galPie(); galHist(); galPolar(); galHbar(); galSurf(); galLog(); galArea();
+
+    /* -------------------------------------------------------------- pie */
+    function galPie() {
+      var card = $('#gcPie'), gS = $('#pieSlices'), gL = $('#pieLegend'), hint = $('.gc__hint', card);
+      var D = [['Lectures', 34, '#7a4f10'], ['Labs', 26, '#d9a441'], ['Reading', 22, '#4b5058'], ['Exams', 18, '#c9c5bd']];
+      var CX = 78, CY = 85, R = 66, hint0 = hint.textContent;
+      var P = { sweep: MOTION ? 0 : 1 }, pops = D.map(function () { return { o: 0 }; });
+      var a = -90, slices = [], pcts = [], rows = [];
+      D.forEach(function (d, i) {
+        var a0 = a, a1 = a + 3.6 * d[1]; a = a1;
+        var p = s('path', { class: 'gc__slice', fill: d[2], 'data-i': i });
+        gS.appendChild(p); slices.push({ el: p, a0: a0, a1: a1 });
+        var mid = (a0 + a1) / 2 * Math.PI / 180;
+        var t = s('text', { class: 'gc__pct' + (i === 3 || i === 1 ? ' gc__pct--dark' : ''), x: r1(CX + R * 0.62 * Math.cos(mid)), y: r1(CY + R * 0.62 * Math.sin(mid) + 4), 'text-anchor': 'middle' });
+        t.textContent = d[1] + '%'; gS.appendChild(t); pcts.push(t);
+        var row = s('g', { 'data-i': i, transform: 'translate(166,' + (44 + i * 26) + ')' });
+        row.appendChild(s('rect', { x: 0, y: -9, width: 11, height: 11, rx: 2, fill: d[2] }));
+        var lt = s('text', { x: 18, y: 1 }); lt.textContent = d[0]; row.appendChild(lt);
+        gL.appendChild(row); rows.push(row);
+      });
+      function pt(deg, rr) { var q = deg * Math.PI / 180; return r1(CX + rr * Math.cos(q)) + ' ' + r1(CY + rr * Math.sin(q)); }
+      function draw() {
+        var end = -90 + 360 * P.sweep;
+        slices.forEach(function (sl, i) {
+          var a1 = Math.min(sl.a1, end);
+          if (a1 <= sl.a0 + 0.01) { sl.el.setAttribute('d', ''); pcts[i].style.opacity = 0; return; }
+          sl.el.setAttribute('d', 'M' + CX + ' ' + CY + 'L' + pt(sl.a0, R) + 'A' + R + ' ' + R + ' 0 ' + (a1 - sl.a0 > 180 ? 1 : 0) + ' 1 ' + pt(a1, R) + 'Z');
+          var mid = (sl.a0 + sl.a1) / 2 * Math.PI / 180, o = pops[i].o * 9;
+          var tr = 'translate(' + r1(o * Math.cos(mid)) + ',' + r1(o * Math.sin(mid)) + ')';
+          sl.el.setAttribute('transform', tr); pcts[i].setAttribute('transform', tr);
+          pcts[i].style.opacity = end >= sl.a1 ? 1 : 0;
+        });
+      }
+      var hot = -1;
+      function setHot(i) {
+        if (i === hot) return;
+        hot = i;
+        slices.forEach(function (sl, k) { sl.el.classList.toggle('is-hot', k === i); rows[k].classList.toggle('is-hot', k === i); });
+        tw(pops, { o: function (k) { return k === i ? 1 : 0; }, duration: 0.45, ease: 'back.out(2.2)', overwrite: true }, draw);
+        hint.textContent = i < 0 ? hint0 : D[i][0] + ': ' + D[i][1] + '% of the week';
+        if (i >= 0) pieTex(i, true);
+      }
+      card.querySelector('svg').addEventListener('pointerover', function (e) {
+        var g = e.target.closest('[data-i]');
+        setHot(g ? +g.getAttribute('data-i') : -1);
+      });
+      card.querySelector('svg').addEventListener('pointerleave', function () { setHot(-1); });
+      draw();
+      // the exporter draws slices in plain TikZ: from 90°, clockwise
+      function pieTex(i, flash) {
+        var k = i < 0 ? 0 : i, start = 90;
+        for (var j = 0; j < k; j++) start -= 3.6 * D[j][1];
+        var end = start - 3.6 * D[k][1], mid = Math.round((start + end) / 2);
+        function nf(v) { return String(Math.round(v * 10) / 10); }
+        tex($('#pieTex'), [['\\begin', '{tikzpicture}[x=0.18\\linewidth, y=0.18\\linewidth]'],
+          ['  \\fill', '[draw=white] (0,0) -- (' + nf(start) + ':1) arc[start angle=' + nf(start) + ', end angle=' + nf(end) + ', radius=1] -- cycle;'],
+          ['  \\node', '[text=white] at (' + mid + ':0.64) {' + D[k][1] + '\\%};'],
+          ['  \\node', '[anchor=' + ((mid + 540) % 360) + '] at (' + mid + ':1.1) {' + D[k][0] + '};'],
+          ['\\end', '{tikzpicture}']], flash);
+      }
+      pieTex(-1, false);
+      onSee(card, function () { tw(P, { sweep: 1, duration: 1.3, ease: 'power2.inOut' }, draw); });
+    }
+
+    /* -------------------------------------------------------- histogram */
+    function galHist() {
+      var card = $('#gcHist'), gB = $('#histBars'), gT = $('#histTicks');
+      var seed = 11;
+      function rnd() { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; }
+      var data = [];
+      while (data.length < 120) {
+        var z = Math.sqrt(-2 * Math.log(rnd() + 1e-9)) * Math.cos(2 * Math.PI * rnd());
+        var v = 172 + 7.5 * z;
+        if (v >= 150 && v < 195) data.push(v);
+      }
+      var X0 = 32, X1 = 250, BASE = 140, TOP = 18, MAXN = 15;
+      function X(v) { return X0 + (X1 - X0) * (v - 150) / 45; }
+      [150, 165, 180, 195].forEach(function (v) {
+        gT.appendChild(s('path', { d: 'M' + r1(X(v)) + ' ' + BASE + 'v4' }));
+        var t = s('text', { x: r1(X(v)), y: BASE + 16, 'text-anchor': 'middle' }); t.textContent = v; gT.appendChild(t);
+      });
+      var yt = s('g'); gT.appendChild(yt);
+      var bars = [], st = [];
+      for (var i = 0; i < MAXN; i++) {
+        var b = s('rect', { class: 'gc__bar', x: X1, y: BASE, width: 0, height: 0 });
+        gB.appendChild(b); bars.push(b); st.push({ x: X1, w: 0, h: 0, n: 0 });
+      }
+      var tip = s('text', { class: 'gc__val', 'text-anchor': 'middle', x: 0, y: 0 }); tip.style.opacity = 0; gB.appendChild(tip);
+      function draw() {
+        st.forEach(function (o, i) {
+          bars[i].setAttribute('x', r1(o.x)); bars[i].setAttribute('width', Math.max(0, r1(o.w)));
+          bars[i].setAttribute('y', r1(BASE - o.h)); bars[i].setAttribute('height', Math.max(0, r1(o.h)));
+        });
+      }
+      var bins = 9, scale = 1;
+      function layout(n, grow) {
+        var counts = []; for (var k = 0; k < n; k++) counts.push(0);
+        data.forEach(function (v) { counts[Math.min(n - 1, Math.floor((v - 150) / 45 * n))]++; });
+        var max = Math.max.apply(null, counts), top = Math.ceil(max / 5) * 5;
+        scale = (BASE - TOP) / top;
+        yt.textContent = '';
+        [0, top / 2, top].forEach(function (v) {
+          var y = BASE - v * scale;
+          yt.appendChild(s('path', { d: 'M' + (X0 - 4) + ' ' + r1(y) + 'h4' }));
+          var t = s('text', { x: X0 - 7, y: r1(y + 4), 'text-anchor': 'end' }); t.textContent = v; yt.appendChild(t);
+        });
+        if (MOTION) gsap.fromTo(yt, { opacity: 0 }, { opacity: 1, duration: 0.4 });
+        var w = (X1 - X0) / n;
+        st.forEach(function (o, i) { o.n = i < n ? counts[i] : 0; });
+        tw(st, {
+          x: function (i) { return i < n ? X0 + i * w : X1; },
+          w: function (i) { return i < n ? w : 0; },
+          h: function (i) { return i < n ? counts[i] * scale : 0; },
+          duration: grow ? 0.8 : 0.7, ease: grow ? 'back.out(1.4)' : 'power3.inOut', stagger: grow ? 0.05 : 0.02, overwrite: true
+        }, draw);
+        histTex(n, counts, !grow);
+      }
+      gB.addEventListener('pointerover', function (e) {
+        var i = bars.indexOf(e.target);
+        if (i < 0 || !st[i].n) { tip.style.opacity = 0; return; }
+        tip.textContent = st[i].n;
+        tip.setAttribute('x', r1(st[i].x + st[i].w / 2)); tip.setAttribute('y', r1(BASE - st[i].n * scale - 5));
+        tip.style.opacity = 1;
+      });
+      gB.addEventListener('pointerleave', function () { tip.style.opacity = 0; });
+      pick(card, 'bins', function (v) { bins = +v; layout(bins, false); });
+      // binned here, as the exporter does, so the PDF has exactly these bars
+      function histTex(n, counts, flash) {
+        var bw = 45 / n, c = counts.map(function (v, i) { return '(' + (Math.round((150 + bw * (i + 0.5)) * 10) / 10) + ',' + v + ')'; });
+        tex($('#histTex'), [['\\begin', '{axis}[ybar=0pt, bar width=' + (Math.round(bw * 10) / 10) + ', xmin=150, xmax=195]'],
+          ['  \\addplot', '[fill=ptblue!75, draw=ptblue!50!black]'], ['', '    coordinates {' + c.join(' ') + '};'], ['\\end', '{axis}']], flash);
+      }
+      (function () {
+        var c0 = []; for (var k = 0; k < bins; k++) c0.push(0);
+        data.forEach(function (v) { c0[Math.min(bins - 1, Math.floor((v - 150) / 45 * bins))]++; });
+        histTex(bins, c0, false);
+      })();
+      onSee(card, function () { layout(bins, true); });
+    }
+
+    /* ------------------------------------------------------------ polar */
+    function galPolar() {
+      var card = $('#gcPolar'), grid = $('#polarGrid'), curve = $('#polarCurve'), pen = $('#polarPen');
+      var CX = 130, CY = 85, R = 68;
+      [R / 2, R].forEach(function (rr) { grid.appendChild(s('circle', { cx: CX, cy: CY, r: rr })); });
+      for (var a = 0; a < 360; a += 30) {
+        var q = a * Math.PI / 180;
+        grid.appendChild(s('path', { d: 'M' + CX + ' ' + CY + 'L' + r1(CX + R * Math.cos(q)) + ' ' + r1(CY - R * Math.sin(q)) }));
+      }
+      [['0°', CX + R + 5, CY + 4, 'start'], ['90°', CX, CY - R - 5, 'middle'], ['180°', CX - R - 5, CY + 4, 'end'], ['270°', CX, CY + R + 13, 'middle']].forEach(function (l) {
+        var t = s('text', { x: l[1], y: l[2], 'text-anchor': l[3] }); t.textContent = l[0]; grid.appendChild(t);
+      });
+      var Q = { k: 3, p: 0, a: 1 }, KS = [2, 3, 4, 5];
+      function draw() {
+        var T = Q.k % 2 ? Math.PI : 2 * Math.PI, n = Math.max(1, Math.round(400 * Q.p)), d = '', x = CX, y = CY;
+        if (Q.p > 0) for (var j = 0; j <= n; j++) {
+          var th = T * Q.p * j / n, rr = Math.cos(Q.k * th);
+          x = CX + R * rr * Math.cos(th); y = CY - R * rr * Math.sin(th);
+          d += (j ? 'L' : 'M') + r1(x) + ' ' + r1(y);
+        }
+        curve.setAttribute('d', d);
+        curve.style.opacity = Q.a;
+        pen.setAttribute('cx', r1(x)); pen.setAttribute('cy', r1(y));
+        pen.style.opacity = Q.p > 0 && Q.p < 1 ? 1 : 0;
+      }
+      // x is the angle in radians; trig takes degrees, as everywhere in pgfplots
+      function polarTex(k, flash) {
+        tex($('#polarTex'), [['\\begin', '{polaraxis}[ymin=0, ymax=1]'], ['  \\addplot', '[thick, domain=0:6.2832, samples=360]'], ['', '    ({deg(x)}, {cos(deg(' + k + '*x))});'], ['\\end', '{polaraxis}']], flash);
+      }
+      var mark = pick(card, 'k', function (v) { run(+v); });
+      var tl = null, visible = false, held = false;
+      function sync() { if (tl) tl.paused(!visible || held); }
+      function run(k) {
+        if (tl) tl.kill();
+        Q.k = k; mark(k);
+        polarTex(k, tl !== null);
+        if (!MOTION) { Q.p = 1; Q.a = 1; draw(); return; }
+        Q.p = 0; Q.a = 1;
+        tl = gsap.timeline({ onUpdate: draw, onComplete: function () { run(KS[(KS.indexOf(k) + 1) % KS.length]); } })
+          .to(Q, { p: 1, duration: 2.6, ease: 'power1.inOut' })
+          .to({}, { duration: 2.2 })
+          .to(Q, { a: 0, duration: 0.4, ease: 'power1.in' });
+        sync();
+      }
+      hold(card, function (v) { held = v; sync(); });
+      if (!MOTION) { run(3); return; }
+      polarTex(3, false);
+      watch(card, function (v) { visible = v; if (v && !tl) run(3); sync(); });
+    }
+
+    /* -------------------------------------------------- horizontal bars */
+    function galHbar() {
+      var card = $('#gcHbar'), g = $('#hbarRows'), btn = $('#hbarSort');
+      var D = [['Python', 42], ['Excel', 31], ['R', 23], ['MATLAB', 17], ['Julia', 9]];
+      var X0 = 66, K = 3.9, ROW = 28, TOP = 14;
+      var rows = D.map(function (d, i) {
+        var gr = s('g', { class: 'gc__hrow' });
+        var lab = s('text', { x: X0 - 7, y: 13, 'text-anchor': 'end' }); lab.textContent = d[0];
+        var bar = s('rect', { class: 'gc__bar', x: X0, y: 0, height: 18, width: 0 });
+        var num = s('text', { class: 'gc__num', x: X0 + 5, y: 13 });
+        gr.appendChild(lab); gr.appendChild(bar); gr.appendChild(num); g.appendChild(gr);
+        return { g: gr, bar: bar, num: num, st: { y: TOP + i * ROW, w: MOTION ? 0 : d[1] } };
+      });
+      function draw() {
+        rows.forEach(function (r, i) {
+          r.g.setAttribute('transform', 'translate(0,' + r1(r.st.y) + ')');
+          r.bar.setAttribute('width', r1(r.st.w * K));
+          r.num.setAttribute('x', r1(X0 + r.st.w * K + 5));
+          r.num.textContent = r.st.w > 0.5 ? Math.round(r.st.w) : '';
+        });
+      }
+      var byValue = true;
+      function order() {
+        var idx = D.map(function (d, i) { return i; });
+        if (!byValue) idx.sort(function (a, b) { return D[a][0].localeCompare(D[b][0], 'en'); });
+        return idx;
+      }
+      function writeTex(flash) {
+        var o = order();
+        tex($('#hbarTex'), [['\\begin', '{axis}[xbar=0pt, y dir=reverse, ytick={0,...,4},'], ['', '  yticklabels={' + o.map(function (i) { return D[i][0]; }).join(', ') + '}]'],
+          ['  \\addplot', ' coordinates {' + o.map(function (i, n) { return '(' + D[i][1] + ',' + n + ')'; }).join(' ') + '};'], ['\\end', '{axis}']], flash);
+      }
+      btn.addEventListener('click', function () {
+        byValue = !byValue;
+        btn.setAttribute('aria-pressed', byValue ? 'true' : 'false');
+        btn.textContent = byValue ? 'Sorted by value' : 'Sorted A to Z';
+        var o = order(), pos = [];
+        o.forEach(function (di, n) { pos[di] = TOP + n * ROW; });
+        tw(rows.map(function (r) { return r.st; }), { y: function (i) { return pos[i]; }, duration: 0.7, ease: 'back.out(1.5)', stagger: 0.04, overwrite: 'auto' }, draw);
+        writeTex(true);
+      });
+      draw(); writeTex(false);
+      onSee(card, function () {
+        tw(rows.map(function (r) { return r.st; }), { w: function (i) { return D[i][1]; }, duration: 1, ease: 'power3.out', stagger: 0.09, overwrite: 'auto' }, draw);
+      });
+    }
+
+    /* ------------------------------------------------------- 3D surface */
+    function galSurf() {
+      var card = $('#gcSurf'), svg = $('#surfSvg'), g = $('#surfQuads');
+      var N = 18, LO = -3, STEP = 6 / N, M = N + 1;
+      var FN = [
+        { f: function (x, y) { return Math.sin(x) * Math.cos(y); }, pgf: 'sin(deg(x))*cos(deg(y))' },
+        { f: function (x, y) { return Math.exp(-(x * x + y * y) / 2); }, pgf: 'exp(-(x^2+y^2)/2)' },
+        { f: function (x, y) { return (x * x - y * y) / 9; }, pgf: '(x^2-y^2)/9' }
+      ];
+      var Zf = new Float64Array(M * M), Zt = new Float64Array(M * M), Z = new Float64Array(M * M);
+      var PX = new Float64Array(M * M), PY = new Float64Array(M * M), PD = new Float64Array(M * M);
+      function fill(arr, f) { for (var i = 0; i < M; i++) for (var j = 0; j < M; j++) arr[i * M + j] = f(LO + i * STEP, LO + j * STEP); }
+      fill(Zt, FN[0].f); Zf.set(Zt);
+      var V = { yaw: -0.65, tilt: 0.55, rise: MOTION ? 0 : 1, m: 1, spin: 0 };
+      var els = [], order = [], depth = new Float64Array(N * N);
+      for (var q = 0; q < N * N; q++) { var p = s('path'); g.appendChild(p); els.push(p); order.push(q); }
+      // ink-blue → amber → cream, like a quiet pgfplots colormap
+      var STOPS = [[47, 54, 64], [122, 79, 16], [217, 164, 65], [250, 233, 196]];
+      function col(t, shade) {
+        t = Math.max(0, Math.min(1, t)) * (STOPS.length - 1);
+        var i = Math.min(STOPS.length - 2, Math.floor(t)), f = t - i, a = STOPS[i], b = STOPS[i + 1];
+        return 'rgb(' + Math.round((a[0] + (b[0] - a[0]) * f) * shade) + ',' + Math.round((a[1] + (b[1] - a[1]) * f) * shade) + ',' + Math.round((a[2] + (b[2] - a[2]) * f) * shade) + ')';
+      }
+      function draw() {
+        var ca = Math.cos(V.yaw), sa = Math.sin(V.yaw), st = Math.sin(V.tilt), ct = Math.cos(V.tilt);
+        var zs = 1.5 * V.rise, k = Math.min(46, 140 / (4.25 * st + 1.5 * ct));
+        for (var n = 0; n < M * M; n++) {
+          var i = (n / M) | 0, j = n % M, x = LO + i * STEP, y = LO + j * STEP;
+          var z = Zf[n] + (Zt[n] - Zf[n]) * V.m; Z[n] = z;
+          var xr = x * ca - y * sa, yr = x * sa + y * ca;
+          PX[n] = 270 + k * xr; PY[n] = 152 - k * yr * st - k * zs * z * ct; PD[n] = -yr * ct + zs * z * st;
+        }
+        for (var c = 0; c < N * N; c++) {
+          var a0 = ((c / N) | 0) * M + c % N;
+          depth[c] = PD[a0] + PD[a0 + 1] + PD[a0 + M] + PD[a0 + M + 1];
+        }
+        order.sort(function (a, b) { return depth[a] - depth[b]; });
+        for (var e = 0; e < order.length; e++) {
+          var cq = order[e], b0 = ((cq / N) | 0) * M + cq % N, b1 = b0 + M, b2 = b0 + M + 1, b3 = b0 + 1;
+          var zc = (Z[b0] + Z[b1] + Z[b2] + Z[b3]) / 4;
+          var gx = (Z[b1] + Z[b2] - Z[b0] - Z[b3]) / (2 * STEP) * zs, gy = (Z[b3] + Z[b2] - Z[b0] - Z[b1]) / (2 * STEP) * zs;
+          var lit = (-0.45 * gx + 0.35 * gy + 0.82) / Math.sqrt(gx * gx + gy * gy + 1);
+          els[e].setAttribute('d', 'M' + r1(PX[b0]) + ' ' + r1(PY[b0]) + 'L' + r1(PX[b1]) + ' ' + r1(PY[b1]) + 'L' + r1(PX[b2]) + ' ' + r1(PY[b2]) + 'L' + r1(PX[b3]) + ' ' + r1(PY[b3]) + 'Z');
+          els[e].setAttribute('fill', col((zc + 1) / 2, 0.62 + 0.42 * Math.max(0, lit)));
+        }
+        var az = Math.round(V.yaw * 180 / Math.PI) % 360; if (az > 180) az -= 360; if (az <= -180) az += 360;
+        var el = Math.round(V.tilt * 180 / Math.PI);
+        if (az !== lastAz || el !== lastEl) { lastAz = az; lastEl = el; azEl.textContent = az; elEl.textContent = el; }
+      }
+      var lastAz = null, lastEl = null, azEl = h('span'), elEl = h('span'), cur = 0;
+      function writeTex(flash) {
+        var pre = $('#surfTex');
+        tex(pre, [['\\begin', '{axis}[view={'], ['  \\addplot3', '[surf, shader=faceted, samples=25, domain=-3:3, y domain=-3:3]'], ['', '    {' + FN[cur].pgf + '};'], ['\\end', '{axis}']], flash);
+        var first = pre.firstChild;
+        first.appendChild(azEl); first.appendChild(document.createTextNode('}{')); first.appendChild(elEl); first.appendChild(document.createTextNode('}]'));
+      }
+      writeTex(false);
+
+      pick(card, 'surf', function (v) {
+        cur = +v;
+        for (var n = 0; n < M * M; n++) Zf[n] = Zf[n] + (Zt[n] - Zf[n]) * V.m;
+        fill(Zt, FN[cur].f); V.m = 0;
+        tw(V, { m: 1, duration: 1.1, ease: 'power3.inOut', overwrite: 'auto' }, MOTION ? null : draw);
+        writeTex(true);
+      });
+
+      // turn it: drag (with a little momentum) or arrow keys
+      var drag = null, spinTw = null, visible = false, held = false;
+      function clampTilt(t) { return Math.max(0.12, Math.min(1.05, t)); }
+      svg.addEventListener('pointerdown', function (e) {
+        drag = { x: e.clientX, y: e.clientY, v: 0 };
+        try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+        if (spinTw) spinTw.kill();
+        V.spin = 0;
+      });
+      svg.addEventListener('pointermove', function (e) {
+        if (!drag) return;
+        var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+        drag.x = e.clientX; drag.y = e.clientY; drag.v = dx * 0.011;
+        V.yaw += dx * 0.011; V.tilt = clampTilt(V.tilt + dy * 0.008);
+        if (!MOTION) draw();
+      });
+      function up() {
+        if (!drag) return;
+        if (MOTION) { V.spin = Math.max(-0.15, Math.min(0.15, drag.v)); spinTw = gsap.to(V, { spin: 0, duration: 1.6, ease: 'power2.out' }); }
+        drag = null;
+      }
+      svg.addEventListener('pointerup', up);
+      svg.addEventListener('pointercancel', up);
+      svg.addEventListener('keydown', function (e) {
+        var dy = 0, dx = 0;
+        if (e.key === 'ArrowLeft') dx = -0.25; else if (e.key === 'ArrowRight') dx = 0.25;
+        else if (e.key === 'ArrowUp') dy = -0.12; else if (e.key === 'ArrowDown') dy = 0.12;
+        else return;
+        e.preventDefault();
+        var to = { yaw: V.yaw + dx, tilt: clampTilt(V.tilt + dy) };
+        if (MOTION) gsap.to(V, { yaw: to.yaw, tilt: to.tilt, duration: 0.45, ease: 'power3.out', overwrite: 'auto' });
+        else { V.yaw = to.yaw; V.tilt = to.tilt; draw(); }
+      });
+      svg.addEventListener('focus', function () { held = true; });
+      svg.addEventListener('blur', function () { held = false; });
+      hold(card, function (v) { held = v; });
+
+      draw();
+      if (!MOTION) return;
+      // spins slowly on its own while on screen, unless you're pointing at it or turning it
+      function tick(time, dt) {
+        if (!held && !drag) V.yaw += 0.00028 * dt;
+        V.yaw += V.spin * dt / 16;
+        draw();
+      }
+      var on = false;
+      watch(card, function (v) {
+        visible = v;
+        if (v && !on) { gsap.ticker.add(tick); on = true; }
+        if (!v && on) { gsap.ticker.remove(tick); on = false; }
+      });
+      onSee(card, function () { gsap.to(V, { rise: 1, duration: 1.8, ease: 'elastic.out(1, 0.55)' }); });
+    }
+
+    /* --------------------------------------------------------- log axis */
+    function galLog() {
+      var card = $('#gcLog'), grid = $('#logGrid'), ticks = $('#logTicks'), line = $('#logLine'), gP = $('#logPts');
+      var X0 = 40, BASE = 140, H = 122;
+      function X(t) { return X0 + 20.5 * t; }
+      function lin(n) { return BASE - H * n / 12000; }
+      function lg(n) { return BASE - H * (Math.log(n) / Math.LN10 - 1) / 3.2; }
+      var gLin = s('g'), gLog = s('g'), tLin = s('g'), tLog = s('g');
+      grid.appendChild(gLin); grid.appendChild(gLog); ticks.appendChild(tLin); ticks.appendChild(tLog);
+      function yTick(gg, tg, y, label) {
+        gg.appendChild(s('path', { d: 'M' + X0 + ' ' + r1(y) + 'H250' }));
+        tg.appendChild(s('path', { d: 'M' + (X0 - 4) + ' ' + r1(y) + 'h4' }));
+        var t = s('text', { x: X0 - 7, y: r1(y + 4), 'text-anchor': 'end' }); t.textContent = label; tg.appendChild(t);
+      }
+      [[4000, '4k'], [8000, '8k'], [12000, '12k']].forEach(function (v) { yTick(gLin, tLin, lin(v[0]), v[1]); });
+      [[10, '10'], [100, '10²'], [1000, '10³'], [10000, '10⁴']].forEach(function (v) { yTick(gLog, tLog, lg(v[0]), v[1]); });
+      for (var t = 0; t <= 10; t += 2) {
+        ticks.appendChild(s('path', { d: 'M' + X(t) + ' ' + BASE + 'v4' }));
+        var tt = s('text', { x: X(t), y: BASE + 16, 'text-anchor': 'middle' }); tt.textContent = t; ticks.appendChild(tt);
+      }
+      var dots = [];
+      for (var k = 0; k <= 10; k++) { var c = s('circle', { class: 'gc__dot', r: 3, cx: X(k), cy: BASE }); gP.appendChild(c); dots.push(c); }
+      var L = { m: 1, d: MOTION ? 0 : 1 };
+      function draw() {
+        var pts = [], reach = L.d * 10;
+        for (var k = 0; k <= 10; k++) {
+          var n = 10 * Math.pow(2, k), y = lin(n) + (lg(n) - lin(n)) * L.m;
+          dots[k].setAttribute('cy', r1(y));
+          dots[k].style.opacity = k <= reach + 1e-6 ? 1 : 0;
+          if (k <= reach) pts.push(r1(X(k)) + ',' + r1(y));
+          else if (k - 1 < reach) {                // the last stretch, part drawn
+            var f = reach - (k - 1), np = 10 * Math.pow(2, k - 1), yp = lin(np) + (lg(np) - lin(np)) * L.m;
+            pts.push(r1(X(k - 1 + f)) + ',' + r1(yp + (y - yp) * f));
+          }
+        }
+        line.setAttribute('points', pts.join(' '));
+        gLin.style.opacity = tLin.style.opacity = 1 - L.m;
+        gLog.style.opacity = tLog.style.opacity = L.m;
+      }
+      function writeTex(log, flash) {
+        tex($('#logTex'), [['\\begin', '{axis}[' + (log ? 'ymode=log, ' : '') + 'xlabel={$t$ (h)}]'], ['  \\addplot', '+[mark=*, domain=0:10, samples=11]'], ['', '    {10*2^x};'], ['\\end', '{axis}']], flash);
+      }
+      pick(card, 'ymode', function (v) {
+        tw(L, { m: v === 'log' ? 1 : 0, duration: 1.1, ease: 'power3.inOut', overwrite: 'auto' }, draw);
+        writeTex(v === 'log', true);
+      });
+      draw(); writeTex(true, false);
+      onSee(card, function () { tw(L, { d: 1, duration: 1.8, ease: 'power1.inOut' }, draw); });
+    }
+
+    /* ------------------------------------------------------ filled area */
+    function galArea() {
+      var card = $('#gcArea'), svg = $('#areaSvg'), range = $('#areaRange'), out = $('#areaOut');
+      var fillEl = $('#areaFill'), bound = $('#areaBound'), val = $('#areaVal'), ticks = $('#areaTicks');
+      var X0 = 24, BASE = 140;
+      function X(x) { return X0 + 22.2 * x; }
+      function Y(y) { return BASE - 150 * y; }
+      function f(x) { return x * Math.exp(-x / 2); }
+      function I(b) { return 4 - (2 * b + 4) * Math.exp(-b / 2); }
+      function curvePts(a, b, n) {
+        var d = '';
+        for (var k = 0; k <= n; k++) { var x = a + (b - a) * k / n; d += 'L' + r1(X(x)) + ' ' + r1(Y(f(x))); }
+        return d;
+      }
+      $('#areaCurve').setAttribute('d', 'M' + curvePts(0, 10, 160).slice(1));
+      for (var t = 0; t <= 10; t += 2) {
+        ticks.appendChild(s('path', { d: 'M' + r1(X(t)) + ' ' + BASE + 'v4' }));
+        var tt = s('text', { x: r1(X(t)), y: BASE + 16, 'text-anchor': 'middle' }); tt.textContent = t; ticks.appendChild(tt);
+      }
+      ticks.appendChild(s('path', { d: 'M' + (X0 - 4) + ' ' + Y(0.5) + 'h4' }));
+      var yl = s('text', { x: X0 - 7, y: Y(0.5) + 4, 'text-anchor': 'end' }); yl.textContent = '.5'; ticks.appendChild(yl);
+      var A = { b: MOTION ? 0 : 5 }, lastB = null;
+      function draw() {
+        var b = Math.max(0, Math.min(10, A.b));
+        fillEl.setAttribute('d', b > 0.01 ? 'M' + X(0) + ' ' + BASE + curvePts(0, b, Math.max(2, Math.round(b * 16))) + 'L' + r1(X(b)) + ' ' + BASE + 'Z' : '');
+        bound.setAttribute('d', 'M' + r1(X(b)) + ' ' + BASE + 'V' + r1(Y(f(b))));
+        val.textContent = '∫₀ᵇ f dx = ' + I(b).toFixed(2);
+        var bs = b.toFixed(1);
+        if (bs !== lastB) {
+          lastB = bs; out.textContent = bs;
+          if (document.activeElement !== range) range.value = bs;
+          tex($('#areaTex'), [['  \\addplot', '[draw=none, fill=ptblue, fill opacity=0.2, domain=0:' + bs + ']'], ['', '    {x*exp(-x/2)} \\closedcycle;'], ['  \\addplot', '[thick, domain=0:10] {x*exp(-x/2)};']]);
+        }
+      }
+      var intro = null;
+      var to = MOTION ? gsap.quickTo(A, 'b', { duration: 0.35, ease: 'power3.out', onUpdate: draw }) : function (v) { A.b = v; draw(); };
+      function set(v) { if (intro) { intro.kill(); intro = null; } to(Math.max(0.2, Math.min(10, v))); }
+      function fromPointer(e) { set((vbX(svg, e, 260) - X0) / 22.2); }
+      var down = false;
+      svg.addEventListener('pointerdown', function (e) { down = true; fromPointer(e); });
+      svg.addEventListener('pointermove', function (e) { if (down || e.pointerType === 'mouse') fromPointer(e); });
+      window.addEventListener('pointerup', function () { down = false; });
+      range.addEventListener('input', function () { set(+range.value); });
+      draw();
+      onSee(card, function () { if (MOTION) intro = gsap.to(A, { b: 5, duration: 1.6, ease: 'power2.inOut', onUpdate: draw }); });
+    }
+  }
+
+  /* =====================================================================
      data — Table 1 becomes Figure 1; pick a chart type, fit the model
      ===================================================================== */
   function setupData() {
@@ -1128,6 +1643,16 @@
       p.appendChild(g);
       p.appendChild(ln('', '100%')); p.appendChild(ln('', '66%'));
     },
+    gallery: function (p) {
+      p.appendChild(ln('ln--head', '44%'));
+      var g = s('svg', { viewBox: '0 0 120 64', class: 'tpl__mini', 'aria-hidden': 'true' });
+      g.appendChild(s('path', { class: 'pie', d: 'M28 32L28 8A24 24 0 0 1 50.8 39.4Z' }));
+      g.appendChild(s('path', { d: 'M28 32L50.8 39.4A24 24 0 1 1 28 8' }));
+      g.appendChild(s('path', { d: 'M66 58V8M66 58H118' }));
+      [[70, 40], [80, 22], [90, 12], [100, 26], [110, 44]].forEach(function (b) { g.appendChild(s('rect', { x: b[0], y: b[1], width: 8, height: 58 - b[1] })); });
+      p.appendChild(g);
+      p.appendChild(ln('', '100%')); p.appendChild(ln('', '72%'));
+    },
     notes: function (p) {
       p.appendChild(ln('ln--head', '44%')); p.appendChild(ln('', '100%'));
       var th = h('span', 'tpl__label', 'Theorem 1. '); th.appendChild(h('i', null, 'Every bounded…')); p.appendChild(th);
@@ -1275,6 +1800,7 @@
     $$('.how__step').forEach(function (st) { st.classList.add('is-on'); });
     setupHero(false);
     setupPlot();
+    setupGallery();
     setupData();
     setupTemplates();
     setupDesktop();
@@ -1283,6 +1809,7 @@
   }
 
   setupPlot();
+  setupGallery();
   setupNav();
   setupButtons();
   setupData();

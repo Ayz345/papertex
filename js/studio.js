@@ -481,6 +481,31 @@
 
   /* ===================================================== charts ===== */
 
+  /* the kinds of chart, as the Type picker shows them */
+  var KINDS = [
+    ['function', 'ƒ(x)', 'Function', 'y = f(x), typed as a formula'],
+    ['line', '⟋', 'Line', 'Points joined by lines'],
+    ['scatter', '⁘', 'Scatter', 'Points on their own'],
+    ['bar', '▮▮', 'Bar', 'Bars, side by side or stacked, upright or lying down'],
+    ['hist', '▁▃▇▅', 'Histogram', 'How often each range of values comes up'],
+    ['pie', '◔', 'Pie', 'Shares of a whole'],
+    ['polar', '✿', 'Polar', 'r = f(θ), on a round grid'],
+    ['surface', '⛰', '3D surface', 'z = f(x, y), seen from an angle']
+  ];
+  /* kinds that keep their ranges and axes when switched between */
+  function family(k) { return k === 'line' || k === 'scatter' || k === 'bar' ? 'data' : k; }
+  var FORMULA = { 'function': ['plain', 'y =', 'x^2'], polar: ['polar', 'r =', 'cos(3θ)'], surface: ['surface', 'z =', 'sin(x) cos(y)'] };
+  var SAMPLE = {
+    data: 'x\ty\n0\t1\n1\t3\n2\t2\n3\t5',
+    hist: 'Score\n62\n71\n55\n80\n67\n74\n90\n58\n69\n77\n84\n65\n72\n60\n79\n68\n73\n88\n64\n70',
+    pie: 'Item\tShare\nRent\t40\nFood\t25\nTransport\t15\nSavings\t12\nOther\t8'
+  };
+  function aspectOf(b) {
+    if (b.kind === 'polar') return 1;
+    if (b.kind === 'pie') return 0.72;
+    return Math.max(0.3, Math.min(1.2, +b.aspect || (b.kind === 'surface' ? 0.75 : 0.62)));
+  }
+
   function openChart(editor, b, from) {
     var st = frame(editor, b, from, 'Chart');
     var doc = editor.doc;
@@ -506,7 +531,7 @@
     st.stage.appendChild(sheet);
 
     st.draw = function () {
-      var aspect = Math.max(0.3, Math.min(1.2, +b.aspect || 0.62));
+      var aspect = aspectOf(b);
       /* the view's padding (24 a side) and the card's (26 across, 22 + 16 down) */
       var vw = view.clientWidth - 48 - 52 - 8;
       var vh = view.clientHeight - 48 - 38 - (cap.offsetHeight + 12) - errs.offsetHeight - 8;
@@ -535,12 +560,15 @@
     /* ---- the data, under the chart ---- */
     function buildSheet() {
       sheet.textContent = '';
-      sheet.classList.toggle('none', b.kind === 'function');
-      if (b.kind === 'function') return;
+      var none = !!FORMULA[b.kind];
+      sheet.classList.toggle('none', none);
+      if (none) return;
       var t = b.from ? blockById(doc, b.from) : null;
       var head = h('div', 'st-sheeth');
       head.appendChild(h('b', '', t ? 'Data — Table ' + (t.__num || '') : 'Data'));
       head.appendChild(h('span', 'st-hint', t ? 'Edits here go into the table on the page.'
+        : b.kind === 'hist' ? 'One value per row: the histogram counts them. Paste a column straight from a spreadsheet.'
+        : b.kind === 'pie' ? 'One row per slice: its name, then its size.'
         : 'One row per point. Paste cells straight from Excel or Google Sheets.'));
       sheet.appendChild(head);
       var gh = h('div', 'st-gridhost');
@@ -564,117 +592,109 @@
       }
     }
 
+    /* ---- switching kinds ---- */
+    function setKind(v) {
+      var was = b.kind;
+      if (v === was) return;
+      b.kind = v;
+      var f0 = family(was), f1 = family(v);
+      if (f0 !== f1) {
+        /* ranges, steps and axes through 0 mean something else in each family */
+        b.xmin = b.xmax = b.ymin = b.ymax = b.zmin = b.zmax = b.xstep = b.ystep = b.zstep = '';
+        b.xlog = b.ylog = false;
+        if (b.axes === 'middle' && v !== 'function') b.axes = 'box';
+        if (v === 'function' && was === 'polar') b.axes = 'middle';
+        /* labels belong to the axes they named: a surface gets x, y, z,
+           a pie and a polar plot have none */
+        var dataLike = function (f) { return f === 'data' || f === 'hist'; };
+        if (v === 'surface') { b.xlabel = '$x$'; b.ylabel = '$y$'; b.zlabel = '$z$'; }
+        else if (v === 'function') { b.xlabel = '$x$'; b.ylabel = '$y$'; }
+        else if (v === 'pie' || v === 'polar') b.xlabel = b.ylabel = '';
+        else if (!(dataLike(f0) && dataLike(f1))) b.xlabel = b.ylabel = '';
+      }
+      var F = FORMULA[v];
+      if (F) {
+        /* a formula that still makes sense is kept; otherwise an example */
+        var keep = (b.fns || []).filter(function (fn) { return fn.expr && C.compile(fn.expr, F[0]).ok; });
+        if (FORMULA[was] && keep.length) b.fns = v === 'surface' ? keep.slice(0, 1) : keep;
+        else b.fns = [{ expr: F[2], name: '' }];
+      } else {
+        if (FORMULA[was]) b.fns = [];
+        if (!b.from) {
+          /* the rows stay unless the new kind cannot use them */
+          var s0 = C.source(b, doc);
+          var nums = s0.head.filter(function (_, i) { return s0.rows.some(function (r) { return C.num(r[i]) !== null; }); }).length;
+          var fits = v === 'hist' ? nums >= 1 : s0.head.length >= 2 && nums >= 1;
+          if (!b.data || !fits) b.data = SAMPLE[v] || SAMPLE.data;
+        }
+        autoCols(was);
+      }
+      if (v === 'surface' && !b.aspect) b.aspect = 0.75;
+      st.rebuild();
+    }
+    /* the columns a kind draws from, chosen when the kind or the data changes */
+    function autoCols(was) {
+      var v = b.kind, src = C.source(b, doc);
+      var numeric = function (i) { return src.rows.some(function (r) { return C.num(r[i]) !== null; }); };
+      if (v === 'hist' || v === 'pie') {
+        /* one column of numbers; for a pie, names from another */
+        if (v === 'pie' && src.head.length > 1 && numeric(b.xcol | 0) && !numeric(0)) b.xcol = 0;
+        var numCol = -1;
+        for (var i = 0; i < src.head.length; i++) {
+          if ((v === 'hist' || i !== (b.xcol | 0)) && numeric(i)) { numCol = i; break; }
+        }
+        b.ycols = [numCol >= 0 ? numCol : (src.head.length > 1 ? 1 : 0)];
+      } else if (!(b.ycols && b.ycols.length) || was === 'hist' || was === 'pie' || b.ycols[0] === (b.xcol | 0)) {
+        if (was === 'hist') b.xcol = 0;
+        b.ycols = [];
+        for (var j = 0; j < src.head.length; j++) if (j !== (b.xcol | 0) && numeric(j)) b.ycols.push(j);
+        if (!b.ycols.length) b.ycols = [src.head.length > 1 ? 1 : 0];
+      }
+    }
+
     /* ---- the settings ---- */
     st.buildPanel = function () {
       var P = st.panel, keep = P.scrollTop;
       P.textContent = '';
       var rebuild = function () { st.touch(true); };
+      var k = b.kind;
 
       var s1 = section(P, 'Type');
-      seg(row(s1, null), [['function', 'ƒ(x)  Function'], ['line', '⟋  Line'], ['scatter', '⁘  Scatter'], ['bar', '▮▮  Bar']], b.kind, function (v) {
-        var was = b.kind;
-        if (v === was) return;
-        b.kind = v;
-        if (v === 'function' && !(b.fns && b.fns.length)) b.fns = [{ expr: 'x^2', name: '' }];
-        if (was === 'function' && v !== 'function') {
-          /* the plot's range and axes through 0 mean nothing for data */
-          b.fns = [];
-          b.xmin = b.xmax = b.ymin = b.ymax = b.xstep = b.ystep = '';
-          if (b.axes === 'middle') b.axes = 'box';
-          if (!b.from && !b.data) b.data = 'x\ty\n0\t1\n1\t3\n2\t2\n3\t5';
-        }
-        if (v === 'function' && was !== 'function') b.xmin = b.xmax = b.ymin = b.ymax = b.xstep = b.ystep = '';
-        st.rebuild();
+      var pick = h('div', 'st-seg many');
+      KINDS.forEach(function (o) {
+        var bt = h('button', o[0] === k ? 'on' : '');
+        bt.type = 'button';
+        bt.title = o[3];
+        bt.appendChild(h('span', 'st-seg-i', o[1]));
+        bt.appendChild(h('span', 'st-seg-t', o[2]));
+        bt.onclick = function () { setKind(o[0]); };
+        pick.appendChild(bt);
       });
+      row(s1, null).appendChild(pick);
 
-      if (b.kind === 'function') {
-        var s2 = section(P, 'Curves', 'Type them as on paper: 2x^2 - 3x + 1, sin x, e^(-x/2), |x|, sqrt(x).');
-        curveCards(s2, 0, true);
-        button(s2, '+ Add a curve', function () { b.fns.push({ expr: '', name: '' }); st.focusFn = b.fns.length - 1; rebuild(); }, 'wide');
-        var r = row(s2, 'x from');
-        input(r, b.xmin, '-5', function (v) { b.xmin = v; st.touch(); }, 'num');
-        r.appendChild(h('span', 'st-to', 'to'));
-        input(r, b.xmax, '5', function (v) { b.xmax = v; st.touch(); }, 'num');
-        slider(row(s2, 'Smoothness'), 50, 500, 25, b.samples || 200, function (v) { return v + ' points'; }, function (v) { b.samples = v; st.touch(); });
-      } else {
-        var s3 = section(P, 'Data');
-        var tables = doc.blocks.filter(function (x) { return x.t === 'table'; });
-        select(row(s3, 'From'), [['', 'Its own rows (under the chart)']].concat(tables.map(function (t) {
-          return [t.id, 'Table ' + (t.__num || '') + (t.caption ? ' — ' + textOf(t.caption).slice(0, 28) : '')];
-        })), b.from || '', function (v) {
-          b.from = v;
-          if (!v && !b.data) b.data = 'x\ty\n0\t1\n1\t3\n2\t2\n3\t5';
-          b.xcol = 0; b.ycols = [1];
-          var t = v ? blockById(doc, v) : null;
-          if (t && !st.savedTable) { st.savedTable = JSON.stringify(t); st.savedTableId = t.id; }
-          st.rebuild();
-        });
-        var src = C.source(b, doc);
-        if (src.head.length) {
-          select(row(s3, b.kind === 'bar' ? 'Labels' : 'x axis'), src.head.map(function (n, i) { return [i, n || 'Column ' + (i + 1)]; }),
-            b.xcol | 0, function (v) {
-              b.xcol = parseInt(v, 10);
-              b.ycols = (b.ycols || []).filter(function (c) { return c !== b.xcol; });
-              if (!b.ycols.length) b.ycols = [b.xcol === 0 ? 1 : 0];
-              rebuild();
-            }, 'The column along the horizontal axis');
-          var s4 = section(P, 'Series', 'Each column of numbers can be a series: tick it, then style it.');
-          src.head.forEach(function (n, i) {
-            if (i === (b.xcol | 0)) return;
-            seriesCard(s4, src, i, n);
-          });
-        }
-        if (b.kind === 'line') toggle(row(s3, null), 'Smooth lines', b.smooth, function (v) { b.smooth = v; st.touch(); });
-        if (b.kind === 'bar') {
-          seg(row(s3, 'Bars'), [[false, 'Side by side'], [true, 'Stacked']], !!b.stacked, function (v) { b.stacked = v === true || v === 'true'; rebuild(); });
-          if (!b.stacked) toggle(row(s3, null), 'Write each value above its bar', b.values, function (v) { b.values = v; st.touch(); });
-          slider(row(s3, 'Bar width'), 20, 100, 5, Math.round((b.barw || 0.8) * 100), function (v) { return v + '%'; },
-            function (v) { b.barw = v / 100; st.touch(); });
-        }
-        if (b.kind !== 'bar') {
-          var s5 = section(P, 'Curves over the data', 'A fitted line or a model, e.g. 2.03x + 0.1 or 21 + 69e^(-0.075x).');
-          curveCards(s5, (b.ycols || [1]).length, false);
-          button(s5, '+ Add a curve', function () { b.fns = b.fns || []; b.fns.push({ expr: '', name: '' }); st.focusFn = b.fns.length - 1; rebuild(); }, 'wide');
-        }
-      }
+      if (k === 'function') functionPanel(P, rebuild);
+      else if (k === 'polar') polarPanel(P, rebuild);
+      else if (k === 'surface') surfacePanel(P, rebuild);
+      else if (k === 'pie') piePanel(P, rebuild);
+      else if (k === 'hist') histPanel(P, rebuild);
+      else dataPanel(P, rebuild);
 
-      var s6 = section(P, 'Axes');
-      input(row(s6, 'Title'), b.title, 'above the chart (optional)', function (v) { b.title = v; st.touch(); }, 'wide');
-      input(row(s6, 'x label'), b.xlabel, 'e.g. Time $t$ (s)', function (v) { b.xlabel = v; st.touch(); }, 'wide');
-      input(row(s6, 'y label'), b.ylabel, 'formulas go between $…$', function (v) { b.ylabel = v; st.touch(); }, 'wide');
-      if (b.kind !== 'function' && b.kind !== 'bar') {
-        var rx = row(s6, 'x range');
-        input(rx, b.xmin, 'auto', function (v) { b.xmin = v; st.touch(); }, 'num');
-        rx.appendChild(h('span', 'st-to', 'to'));
-        input(rx, b.xmax, 'auto', function (v) { b.xmax = v; st.touch(); }, 'num');
+      if (k !== 'pie' && k !== 'surface') {
+        var s7 = section(P, 'Legend');
+        select(row(s7, 'Place'), [['auto', 'Automatic (the emptiest corner)'], ['north east', 'Top right'], ['north west', 'Top left'],
+          ['south east', 'Bottom right'], ['south west', 'Bottom left'], ['outer north east', 'Outside, on the right'], ['none', 'Hidden']],
+          b.legend === false ? 'none' : (b.legendPos || 'auto'), function (v) { b.legend = v !== 'none'; b.legendPos = v; st.touch(); });
       }
-      var ry = row(s6, 'y range');
-      input(ry, b.ymin, 'auto', function (v) { b.ymin = v; st.touch(); }, 'num');
-      ry.appendChild(h('span', 'st-to', 'to'));
-      input(ry, b.ymax, 'auto', function (v) { b.ymax = v; st.touch(); }, 'num');
-      var rt = row(s6, 'Tick every');
-      if (b.kind !== 'bar') {
-        rt.appendChild(h('span', 'st-to', 'x'));
-        input(rt, b.xstep, 'auto', function (v) { b.xstep = v; st.touch(); }, 'num');
-      }
-      rt.appendChild(h('span', 'st-to', 'y'));
-      input(rt, b.ystep, 'auto', function (v) { b.ystep = v; st.touch(); }, 'num');
-      seg(row(s6, 'Axes'), [['box', 'Framed'], ['left', 'Arrows'], ['middle', 'Through 0']], b.axes || 'box', function (v) { b.axes = v; rebuild(); });
-      var gv = b.grid === 'both' ? 'both' : (b.grid === false || b.grid === 'none') ? 'none' : 'major';
-      seg(row(s6, 'Grid'), [['none', 'None'], ['major', 'Lines'], ['both', 'Fine']], gv, function (v) { b.grid = v; rebuild(); });
-
-      var s7 = section(P, 'Legend');
-      select(row(s7, 'Place'), [['auto', 'Automatic (the emptiest corner)'], ['north east', 'Top right'], ['north west', 'Top left'],
-        ['south east', 'Bottom right'], ['south west', 'Bottom left'], ['outer north east', 'Outside, on the right'], ['none', 'Hidden']],
-        b.legend === false ? 'none' : (b.legendPos || 'auto'), function (v) { b.legend = v !== 'none'; b.legendPos = v; st.touch(); });
 
       var s8 = section(P, 'Size on the page');
       slider(row(s8, 'Width'), 30, 100, 5, Math.round((b.width || 0.75) * 100), function (v) { return v + '% of the text'; },
         function (v) { b.width = v / 100; st.touch(); });
-      var asp = +b.aspect || 0.62;
-      seg(row(s8, 'Shape'), [[0.5, 'Wide'], [0.62, 'Standard'], [0.8, 'Tall'], [1, 'Square']],
-        [0.5, 0.62, 0.8, 1].reduce(function (best, v) { return Math.abs(v - asp) < Math.abs(best - asp) ? v : best; }, 0.62),
-        function (v) { b.aspect = +v; rebuild(); });
+      if (k !== 'pie' && k !== 'polar') {
+        var asp = aspectOf(b);
+        seg(row(s8, 'Shape'), [[0.5, 'Wide'], [0.62, 'Standard'], [0.8, 'Tall'], [1, 'Square']],
+          [0.5, 0.62, 0.8, 1].reduce(function (best, v) { return Math.abs(v - asp) < Math.abs(best - asp) ? v : best; }, 0.62),
+          function (v) { b.aspect = +v; rebuild(); });
+      }
 
       var s9 = section(P, 'Caption and label');
       captionEditor(st, row(s9, null, 'full'), function () { st.draw(); });
@@ -692,9 +712,314 @@
       }
     };
 
+    function range(parent, label, lo, hi, ph0, ph1, set) {
+      var r = row(parent, label);
+      input(r, b[lo], ph0, function (v) { b[lo] = v; st.touch(); }, 'num');
+      r.appendChild(h('span', 'st-to', 'to'));
+      input(r, b[hi], ph1, function (v) { b[hi] = v; st.touch(); }, 'num');
+      return r;
+    }
+    function titleRow(s) { input(row(s, 'Title'), b.title, 'above the chart (optional)', function (v) { b.title = v; st.touch(); }, 'wide'); }
+    function gridRow(s, rebuild, fineToo) {
+      var gv = b.grid === 'both' ? 'both' : (b.grid === false || b.grid === 'none') ? 'none' : 'major';
+      seg(row(s, 'Grid'), [['none', 'None'], ['major', 'Lines']].concat(fineToo ? [['both', 'Fine']] : []), gv === 'both' && !fineToo ? 'major' : gv,
+        function (v) { b.grid = v; rebuild(); });
+    }
+    /* a straight or a logarithmic scale, for one axis */
+    function scaleSeg(parent, key, label, rebuild) {
+      seg(row(parent, label), [[false, 'Linear'], [true, 'Logarithmic']], !!b[key], function (v) {
+        b[key] = v === true || v === 'true';
+        /* a log axis cannot start at 0 or below */
+        var lo = key === 'xlog' ? 'xmin' : 'ymin', hi = key === 'xlog' ? 'xmax' : 'ymax';
+        if (b[key]) {
+          var a = C.val(b[lo]), z = C.val(b[hi]);
+          if (a != null && !(a > 0)) b[lo] = '';
+          if (z != null && !(z > 0)) b[hi] = '';
+          if (key === 'xlog' && b.kind === 'function') { if (!b[lo]) b[lo] = '0.1'; if (!b[hi]) b[hi] = '100'; }
+          if (b.axes === 'middle') b.axes = 'box';
+        }
+        rebuild();
+      }, null);
+    }
+    function axesBox(s, rebuild, noMiddle) {
+      seg(row(s, 'Axes'), [['box', 'Framed'], ['left', 'Arrows']].concat(noMiddle ? [] : [['middle', 'Through 0']]),
+        noMiddle && b.axes === 'middle' ? 'box' : (b.axes || 'box'), function (v) { b.axes = v; rebuild(); });
+    }
+
+    /* ---- y = f(x) ---- */
+    function functionPanel(P, rebuild) {
+      var s2 = section(P, 'Curves', 'Type them as on paper: 2x^2 - 3x + 1, sin x, e^(-x/2), |x|, sqrt(x).');
+      curveCards(s2, 0, true, 'plain');
+      button(s2, '+ Add a curve', function () { b.fns.push({ expr: '', name: '' }); st.focusFn = b.fns.length - 1; rebuild(); }, 'wide');
+      range(s2, 'x from', 'xmin', 'xmax', b.xlog ? '0.1' : '-5', b.xlog ? '100' : '5');
+      slider(row(s2, 'Smoothness'), 50, 500, 25, b.samples || 200, function (v) { return v + ' points'; }, function (v) { b.samples = v; st.touch(); });
+      axesSection(P, rebuild, true);
+    }
+
+    /* ---- r = f(θ) ---- */
+    function polarPanel(P, rebuild) {
+      var s2 = section(P, 'Curves', 'r as a formula of the angle θ (type θ, theta or t): 1 + cos θ, cos(3θ), θ/2pi, 2sin(4t).');
+      curveCards(s2, 0, true, 'polar');
+      button(s2, '+ Add a curve', function () { b.fns.push({ expr: '', name: '' }); st.focusFn = b.fns.length - 1; rebuild(); }, 'wide');
+      range(s2, 'θ from', 'xmin', 'xmax', '0', '2pi');
+      slider(row(s2, 'Smoothness'), 90, 1000, 30, b.samples || 360, function (v) { return v + ' points'; }, function (v) { b.samples = v; st.touch(); });
+      var s6 = section(P, 'Grid');
+      titleRow(s6);
+      seg(row(s6, 'Angles in'), [['deg', 'Degrees'], ['rad', 'Radians (π)']], b.angles === 'rad' ? 'rad' : 'deg', function (v) { b.angles = v; rebuild(); });
+      seg(row(s6, 'A spoke every'), [[15, '15°'], [30, '30°'], [45, '45°'], [90, '90°']], b.astep || 30, function (v) { b.astep = +v; rebuild(); });
+      var rr = row(s6, 'Radius up to');
+      input(rr, b.ymax, 'auto', function (v) { b.ymax = v; st.touch(); }, 'num');
+      rr.appendChild(h('span', 'st-to', 'rings every'));
+      input(rr, b.ystep, 'auto', function (v) { b.ystep = v; st.touch(); }, 'num');
+      gridRow(s6, rebuild, true);
+    }
+
+    /* ---- z = f(x, y) ---- */
+    function surfacePanel(P, rebuild) {
+      b.fns = b.fns && b.fns.length ? b.fns.slice(0, 1) : [{ expr: 'sin(x) cos(y)', name: '' }];
+      var fn = b.fns[0];
+      var s2 = section(P, 'Surface', 'A height for every point: sin(x) cos(y), x^2 - y^2, e^(-(x^2 + y^2)), sin(sqrt(x^2 + y^2)).');
+      var top = h('div', 'st-cs-top st-formula');
+      top.appendChild(h('span', 'st-y', 'z ='));
+      var ex = input(top, fn.expr, 'e.g. sin(x) cos(y)', function (v, el) {
+        fn.expr = v;
+        var c = C.compile(v, 'surface');
+        el.classList.toggle('bad', !!v.trim() && !c.ok);
+        el.title = c.ok ? '' : c.err;
+        st.touch();
+      }, 'st-fn-expr mono grow');
+      var c0 = C.compile(fn.expr, 'surface');
+      if (fn.expr && !c0.ok) { ex.classList.add('bad'); ex.title = c0.err; }
+      s2.appendChild(top);
+      range(s2, 'x from', 'xmin', 'xmax', '-3', '3');
+      range(s2, 'y from', 'ymin', 'ymax', '-3', '3');
+      slider(row(s2, 'Detail'), 8, 60, 1, b.samples3 || 25, function (v) { return v + ' × ' + v; }, function (v) { b.samples3 = v; st.touch(); });
+
+      var s3 = section(P, 'Look');
+      seg(row(s3, 'Drawn as'), [['surf', 'Surface'], ['mesh', 'Wire mesh']], b.surf === 'mesh' ? 'mesh' : 'surf', function (v) { b.surf = v; rebuild(); });
+      if (b.surf !== 'mesh') seg(row(s3, 'Shading'), [['faceted', 'Faceted'], ['smooth', 'Smooth']], b.shader === 'smooth' ? 'smooth' : 'faceted',
+        function (v) { b.shader = v; rebuild(); });
+      var cm = h('div', 'st-cmap');
+      Object.keys(C.CMAPS).forEach(function (name) {
+        var o = h('button', 'st-cmap-o' + ((b.cmap || 'viridis') === name ? ' on' : ''));
+        o.type = 'button';
+        o.title = C.CMAPS[name][0];
+        var stops = C.CMAPS[name][1];
+        o.style.background = 'linear-gradient(90deg,' + stops.map(function (s) { return 'rgb(' + s.join(',') + ')'; }).join(',') + ')';
+        o.appendChild(h('span', 'st-cmap-t', C.CMAPS[name][0]));
+        o.onclick = function () { b.cmap = name; rebuild(); };
+        cm.appendChild(o);
+      });
+      row(s3, 'Colours').appendChild(cm);
+      toggle(row(s3, null), 'Colour bar beside it, with the heights', b.colorbar, function (v) { b.colorbar = v; st.touch(); });
+
+      var s4 = section(P, 'View', 'Turn it round and tilt it. Every angle comes out the same in the PDF.');
+      var ang = h('div', 'st-angle');
+      var turn = h('div', 'st-angle-r');
+      turn.appendChild(h('span', 'st-l', 'Turn'));
+      slider(turn, -180, 180, 5, isFinite(parseFloat(b.az)) ? b.az : 25, function (v) { return v + '°'; }, function (v) { b.az = v; st.touch(); });
+      var tilt = h('div', 'st-angle-r');
+      tilt.appendChild(h('span', 'st-l', 'Tilt'));
+      slider(tilt, 0, 90, 5, isFinite(parseFloat(b.el)) ? b.el : 30, function (v) { return v + '°'; }, function (v) { b.el = v; st.touch(); });
+      ang.appendChild(turn);
+      ang.appendChild(tilt);
+      row(s4, null, 'full').appendChild(ang);
+      var pre = row(s4, 'Presets');
+      [['Standard', 25, 30], ['From the side', 0, 0], ['From above', 0, 90], ['Low', -35, 15]].forEach(function (p) {
+        button(pre, p[0], function () { b.az = p[1]; b.el = p[2]; rebuild(); });
+      });
+
+      var s6 = section(P, 'Axes');
+      titleRow(s6);
+      input(row(s6, 'x label'), b.xlabel, 'e.g. $x$', function (v) { b.xlabel = v; st.touch(); }, 'wide');
+      input(row(s6, 'y label'), b.ylabel, 'e.g. $y$', function (v) { b.ylabel = v; st.touch(); }, 'wide');
+      input(row(s6, 'z label'), b.zlabel, 'e.g. $z$', function (v) { b.zlabel = v; st.touch(); }, 'wide');
+      range(s6, 'z range', 'zmin', 'zmax', 'auto', 'auto');
+      gridRow(s6, rebuild, false);
+    }
+
+    /* ---- slices ---- */
+    function dataSource(s3, labelCol, valueCol, valueLabel) {
+      var tables = doc.blocks.filter(function (x) { return x.t === 'table'; });
+      select(row(s3, 'From'), [['', 'Its own rows (under the chart)']].concat(tables.map(function (t) {
+        return [t.id, 'Table ' + (t.__num || '') + (t.caption ? ' — ' + textOf(t.caption).slice(0, 28) : '')];
+      })), b.from || '', function (v) {
+        b.from = v;
+        if (!v && !b.data) b.data = SAMPLE[b.kind] || SAMPLE.data;
+        b.xcol = 0; b.ycols = [1];
+        var t = v ? blockById(doc, v) : null;
+        if (t && !st.savedTable) { st.savedTable = JSON.stringify(t); st.savedTableId = t.id; }
+        autoCols(b.kind);
+        st.rebuild();
+      });
+      var src = C.source(b, doc);
+      var opts = src.head.map(function (n, i) { return [i, n || 'Column ' + (i + 1)]; });
+      if (src.head.length && labelCol) select(row(s3, labelCol), opts, b.xcol | 0, function (v) { b.xcol = parseInt(v, 10); rebuild(); });
+      if (src.head.length && valueCol) select(row(s3, valueLabel || 'Values'), opts, (b.ycols || [1])[0], function (v) {
+        b.ycols = [parseInt(v, 10)]; rebuild();
+      });
+      return src;
+      function rebuild() { st.touch(true); }
+    }
+    function piePanel(P, rebuild) {
+      var s3 = section(P, 'Data');
+      dataSource(s3, 'Names', true, 'Sizes');
+      var m = C.model(b, doc);
+      var s4 = section(P, 'Slices', 'Clockwise from the top, in the order of the rows.');
+      var list = h('div', 'st-slices');
+      b.sliceColors = b.sliceColors || {};
+      m.slices.forEach(function (sl, i) {
+        var it = h('div', 'st-slice');
+        colorPick(it, b.sliceColors[i] || null, C.autoHex(i), function (hex) {
+          if (hex) b.sliceColors[i] = hex; else delete b.sliceColors[i];
+          st.touch(true);
+        });
+        it.appendChild(h('span', 'st-slice-n', sl.text || '—'));
+        it.appendChild(h('span', 'st-slice-v', sl.pct + '%'));
+        list.appendChild(it);
+      });
+      s4.appendChild(list);
+      var s5 = section(P, 'Look');
+      titleRow(s5);
+      seg(row(s5, 'Names'), [['outside', 'Beside slices'], ['legend', 'In a key'], ['none', 'Hidden']], b.pieLabels || 'outside',
+        function (v) { b.pieLabels = v; rebuild(); });
+      seg(row(s5, 'Numbers'), [['percent', '%'], ['value', 'Values'], ['both', 'Both'], ['none', 'None']], b.pieNumbers || 'percent',
+        function (v) { b.pieNumbers = v; rebuild(); });
+      if ((b.pieNumbers || 'percent') !== 'value' && b.pieNumbers !== 'none') {
+        seg(row(s5, 'Decimals'), [[0, '35%'], [1, '35.2%'], [2, '35.24%']], b.pieDec || 0, function (v) { b.pieDec = +v; rebuild(); });
+      }
+      toggle(row(s5, null), 'Ring (a hole in the middle)', b.donut, function (v) { b.donut = v; st.touch(); });
+    }
+
+    /* ---- counts ---- */
+    function histPanel(P, rebuild) {
+      var s3 = section(P, 'Data');
+      var src = dataSource(s3, null, true, 'Values');
+      var col = (b.ycols || [0])[0];
+      b.style = b.style || {};
+      var sty = b.style[col] || {};
+      var save = function () { if (Object.keys(sty).length) b.style[col] = sty; else delete b.style[col]; };
+      var nm = row(s3, 'Colour');
+      colorPick(nm, sty.color || null, C.autoHex(0), function (hex) {
+        if (hex) sty.color = hex; else delete sty.color;
+        save(); st.touch(true);
+      });
+      input(nm, sty.name, 'name in the legend: ' + (src.head[col] || ''), function (v) {
+        if (v) sty.name = v; else delete sty.name;
+        save(); st.touch();
+      }, 'grow');
+
+      var m = C.model(b, doc);
+      var s4 = section(P, 'Bins', m.bins ? m.bins.n + ' bins, each ' + String(+m.bins.w.toPrecision(6)) + ' wide, from ' +
+        String(+m.bins.start.toPrecision(6)) + '. ' + m.bins.N + ' values counted.' : null);
+      slider(row(s4, 'How many'), 0, 40, 1, parseInt(b.bins, 10) || 0, function (v) { return v ? v + ' bins' : 'automatic'; },
+        function (v) { b.bins = v || ''; if (v) b.binw = ''; st.touch(); });
+      var rw = row(s4, 'Or each');
+      input(rw, b.binw, 'auto', function (v) { b.binw = v; st.touch(); }, 'num');
+      rw.appendChild(h('span', 'st-to', 'wide, from'));
+      input(rw, b.binstart, 'auto', function (v) { b.binstart = v; st.touch(); }, 'num');
+      seg(row(s4, 'Heights'), [['count', 'Count'], ['percent', 'Percent'], ['density', 'Density']], b.histY || 'count',
+        function (v) { b.histY = v; rebuild(); });
+      toggle(row(s4, null), 'Write each count above its bar', b.values, function (v) { b.values = v; st.touch(); });
+      toggle(row(s4, null), 'Normal curve with the same mean and spread', b.normal, function (v) { b.normal = v; rebuild(); });
+      if (b.normal) {
+        b.normalStyle = b.normalStyle || {};
+        var ns = b.normalStyle;
+        var card2 = h('div', 'st-card-s');
+        var top = h('div', 'st-cs-top');
+        colorPick(top, ns.color || null, C.autoHex(1), function (hex) { if (hex) ns.color = hex; else delete ns.color; st.touch(true); });
+        input(top, ns.name, 'Normal curve', function (v) { ns.name = v; st.touch(); }, 'grow');
+        card2.appendChild(top);
+        var sub = h('div', 'st-cs-sub');
+        lineControls(sub, ns, C.look(b, { fn: true, st: ns, color: 1 }));
+        card2.appendChild(sub);
+        s4.appendChild(card2);
+      }
+      axesSection(P, rebuild, false);
+    }
+
+    /* ---- line, scatter, bar ---- */
+    function dataPanel(P, rebuild) {
+      var k = b.kind;
+      var s3 = section(P, 'Data');
+      var tables = doc.blocks.filter(function (x) { return x.t === 'table'; });
+      select(row(s3, 'From'), [['', 'Its own rows (under the chart)']].concat(tables.map(function (t) {
+        return [t.id, 'Table ' + (t.__num || '') + (t.caption ? ' — ' + textOf(t.caption).slice(0, 28) : '')];
+      })), b.from || '', function (v) {
+        b.from = v;
+        if (!v && !b.data) b.data = SAMPLE.data;
+        b.xcol = 0; b.ycols = [1];
+        var t = v ? blockById(doc, v) : null;
+        if (t && !st.savedTable) { st.savedTable = JSON.stringify(t); st.savedTableId = t.id; }
+        st.rebuild();
+      });
+      var src = C.source(b, doc);
+      if (src.head.length) {
+        select(row(s3, k === 'bar' ? 'Labels' : 'x axis'), src.head.map(function (n, i) { return [i, n || 'Column ' + (i + 1)]; }),
+          b.xcol | 0, function (v) {
+            b.xcol = parseInt(v, 10);
+            b.ycols = (b.ycols || []).filter(function (c) { return c !== b.xcol; });
+            if (!b.ycols.length) b.ycols = [b.xcol === 0 ? 1 : 0];
+            rebuild();
+          }, k === 'bar' ? 'The column that names each bar' : 'The column along the horizontal axis');
+        var s4 = section(P, 'Series', 'Each column of numbers can be a series: tick it, then style it.');
+        src.head.forEach(function (n, i) {
+          if (i === (b.xcol | 0)) return;
+          seriesCard(s4, src, i, n);
+        });
+      }
+      if (k === 'line') toggle(row(s3, null), 'Smooth lines', b.smooth, function (v) { b.smooth = v; st.touch(); });
+      if (k === 'bar') {
+        var sb = section(P, 'Bars');
+        seg(row(sb, 'Direction'), [[false, '▮ Upright'], [true, '▬ Lying down']], !!b.horizontal, function (v) {
+          b.horizontal = v === true || v === 'true'; rebuild();
+        });
+        seg(row(sb, 'Series'), [[false, 'Side by side'], [true, 'Stacked']], !!b.stacked, function (v) { b.stacked = v === true || v === 'true'; rebuild(); });
+        if (!b.stacked) toggle(row(sb, null), 'Write each value at the end of its bar', b.values, function (v) { b.values = v; st.touch(); });
+        slider(row(sb, 'Bar width'), 20, 100, 5, Math.round((b.barw || 0.8) * 100), function (v) { return v + '%'; },
+          function (v) { b.barw = v / 100; st.touch(); });
+      }
+      if (k !== 'bar') {
+        var s5 = section(P, 'Curves over the data', 'A fitted line or a model, e.g. 2.03x + 0.1 or 21 + 69e^(-0.075x).');
+        curveCards(s5, (b.ycols || [1]).length, false, 'plain');
+        button(s5, '+ Add a curve', function () { b.fns = b.fns || []; b.fns.push({ expr: '', name: '' }); st.focusFn = b.fns.length - 1; rebuild(); }, 'wide');
+      }
+      axesSection(P, rebuild, false);
+    }
+
+    /* titles, ranges, ticks, scales: for every chart with x and y axes */
+    function axesSection(P, rebuild, isFn) {
+      var k = b.kind, bar = k === 'bar', hz = bar && b.horizontal;
+      var s6 = section(P, 'Axes');
+      titleRow(s6);
+      var xl = bar ? 'Names axis' : 'x label', yl = bar ? 'Values axis' : 'y label';
+      input(row(s6, xl), b.xlabel, bar ? 'what the bars are, e.g. Country' : 'e.g. Time $t$ (s)', function (v) { b.xlabel = v; st.touch(); }, 'wide');
+      input(row(s6, yl), b.ylabel, 'formulas go between $…$', function (v) { b.ylabel = v; st.touch(); }, 'wide');
+      if (!isFn && !bar) range(s6, 'x range', 'xmin', 'xmax', 'auto', 'auto');
+      range(s6, bar ? 'Values from' : 'y range', 'ymin', 'ymax', 'auto', 'auto');
+      var rt = row(s6, 'Tick every');
+      if (!bar && !b.xlog) {
+        rt.appendChild(h('span', 'st-to', 'x'));
+        input(rt, b.xstep, 'auto', function (v) { b.xstep = v; st.touch(); }, 'num');
+      }
+      if (!b.ylog) {
+        rt.appendChild(h('span', 'st-to', bar ? 'value' : 'y'));
+        input(rt, b.ystep, 'auto', function (v) { b.ystep = v; st.touch(); }, 'num');
+      }
+      if (b.xlog && b.ylog) rt.appendChild(h('span', 'st-hint', 'at powers of ten, on log scales'));
+      if (k === 'function' || k === 'line' || k === 'scatter') {
+        var catX = k !== 'function' && C.model(b, doc).cats;
+        if (!catX) scaleSeg(s6, 'xlog', 'x scale', rebuild);
+        scaleSeg(s6, 'ylog', 'y scale', rebuild);
+      }
+      axesBox(s6, rebuild, b.xlog || b.ylog || k === 'hist' || hz);
+      gridRow(s6, rebuild, true);
+    }
+
     /* a formula with its look */
-    function curveCards(parent, color0, keepOne) {
+    function curveCards(parent, color0, keepOne, mode) {
       b.fns = b.fns || [];
+      var lead = mode === 'polar' ? 'r =' : 'y =';
       b.fns.forEach(function (fn, i) {
         var card2 = h('div', 'st-card-s');
         var top = h('div', 'st-cs-top');
@@ -703,21 +1028,24 @@
           if (hex) fn.color = hex; else delete fn.color;
           st.touch(true);
         });
-        top.appendChild(h('span', 'st-y', 'y ='));
-        var ex = input(top, fn.expr, 'e.g. 2x^2 - 3x + 1', function (v, el) {
+        top.appendChild(h('span', 'st-y', lead));
+        var ex = input(top, fn.expr, mode === 'polar' ? 'e.g. 1 + cos θ' : 'e.g. 2x^2 - 3x + 1', function (v, el) {
           fn.expr = v;
-          var c = C.compile(v);
+          var c = C.compile(v, mode);
           el.classList.toggle('bad', !!v.trim() && !c.ok);
           el.title = c.ok ? '' : c.err;
           st.touch();
         }, 'st-fn-expr mono');
-        var c0 = C.compile(fn.expr);
+        var c0 = C.compile(fn.expr, mode);
         if (fn.expr && !c0.ok) { ex.classList.add('bad'); ex.title = c0.err; }
         if (b.fns.length > 1 || !keepOne) button(top, '×', function () { b.fns.splice(i, 1); st.touch(true); }, 'ico', 'Remove this curve');
         card2.appendChild(top);
         var sub = h('div', 'st-cs-sub');
         input(sub, fn.name, 'name in the legend', function (v) { fn.name = v; st.touch(); }, 'grow');
         lineControls(sub, fn, L);
+        if (mode === 'polar') {
+          toggle(sub, 'Shade inside', fn.fill, function (v) { if (v) fn.fill = 'axis'; else delete fn.fill; st.touch(); });
+        } else fillControl(sub, fn, 'f' + i, function () {});
         card2.appendChild(sub);
         parent.appendChild(card2);
       });
@@ -727,6 +1055,17 @@
         L.dash, function (v) { if (v === 'solid') delete sty.dash; else sty.dash = v; st.touch(); }, 'Line style');
       select(parent, [['thin', 'thin'], ['semithick', 'medium'], ['thick', 'thick'], ['very thick', 'heavy'], ['ultra thick', 'heaviest']],
         L.thick, function (v) { sty.thick = v; st.touch(); }, 'Line width');
+    }
+    /* shading under a curve or a line, or between it and another */
+    function fillControl(parent, sty, key, save) {
+      var others = C.model(b, doc).series.filter(function (s) { return s.key !== key && (s.fn || b.kind === 'line') && !s.normal; });
+      var opts = [['', 'no shading'], ['axis', 'shade down to the x axis']].concat(others.map(function (s) {
+        return [s.key, 'shade up to ' + (s.name || (s.expr ? 'y = ' + s.expr : 'the other curve'))];
+      }));
+      select(parent, opts, sty.fill || '', function (v) {
+        if (v) sty.fill = v; else delete sty.fill;
+        save(); st.touch();
+      }, 'Shade the area under this, or between it and another curve');
     }
     /* one column of the data as a series: on or off, and how it looks */
     function seriesCard(parent, src, col, name) {
@@ -766,6 +1105,7 @@
             sty.msize = v; save(); st.touch();
           }, 'Point size');
         }
+        if (b.kind === 'line') fillControl(sub, sty, 'c' + col, save);
         var errOpts = [['', 'no error bars']].concat(src.head.map(function (n, i) { return [i, '± ' + (n || 'Column ' + (i + 1))]; })
           .filter(function (o) { return o[0] !== col && o[0] !== (b.xcol | 0); }));
         if (errOpts.length > 1) select(sub, errOpts, sty.err == null ? '' : sty.err, function (v) {

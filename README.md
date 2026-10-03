@@ -77,7 +77,7 @@ touching the math layout in `js/math.js`.
 | `js/math.js` | The formula engine: a tree model, a WYSIWYG renderer with its own caret and keyboard handling, LaTeX serialisation, and a small LaTeX parser used only for pasting. |
 | `js/doc.js` | The document model (blocks) and the on-paper editor — numbering, block menus, inline formulas, tables, figures, lists. |
 | `js/latex.js` | Turns the model into a `.tex` file, collecting the packages it actually needs. |
-| `js/chart.js` | Function plots and charts of data: a formula parser (no `eval`), the SVG drawn on the page, and the pgfplots code for the `.tex`. Axis limits, ticks and the legend corner are decided here and written into both, so the PDF matches the page. |
+| `js/chart.js` | Function plots, charts of data, histograms, pies, polar plots and 3D surfaces: a formula parser (no `eval`), the SVG drawn on the page, and the pgfplots code for the `.tex`. Axis limits, ticks and the legend corner are decided here and written into both, so the PDF matches the page. |
 | `js/home.js` | What the home page needs without loading the editor: recent documents and templates. |
 | `js/symbols.js` | Symbol and structure tables driving the palette and the `\command` autocomplete. |
 | `js/app.js` | Chrome: palettes, LaTeX pane, outline, settings, undo, storage, export. |
@@ -93,13 +93,19 @@ fraction instead of deleting a brace.
 - `Ctrl+K` — the command palette: one search over every block, symbol, structure,
   template and command, showing each one's shortcut; `\` in running text opens it at
   the caret (`\` twice types a backslash)
-- **New** — start blank or from a template: article, homework, lab report, data report, lecture notes
-- `/` on an empty line — block menu (section, equation, figure, table, function plot, chart, list, theorem, code, bibliography, raw LaTeX)
+- **New** — start blank or from a template: article, homework, lab report, data report, chart gallery, lecture notes
+- `/` on an empty line — block menu (section, equation, figure, table, function plot, chart, histogram, pie, polar plot, 3D surface, list, theorem, code, bibliography, raw LaTeX)
 - **Function plot** — type `y = 2x^2 - 3x + 1`, `sin x`, `e^(-x/2)`, `|x|` the way they are written
   on paper; several curves, ranges such as `-2pi` to `2pi`, axes framed or through the origin
 - **Chart** — line, scatter or bar chart of a table in the document (it follows the
   table as you edit it) or of rows pasted from a spreadsheet; curves such as a fitted
   model can be drawn over the data. Exported as pgfplots
+- **More charts** — horizontal bars; histograms (bins worked out on the page, with an
+  optional normal curve); pie and ring charts (plain TikZ); polar plots `r = cos(3θ)`
+  (pgfplots `polaraxis`); 3D surfaces `z = sin(x) cos(y)` (`\addplot3[surf]`, any view
+  angle, colour maps, a colour bar); logarithmic x and y axes; areas shaded under a
+  curve or between two (`\closedcycle`, `fill between`). The **Chart gallery** template
+  has one of each
 - **Tables** — paste a block of cells from Excel or Sheets into a cell; rows and
   columns go in beside the cell you are in; the 📊 button charts the table
 - **The chart and table editor** — a new chart or table opens full-window, and so does

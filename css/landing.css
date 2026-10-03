@@ -446,6 +446,61 @@ button { font: inherit; color: inherit; }
 .plot__pen { fill: var(--accent); stroke: #fff; stroke-width: 2; opacity: 0; }
 .plot__tex div, .data__tex div { margin: 0 -18px; padding: 0 18px; }
 
+/* -------------------------------------------------------- chart gallery */
+.gallery { padding: 64px 0 56px; }
+.gallery .lead { max-width: 34em; }
+.gal { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; }
+.gc {
+  position: relative; display: flex; flex-direction: column; gap: 10px; min-width: 0;
+  background: var(--paper); border-radius: var(--radius); padding: 14px 14px 0; overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(30, 28, 24, .07), 0 18px 40px -26px rgba(30, 28, 24, .5);
+  transition: transform .35s var(--ease), box-shadow .35s var(--ease);
+}
+.gc:hover { transform: translateY(-4px); box-shadow: 0 0 0 1px rgba(30, 28, 24, .1), 0 28px 48px -26px rgba(30, 28, 24, .55); }
+.gc--wide { grid-column: span 2; }
+.gc__head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 24px; }
+.gc__hint { font-size: 12px; color: var(--muted); text-align: right; }
+.gc__svg { width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
+.gc__svg--surf { cursor: grab; touch-action: none; border-radius: 6px; }
+.gc__svg--surf:active { cursor: grabbing; }
+.gc__svg--surf:focus-visible { outline-offset: 2px; }
+.gc__svg--area { cursor: ew-resize; }
+.gc__ctrl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 44px; }
+.gc__ctrl.range { flex: none; flex-wrap: nowrap; }
+.gc__ctrl.range input { min-width: 50px; }
+.chip--word { font-family: var(--ui); }
+.gc__ctrl.range label { font-size: 12.5px; }
+.gc__ctrl.range input { height: 36px; }
+.gc__label { font-size: 12.5px; font-weight: 600; color: #3d4148; padding-right: 4px; }
+.chip--sm { min-height: 36px; padding: 0 10px; font-size: 13px; }
+.gc__tex {
+  margin: auto -14px 0; padding: 10px 14px 12px; background: var(--night); font-size: 11.5px; line-height: 1.6;
+  white-space: pre-wrap; overflow-wrap: anywhere; min-height: 5.4em;
+}
+.gc__tex .k { color: var(--amber); }
+.gc__tex.flash { animation: flash .6s ease-out; }
+
+/* the drawings, in the PDF's ink */
+.gc__slice { stroke: var(--paper); stroke-width: 1.5; cursor: pointer; transition: filter .2s ease; }
+.gc__slice.is-hot { filter: brightness(1.08) drop-shadow(0 4px 6px rgba(30, 28, 24, .25)); }
+.gc__pct { font: 600 11px var(--serif); fill: #fffefb; pointer-events: none; }
+.gc__pct--dark { fill: #14100c; }
+.gc__legend text { font: 12px var(--serif); fill: #14100c; transition: font-weight .2s; }
+.gc__legend .is-hot text { font-weight: 700; }
+.gc__legend rect { stroke: rgba(20, 16, 12, .25); stroke-width: .5; }
+.gc__bar { fill: var(--accent); fill-opacity: .82; stroke: #5c3a0a; stroke-width: .8; transition: fill-opacity .15s ease; }
+.gc__bar:hover { fill-opacity: 1; }
+.gc__hrow text { font: 12px var(--serif); fill: #14100c; }
+.gc__hrow .gc__num { font-size: 11px; fill: #4b5058; }
+.gc__hrow:hover .gc__bar { fill-opacity: 1; }
+.gc__polar-grid circle, .gc__polar-grid path { fill: none; stroke: #e6e1d7; stroke-width: 1; }
+.gc__polar-grid text { font: 10px var(--serif); fill: #5f646d; }
+.gc__dot { fill: var(--accent); stroke: #fffefb; stroke-width: 1.2; }
+.gc__fill { fill: var(--amber); fill-opacity: .55; }
+.gc__bound { stroke: #5c3a0a; stroke-width: 1.2; stroke-dasharray: 3 3; }
+.gc__val { font: italic 13px var(--math); fill: #14100c; }
+#surfQuads path { stroke: rgba(20, 16, 12, .32); stroke-width: .5; stroke-linejoin: round; }
+
 /* -------------------------------------------------------- table → chart */
 .data { padding: 72px 0 104px; }
 .data__grid { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 40px 72px; }
@@ -552,6 +607,8 @@ button { font: inherit; color: inherit; }
 .tpl__mini path, .tpl__mini polyline { fill: none; stroke: #3a3530; stroke-width: 1; }
 .tpl__mini .fit { stroke: var(--accent); stroke-width: 1.4; }
 .tpl__mini circle { fill: #3a3530; }
+.tpl__mini rect { fill: var(--accent); fill-opacity: .75; stroke: none; }
+.tpl__mini .pie { fill: var(--amber); }
 .tpl__tbl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1.5px solid #3a3530; border-bottom: 1.5px solid #3a3530; font: 9.5px var(--serif); color: #3a3530; text-align: center; }
 .tpl__tbl span { padding: 1px 0; }
 .tpl__tbl span:nth-child(-n+3) { border-bottom: 1px solid #3a3530; }
@@ -637,6 +694,13 @@ button { font: inherit; color: inherit; }
   .plot__side { display: contents; }
   .plot__paper { order: 1; flex: none; width: 100%; max-width: 560px; align-self: center; }
   .plot__tex { order: 3; }
+}
+@media (max-width: 1100px) {
+  .gal { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .gal { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .gc--wide { grid-column: auto; }
 }
 @media (max-width: 960px) {
   /* the six links no longer fit beside the brand and the button: they get their own scrolling row */

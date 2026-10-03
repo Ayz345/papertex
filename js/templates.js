@@ -187,6 +187,70 @@
       }
     },
     {
+      id: 'gallery', name: 'Chart gallery', icon: '◔', desc: 'One of every chart: areas, log scales, bars, a histogram, a pie, polar and 3D',
+      build: function () {
+        var d = base('Every Kind of Chart');
+        d.meta.abstract = 'Each chart below is drawn on the page and written into the LaTeX as pgfplots or TikZ. ' +
+          'Click one to open it, change anything, and see the PDF follow.';
+        var chips = { id: D.uid(), t: 'table',
+          rows: [['Year', 'Chip', 'Transistors'], ['1971', 'Intel 4004', '2300'], ['1978', 'Intel 8086', '29000'], ['1985', 'Intel 386', '275000'],
+            ['1993', 'Pentium', '3100000'], ['2000', 'Pentium 4', '42000000'], ['2008', 'Core i7', '731000000'],
+            ['2016', 'Xeon E5', '7200000000'], ['2021', 'Apple M1 Max', '57000000000']],
+          align: ['c', 'l', 'r'], header: true, booktabs: true, rules: false,
+          caption: 'Transistors on one chip (approximate figures).', label: 'tab:chips', placement: 'htbp' };
+        d.blocks = [
+          sec('Areas under and between curves'),
+          para('The area between ' + im('y = x') + ' and ' + im('y = x^2') + ' is ' + im('\\int_0^1 (x - x^2)\\,dx = \\tfrac{1}{6}') +
+            '. A curve can be shaded down to the axis or up to another curve.'),
+          chart('function', {
+            fns: [{ expr: 'x', name: '$y = x$', fill: 'f1' }, { expr: 'x^2', name: '$y = x^2$', dash: 'dashed' }],
+            xmin: '0', xmax: '1', ymin: '0', ymax: '1', axes: 'left', xlabel: '$x$', ylabel: '$y$', width: 0.6, aspect: 0.8,
+            caption: 'The region between the two curves, shaded.', label: 'fig:area'
+          }),
+          sec('A logarithmic scale'),
+          para('Numbers that grow by a factor each step lie on a straight line when the axis is logarithmic (Table ' + ref('tab:chips') + ').'),
+          chips,
+          chart('line', {
+            from: chips.id, xcol: 0, ycols: [2], ylog: true, xlabel: 'Year', ylabel: 'Transistors per chip', legend: false,
+            caption: 'Moore’s law: a doubling roughly every two years.', label: 'fig:moore'
+          }),
+          sec('Bars lying down'),
+          para('Long names read better beside bars than under them.'),
+          chart('bar', {
+            data: 'Subject\tStudents\nMathematics\t31\nPhysics\t24\nComputer science\t38\nBiology\t17\nHistory\t12',
+            horizontal: true, values: true, legend: false, ylabel: 'Students', width: 0.7,
+            caption: 'Favourite subject, out of 122 students.', label: 'fig:subjects'
+          }),
+          sec('A histogram'),
+          para('Heights are counted into bins; the curve is the normal distribution with the same mean and spread.'),
+          chart('hist', {
+            data: 'Height (cm)\n162\n171\n158\n180\n167\n174\n169\n177\n165\n172\n183\n160\n175\n168\n179\n170\n164\n173\n186\n166\n171\n176\n161\n169\n178\n174\n168\n163\n181\n172',
+            ycols: [0], normal: true, xlabel: 'Height (cm)', ylabel: 'Students',
+            caption: 'Heights of 30 students.', label: 'fig:heights'
+          }),
+          sec('A pie'),
+          chart('pie', {
+            data: 'Activity\tHours\nSleep\t8\nSchool\t7\nHomework\t3\nSport\t2\nMeals\t1.5\nOther\t2.5',
+            donut: true, width: 0.8, caption: 'A school day, hour by hour.', label: 'fig:day'
+          }),
+          sec('Polar curves'),
+          para('A rose ' + im('r = \\cos 3\\theta') + ' and a cardioid ' + im('r = 1 + \\cos\\theta') + ', on a grid in radians.'),
+          chart('polar', {
+            fns: [{ expr: '1 + cos θ', name: 'cardioid', fill: 'axis' }, { expr: 'cos(3θ)', name: 'rose' }],
+            angles: 'rad', width: 0.6, caption: 'Two curves in polar coordinates.', label: 'fig:polar'
+          }),
+          sec('A surface'),
+          para('The saddle ' + im('z = x^2 - y^2') + ' rises along one axis and falls along the other.'),
+          chart('surface', {
+            fns: [{ expr: 'x^2 - y^2', name: '' }], xmin: '-2', xmax: '2', ymin: '-2', ymax: '2', colorbar: true,
+            xlabel: '$x$', ylabel: '$y$', zlabel: '$z$', aspect: 0.75,
+            caption: 'A saddle surface.', label: 'fig:saddle'
+          })
+        ];
+        return d;
+      }
+    },
+    {
       id: 'notes', name: 'Lecture notes', icon: '❡', desc: 'Definitions, theorems and proofs',
       build: function () {
         var d = base('Lecture 1: Limits', { showAbstract: false });

@@ -227,6 +227,131 @@ in equation~<span class="k">\eqref</span>{eq:gauss} and prove in ...
   </div>
 </section>
 
+<!-- ============================ chart gallery: seven kinds, each one reacts -->
+<section class="gallery" id="gallery">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <p class="eyebrow" data-reveal>Chart gallery</p>
+        <h2 class="h2" data-split>Pies, polar roses, 3D surfaces — in real LaTeX.</h2>
+        <p class="lead" data-reveal>Seven more kinds of chart, each drawn on the page and written out as pgfplots or TikZ that compiles. Point, drag and click: every one of these answers.</p>
+      </div>
+      <a class="link-arrow" href="app.html#new=gallery" data-reveal><span>See every chart in the editor</span><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+    </div>
+
+    <div class="gal">
+      <!-- pie -->
+      <article class="gc" id="gcPie" data-reveal>
+        <div class="gc__head"><span class="fp__badge">Pie</span><span class="gc__hint">Point at a slice</span></div>
+        <svg class="gc__svg" viewBox="0 0 260 170" role="img" aria-label="Pie chart of a week of study: lectures 34%, labs 26%, reading 22%, exams 18%.">
+          <g id="pieSlices"></g>
+          <g class="gc__legend" id="pieLegend"></g>
+        </svg>
+        <pre class="gc__tex code__body" id="pieTex"></pre>
+      </article>
+
+      <!-- histogram -->
+      <article class="gc" id="gcHist" data-reveal>
+        <div class="gc__head"><span class="fp__badge">Histogram</span><span class="gc__hint">120 heights, in cm</span></div>
+        <svg class="gc__svg" viewBox="0 0 260 170" role="img" aria-label="Histogram of 120 heights between 150 and 195 cm, peaked near 172 cm.">
+          <g class="plot__axes"><path d="M32 12V140H250"/></g>
+          <g class="plot__ticks" id="histTicks"></g>
+          <g id="histBars"></g>
+        </svg>
+        <div class="gc__ctrl" role="group" aria-label="Number of bins">
+          <span class="gc__label">Bins</span>
+          <button class="chip chip--sm" type="button" data-bins="6" aria-pressed="false">6</button>
+          <button class="chip chip--sm is-on" type="button" data-bins="9" aria-pressed="true">9</button>
+          <button class="chip chip--sm" type="button" data-bins="15" aria-pressed="false">15</button>
+        </div>
+        <pre class="gc__tex code__body" id="histTex"></pre>
+      </article>
+
+      <!-- polar -->
+      <article class="gc" id="gcPolar" data-reveal>
+        <div class="gc__head"><span class="fp__badge">Polar</span><span class="gc__hint">r = cos(kθ)</span></div>
+        <svg class="gc__svg" viewBox="0 0 260 170" role="img" aria-label="Polar plot of the rose r = cos(k theta).">
+          <g class="gc__polar-grid" id="polarGrid"></g>
+          <path class="plot__curve" id="polarCurve" d=""/>
+          <circle class="plot__pen" id="polarPen" r="4" cx="130" cy="85"/>
+        </svg>
+        <div class="gc__ctrl" role="group" aria-label="Petal number k">
+          <span class="gc__label">k</span>
+          <button class="chip chip--sm" type="button" data-k="2" aria-pressed="false">2</button>
+          <button class="chip chip--sm is-on" type="button" data-k="3" aria-pressed="true">3</button>
+          <button class="chip chip--sm" type="button" data-k="4" aria-pressed="false">4</button>
+          <button class="chip chip--sm" type="button" data-k="5" aria-pressed="false">5</button>
+        </div>
+        <pre class="gc__tex code__body" id="polarTex"></pre>
+      </article>
+
+      <!-- horizontal bars -->
+      <article class="gc" id="gcHbar" data-reveal>
+        <div class="gc__head"><span class="fp__badge">Horizontal bars</span><span class="gc__hint">Hours of code</span></div>
+        <svg class="gc__svg" viewBox="0 0 260 170" role="img" aria-label="Horizontal bar chart: Python 42 hours, Excel 31, R 23, MATLAB 17, Julia 9.">
+          <g class="plot__axes"><path d="M66 10V156"/></g>
+          <g id="hbarRows"></g>
+        </svg>
+        <div class="gc__ctrl">
+          <button class="chip chip--sm chip--word" type="button" id="hbarSort" aria-pressed="true">Sorted by value</button>
+        </div>
+        <pre class="gc__tex code__body" id="hbarTex"></pre>
+      </article>
+
+      <!-- 3D surface -->
+      <article class="gc gc--wide" id="gcSurf" data-reveal>
+        <div class="gc__head"><span class="fp__badge">3D surface</span><span class="gc__hint">Drag to turn it · arrow keys too</span></div>
+        <svg class="gc__svg gc__svg--surf" id="surfSvg" viewBox="0 0 540 300" role="img" tabindex="0" aria-label="3D surface plot of z = f(x, y). Drag or use the arrow keys to turn it.">
+          <g id="surfQuads"></g>
+        </svg>
+        <div class="gc__ctrl" role="group" aria-label="Surface">
+          <button class="chip chip--sm is-on" type="button" data-surf="0" aria-pressed="true">sin x · cos y</button>
+          <button class="chip chip--sm" type="button" data-surf="1" aria-pressed="false">e^(−(x²+y²)/2)</button>
+          <button class="chip chip--sm" type="button" data-surf="2" aria-pressed="false">saddle (x² − y²)/9</button>
+        </div>
+        <pre class="gc__tex code__body" id="surfTex"></pre>
+      </article>
+
+      <!-- log axis -->
+      <article class="gc" id="gcLog" data-reveal>
+        <div class="gc__head"><span class="fp__badge">Log axis</span><span class="gc__hint">Bacteria, doubling hourly</span></div>
+        <svg class="gc__svg" viewBox="0 0 260 170" role="img" aria-label="Bacteria count doubling every hour from 10 to about 10,000 over 10 hours, on a linear or logarithmic y axis.">
+          <g class="plot__grid-lines" id="logGrid"></g>
+          <g class="plot__axes"><path d="M40 12V140H250"/></g>
+          <g class="plot__ticks" id="logTicks"></g>
+          <polyline class="plot__curve" id="logLine" points=""/>
+          <g id="logPts"></g>
+        </svg>
+        <div class="gc__ctrl" role="group" aria-label="y axis">
+          <span class="gc__label">y axis</span>
+          <button class="chip chip--sm chip--word" type="button" data-ymode="lin" aria-pressed="false">linear</button>
+          <button class="chip chip--sm chip--word is-on" type="button" data-ymode="log" aria-pressed="true">log</button>
+        </div>
+        <pre class="gc__tex code__body" id="logTex"></pre>
+      </article>
+
+      <!-- filled area -->
+      <article class="gc" id="gcArea" data-reveal>
+        <div class="gc__head"><span class="fp__badge">Filled area</span><span class="gc__hint">Drag across the plot</span></div>
+        <svg class="gc__svg gc__svg--area" id="areaSvg" viewBox="0 0 260 170" role="img" aria-label="The area under y = x e^(−x/2) from 0 to b, shaded.">
+          <g class="plot__axes"><path d="M24 12V140H250"/></g>
+          <g class="plot__ticks" id="areaTicks"></g>
+          <path class="gc__fill" id="areaFill" d=""/>
+          <path class="plot__curve" id="areaCurve" d=""/>
+          <path class="gc__bound" id="areaBound" d=""/>
+          <text class="gc__val" id="areaVal" x="246" y="28" text-anchor="end"></text>
+        </svg>
+        <div class="gc__ctrl range">
+          <label for="areaRange">Upper bound <i>b</i></label>
+          <input id="areaRange" type="range" min="0.2" max="10" step="0.1" value="5">
+          <output id="areaOut" for="areaRange">5.0</output>
+        </div>
+        <pre class="gc__tex code__body" id="areaTex"></pre>
+      </article>
+    </div>
+  </div>
+</section>
+
 <!-- ===================================== chart from a table, live model -->
 <section class="data" id="data">
   <div class="wrap data__grid">
@@ -411,6 +536,7 @@ in equation~<span class="k">\eqref</span>{eq:gauss} and prove in ...
       <div>
         <h3>Product</h3>
         <a href="app.html">Open the editor</a>
+        <a href="#gallery">Chart gallery</a>
         <a href="#templates">Templates</a>
         <a href="#desktop">Desktop app</a>
       </div>

@@ -393,18 +393,25 @@ blockquote.pt-quote {
 .pt-chlab.l { justify-content: flex-start; }
 .pt-chm { display: inline-block; }
 .pt-cherr {
-  font: 400 11px/1.4 ui-sans-serif, system-ui, sans-serif; color: #b42318;
-  background: #fef3f2; border-radius: 4px; padding: 3px 8px; margin-top: 4px;
+  font: 400 11.5px/1.45 ui-sans-serif, system-ui, sans-serif; color: #a8250d;
+  background: #fff6f4; border-left: 2px solid #e5a091; border-radius: 0 6px 6px 0; padding: 4px 9px; margin-top: 6px;
 }
+/* "⤢ Edit chart": slides in when the chart is pointed at or focused, lifts on hover, gives on press */
 .pt-chedit {
-  position: absolute; top: 0; right: 0; opacity: 0; transition: opacity .15s, transform .15s;
-  font: 600 11px/1 ui-sans-serif, system-ui, sans-serif; color: #7a4f10;
-  background: #fffaf0; border: 1px solid #e8d4a8; border-radius: 6px; padding: 6px 9px; cursor: pointer;
+  position: absolute; top: 0; right: 0; z-index: 2; opacity: 0; transform: translateY(4px) scale(.96);
+  transition: opacity .2s ease, transform .3s cubic-bezier(.3, 1.4, .5, 1), background-color .15s ease, box-shadow .2s ease;
+  font: 600 11.5px/1 ui-sans-serif, system-ui, sans-serif; color: #7a4f10;
+  background: #fffaf0; border: 1px solid #e8d4a8; border-radius: 7px; padding: 7px 10px; cursor: pointer;
   box-shadow: 0 4px 12px -6px rgba(92, 58, 10, .5);
 }
-.blk:hover .pt-chedit, .pt-chedit:focus-visible { opacity: 1; }
-.pt-chedit:hover { background: #fdf3dd; transform: translateY(-1px); }
-.pt-chart:hover .pt-chsvg { outline: 1px dashed #e8d4a8; outline-offset: 6px; border-radius: 2px; }
+.blk:hover .pt-chedit, .blk:focus-within .pt-chedit, .pt-chedit:focus-visible { opacity: 1; transform: none; }
+.pt-chedit:hover { background: #fdf3dd; transform: translateY(-2px); box-shadow: 0 10px 18px -10px rgba(92, 58, 10, .6); }
+.pt-chedit:active { transform: translateY(1px) scale(.96); transition-duration: .06s; }
+.pt-chedit:focus-visible { outline: 2px solid #9a5b06; outline-offset: 2px; }
+@media (hover: none) { .pt-chedit { opacity: 1; transform: none; } }   /* no pointer to reveal it */
+.pt-chsvg { outline: 1px dashed transparent; outline-offset: 12px; border-radius: 2px; transition: outline-color .2s ease, outline-offset .25s ease; }
+.pt-chart:hover .pt-chsvg { outline-color: #e2c48c; outline-offset: 6px; }
+@media (prefers-reduced-motion: reduce) { .pt-chedit, .pt-chsvg { transition: none; } }
 
 /* table looks (the studio's Look settings) */
 .pt-tcap.below { margin: .45em 0 0; }
@@ -416,3 +423,12 @@ blockquote.pt-quote {
 .pt-table.sz-footnotesize { font-size: .76em; }
 .pt-tabctl button.big { font-weight: 600; color: #7a4f10; border-color: #e8d4a8; background: #fffaf0; }
 @media print { .pt-chedit { display: none !important; } .pt-chart:hover .pt-chsvg { outline: none; } }
+
+/* new chart kinds */
+.pt-chlab.r { justify-content: flex-end; }
+.pt-chsvg text.pt-chpnum { font-size: 9px; }
+.pt-chcbar { stroke: #111; stroke-width: .4; fill: none; }
+.pt-chpie { overflow: visible; }
+.pt-chgrid circle { stroke: #d9d9d9; stroke-width: .5; fill: none; }
+.pt-chgrid .minor circle { stroke: #ececec; stroke-width: .4; }
+.pt-chaxis circle, .pt-chaxis path:not(.pt-charrow) { stroke: #111; stroke-width: .6; fill: none; }

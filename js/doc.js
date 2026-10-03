@@ -62,6 +62,15 @@
       };
       case 'plot': return chartBlock('function', { fns: [{ expr: 'sin x', name: '' }], xmin: '-2pi', xmax: '2pi', axes: 'middle', xlabel: '$x$', ylabel: '$y$' });
       case 'chart': return chartBlock('line', { data: 'Time (s), Distance (m)\n0, 0\n1, 1.8\n2, 4.1\n3, 6.2\n4, 7.9\n5, 10.1' });
+      case 'pie': return chartBlock('pie', { data: 'Item\tShare\nRent\t40\nFood\t25\nTransport\t15\nSavings\t12\nOther\t8', width: 0.8 });
+      case 'histogram': return chartBlock('hist', {
+        data: 'Score\n62\n71\n55\n80\n67\n74\n90\n58\n69\n77\n84\n65\n72\n60\n79\n68\n73\n88\n64\n70',
+        ycols: [0], xlabel: 'Score', ylabel: 'Students', legend: false
+      });
+      case 'polar': return chartBlock('polar', { fns: [{ expr: 'cos(3θ)', name: '' }], width: 0.6 });
+      case 'surface': return chartBlock('surface', {
+        fns: [{ expr: 'sin(x) cos(y)', name: '' }], xlabel: '$x$', ylabel: '$y$', zlabel: '$z$', aspect: 0.75
+      });
       case 'theorem': return { id: uid(), t: 'theorem', kind: 'theorem', title: '', html: '', label: '' };
       case 'lemma': return { id: uid(), t: 'theorem', kind: 'lemma', title: '', html: '', label: '' };
       case 'definition': return { id: uid(), t: 'theorem', kind: 'definition', title: '', html: '', label: '' };
@@ -76,7 +85,8 @@
     }
   }
 
-  /* A chart: kind is function | line | scatter | bar. Data comes from a
+  /* A chart: kind is function | line | scatter | bar | hist | pie | polar |
+     surface. Data comes from a
      table in the document (from = its id) or from the chart's own rows
      (data, as comma- or tab-separated text). See chart.js. */
   function chartBlock(kind, o) {
@@ -112,6 +122,10 @@
       ['table', 'Table', '▦', 'tabular with caption'],
       ['plot', 'Function plot', '📈', 'y = f(x), drawn with pgfplots'],
       ['chart', 'Chart', '📊', 'Line, scatter or bar chart of data'],
+      ['histogram', 'Histogram', '▁▃▇', 'How often values come up, in bins'],
+      ['pie', 'Pie chart', '◔', 'Shares of a whole, drawn in TikZ'],
+      ['polar', 'Polar plot', '✿', 'r = f(θ) on a round grid'],
+      ['surface', '3D surface', '⛰', 'z = f(x, y) with pgfplots'],
       ['quote', 'Quote', '❝', 'quote environment'],
       ['code', 'Code', '⌨', 'verbatim / lstlisting'],
       ['bib', 'Bibliography', '📚', 'thebibliography'],
