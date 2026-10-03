@@ -11,7 +11,7 @@
      are data: URLs; the compiled PDF is a blob:. connect-src names the
      engine host — tools/build-web.js narrows it to this site alone when
      TeX Live is deployed beside the page. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-nCsYqU57DcjyJdeLktuVapNA/VJyB+D3CgjahKkAG30=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-FFom6qq8tNvBDtWKkeXB9k9xIAfAX5n1XPyZ4XVibEQ=' 'sha256-OI1XvI1YDe5z/WgOLZqJHOh6Nij9VeE5vwyJRCkFWKg=' 'sha256-nu0nbrruuIQRlZrmaasXEIsi/IQbBebJfrJUnEvcyeg=' 'sha256-6M3r1xu+SWYvL+yQeuSAv9wY5i4gOD9Mhzy0wi4bPNA=' 'sha256-oji+0n13nqRqXf6T7hCsodCcFbSB6vjz0B+gRtfs3eE=' 'sha256-r4ar0xaMZepl04KR7XVNhhc0Ahx6YLBONtjkvyBCh24=' 'sha256-2Nf8IMEt9AgrBEapUtgndS3BXdMStE29Q8deX0WEE+s=' 'sha256-/qwyeuNYjB8t+GGALhtrTsg+jA6Tflb/t4rjsksFau4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-nCsYqU57DcjyJdeLktuVapNA/VJyB+D3CgjahKkAG30=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-rYmUfC1bRf1MC2OYZgmryvMELReyz6J1wfPWRUiKJjA=' 'sha256-OI1XvI1YDe5z/WgOLZqJHOh6Nij9VeE5vwyJRCkFWKg=' 'sha256-NDf/P5kaLbBnWK42+ZOHaGbFggbtZ8Ko1Fpmm9ZxAqI=' 'sha256-DrmNT/aFR7qmsfPb8kPX7nLMAr0kEo5vZbUiNXtTKS8=' 'sha256-nt+HEqlM6KFPRxpUBGPKQ/qqp7BiHip9Uq46tGqSUz8=' 'sha256-TN9SaTGAHK+83BxemLZqeTqS9HgUlxrFayqccj1qads=' 'sha256-qqNK5hz/xQaXfdmUyTvC3k3L9ENybSZk/dBEHFpiOnY=' 'sha256-5yNKBiJcGfTMesfu/uvAm/VXO5lpi1gCM87otMLrQqk=' 'sha256-y9lXdNHKpNXIYQ1raFdQua8Dr6uJyAW2+49IrZVkGcc=' 'sha256-aOSjqN4do88mQivTl+9IPhC/pOUU5C2TR3lWiUhu3vg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <!-- Where the compiler's wasm and TeX Live live, if not beside this page
      (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
 <meta name="papertex-engine" content="">
@@ -666,6 +666,44 @@ body.nopanel .side { margin-right: -380px; }
 }
 .kb-count { flex: 1 1 auto; font-size: 12px; color: var(--muted); }
 
+/* command palette */
+.cp-back { position: fixed; inset: 0; z-index: 330; }
+.cp {
+  position: fixed; width: 440px; max-width: calc(100vw - 24px);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 22px 60px -16px rgba(20, 25, 35, .42), 0 1px 3px rgba(20, 25, 35, .12);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.cp.centred { left: 50%; top: 14vh; transform: translateX(-50%); width: 560px; }
+.cp-in {
+  border: 0; border-bottom: 1px solid var(--line-2); padding: 12px 14px; font: inherit; font-size: 14px;
+  color: var(--ink); outline: none; background: transparent;
+}
+.cp-list { max-height: 330px; overflow: auto; padding: 4px; }
+.cp-g {
+  font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint);
+  padding: 9px 9px 3px;
+}
+.cp-row {
+  display: flex; align-items: center; gap: 10px; padding: 5px 8px; border-radius: 7px; cursor: pointer;
+  min-height: 32px;
+}
+.cp-row.on { background: var(--accent-soft); }
+.cp-glyph {
+  flex: 0 0 28px; width: 28px; display: flex; justify-content: center; align-items: center;
+  font-family: var(--serif); font-size: 15px; color: var(--ink); overflow: hidden; white-space: nowrap;
+}
+.cp-glyph .pv, .cp-glyph .pv-frac { transform: scale(.85); }
+.cp-l { flex: 1 1 auto; min-width: 0; font-size: 13px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-l small { margin-left: 8px; font-size: 11px; color: var(--faint); }
+.cp-k {
+  flex: 0 0 auto; font: 10.5px/1.6 var(--mono); background: var(--chrome); border: 1px solid var(--line);
+  border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; color: var(--muted);
+}
+.cp-none { padding: 18px; text-align: center; color: var(--muted); font-size: 12.5px; }
+.cp-foot { padding: 6px 12px 8px; font-size: 10.5px; color: var(--faint); border-top: 1px solid var(--line-2); }
+.tplitem .popico { width: 26px; height: 26px; font-size: 14px; }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
 }
@@ -1097,6 +1135,7 @@ blockquote.pt-quote {
   <button class="tb" id="btnPanel" title="Show or hide the LaTeX panel"><span class="k">▥</span></button>
 
   <span class="spacer"></span>
+  <button class="tb ghost" id="btnPalette" title="Search every command, block and symbol">⌕ Commands</button>
   <button class="tb ghost" id="btnHelp" title="Keyboard shortcuts and tips">? Shortcuts</button>
   <button class="tb ghost" id="btnPrint" title="Print the page as it looks here">Print / PDF</button>
   <button class="tb ghost" id="btnCopy" title="Copy the generated LaTeX">Copy LaTeX</button>
@@ -1168,6 +1207,8 @@ blockquote.pt-quote {
     <div class="helpgrid">
       <kbd>/</kbd><span>On an empty paragraph, opens the block menu — section, equation, figure, table, list…</span>
       <kbd>$</kbd><span>Inside any text, starts an inline formula right where the cursor is</span>
+      <kbd data-key="view.palette.cmd">Ctrl+K</kbd><span>The command palette: search every block, symbol, structure and command, and see its
+        shortcut. In running text <kbd>\</kbd> opens it too (press <kbd>\</kbd> twice for a backslash)</span>
       <kbd data-key="block.eq">Ctrl+Enter</kbd><span>Drops a display equation below the current block</span>
       <kbd>Enter</kbd><span>New paragraph · in a list, a new item · in an equation, a new aligned line —
         on an empty last line, back to the text</span>
@@ -3051,7 +3092,11 @@ blockquote.pt-quote {
       if (k.length === 1) { this.resolveCI(); }
     }
 
-    if (e.ctrlKey || e.metaKey) {
+    /* AltGr arrives as Ctrl+Alt on Windows, and it is how \ { } [ ] | are
+       typed on Turkish, German and many other layouts: that is typing, not
+       a shortcut. */
+    var altGr = (e.getModifierState && e.getModifierState('AltGraph')) || (e.ctrlKey && e.altKey && k.length === 1);
+    if ((e.ctrlKey || e.metaKey) && !altGr) {
       if (k === 'a') { this.sel = { row: this.root, a: 0, b: this.root.k.length }; this.cur = { row: this.root, i: this.root.k.length }; e.preventDefault(); this.render(); return; }
       return; /* let copy/paste/undo bubble */
     }
@@ -3582,7 +3627,9 @@ blockquote.pt-quote {
     return (div.textContent || '').trim() || 'Untitled document';
   }
   function record(id, json, doc, prev) {
-    return { id: id, title: titleOf(doc), updated: Date.now(), json: json, backedUp: prev ? prev.backedUp || 0 : 0 };
+    var now = Date.now();
+    return { id: id, title: titleOf(doc), updated: now, json: json, backedUp: prev ? prev.backedUp || 0 : 0,
+      created: prev && prev.created ? prev.created : now };
   }
 
   var opened = null;
@@ -3619,7 +3666,9 @@ blockquote.pt-quote {
   function list() {
     return be.all().then(function (rs) {
       return rs.map(function (r) {
-        return { id: r.id, title: r.title, updated: r.updated, backedUp: r.backedUp || 0, size: (r.json || '').length };
+        return { id: r.id, title: r.title, updated: r.updated, backedUp: r.backedUp || 0, size: (r.json || '').length,
+          /* records from before 'created' was kept count from their last change */
+          created: r.created || r.updated };
       }).sort(function (a, b) { return b.updated - a.updated; });
     });
   }
@@ -3769,7 +3818,7 @@ blockquote.pt-quote {
 
   /* ---- blocks ---- */
   function blockTex(b, use, doc) {
-    var s = '', L = function (lab) { return lab ? '\\label{' + lab + '}' : ''; };
+    var s = '', L = function (lab) { return lab ? '\\label{' + PT.sanitize.label(lab) + '}' : ''; };
     switch (b.t) {
       case 'section': {
         var cmd = ['section', 'subsection', 'subsubsection', 'paragraph'][b.level - 1] || 'section';
@@ -3789,7 +3838,7 @@ blockquote.pt-quote {
         var env = (b.env === 'gather' ? 'gather' : 'align') + star;
         var body = lines.map(function (r, i) {
           var t = (b.env === 'gather' ? M.texRow(r).trim() : alignedLine(r));
-          if (b.labels && b.labels[i]) t += ' \\label{' + b.labels[i] + '}';
+          if (b.labels && b.labels[i]) t += ' \\label{' + PT.sanitize.label(b.labels[i]) + '}';
           return '  ' + t;
         }).join(' \\\\\n');
         return '\\begin{' + env + '}\n' + body + '\n\\end{' + env + '}\n';
@@ -3807,12 +3856,18 @@ blockquote.pt-quote {
         return out + '\\end{' + env2 + '}\n';
       }
       case 'figure': {
-        use.graphicx = true;
         var w = (b.width || 0.8);
+        /* A figure whose image has not been chosen yet would name a file
+           that does not exist, and the whole document would fail to
+           compile. Until there is an image, set a framed placeholder. */
+        var hasImage = !!(b.src && b.filename);
+        if (hasImage) use.graphicx = true;
         return '\\begin{figure}[' + (b.placement || 'htbp') + ']\n  \\centering\n' +
-          '  \\includegraphics[width=' + w + '\\linewidth]{' + (b.filename || 'figure.png') + '}\n' +
+          (hasImage
+            ? '  \\includegraphics[width=' + w + '\\linewidth]{' + String(b.filename).replace(/[{}\\%#]/g, '') + '}\n'
+            : '  \\fbox{\\parbox[c][' + (w * 0.6).toFixed(2) + '\\linewidth][c]{' + w + '\\linewidth}{\\centering\\small\\itshape Image not chosen yet}}\n') +
           (b.caption ? '  \\caption{' + inline(b.caption, use).trim() + '}\n' : '') +
-          (b.label ? '  \\label{' + b.label + '}\n' : '') +
+          (b.label ? '  \\label{' + PT.sanitize.label(b.label) + '}\n' : '') +
           '\\end{figure}\n';
       }
       case 'table': {
@@ -3820,7 +3875,7 @@ blockquote.pt-quote {
         if (b.rules) cols = '|' + cols + '|';
         var t = '\\begin{table}[' + (b.placement || 'htbp') + ']\n  \\centering\n';
         if (b.caption) t += '  \\caption{' + inline(b.caption, use).trim() + '}\n';
-        if (b.label) t += '  \\label{' + b.label + '}\n';
+        if (b.label) t += '  \\label{' + PT.sanitize.label(b.label) + '}\n';
         t += '  \\begin{tabular}{' + cols + '}\n';
         if (b.booktabs) { use.booktabs = true; t += '    \\toprule\n'; }
         else if (b.rules) t += '    \\hline\n';
@@ -4353,6 +4408,13 @@ blockquote.pt-quote {
     /* Ctrl/⌘ shortcuts (bold, italic, inline formula …) are bindable and
        dispatched by PT.keys before the key gets here. */
     if ((ev.ctrlKey || ev.metaKey) && !ev.altKey) return;
+    /* \ in running text opens the command palette at the caret — blocks,
+       symbols, formatting; pressing \ again there types a backslash */
+    if (ev.key === '\\' && !ev.metaKey && PT.palette) {   /* AltGr+… on many layouts */
+      ev.preventDefault();
+      PT.palette.open({ fromBackslash: true });
+      return;
+    }
     if (opts.onKey) opts.onKey(ev, e);
   };
 
@@ -5266,6 +5328,162 @@ blockquote.pt-quote {
 })();
 </script>
 <script>
+/* js/templates.js */
+/* PaperTeX — starting points for a new document.
+
+   Each template builds an ordinary document — the same model as anything
+   typed by hand — so there is nothing special to save, export or compile.
+   The text in them says what goes where; formulas, references and the
+   bibliography are real, so a template compiles as it stands. */
+(function () {
+  'use strict';
+  var M = PT.math, D = PT.doc;
+
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  /* an inline formula, as the editor stores it */
+  function im(tex) { return '<span class="imath" contenteditable="false" data-m="' + esc(JSON.stringify(M.parseTex(tex))) + '"></span>'; }
+  function ref(label, kind) { return '<span class="xref" contenteditable="false" data-kind="' + (kind || 'ref') + '" data-label="' + esc(label) + '"></span>'; }
+  function cite(key) { return ref(key, 'cite'); }
+
+  function sec(text, opts) {
+    opts = opts || {};
+    return { id: D.uid(), t: 'section', level: opts.level || 1, html: text, label: opts.label || '', numbered: opts.numbered !== false };
+  }
+  function para(html) { return { id: D.uid(), t: 'para', html: html }; }
+  function eq(lines, labels) {
+    return { id: D.uid(), t: 'eq', env: 'align', numbered: !!labels, label: labels ? labels[0] : '',
+      labels: labels || [], lines: lines.map(function (l) { return M.parseTex(l); }) };
+  }
+  function list(items, ordered) {
+    return { id: D.uid(), t: 'list', ordered: !!ordered, items: items.map(function (h) { return { html: h, level: 0 }; }) };
+  }
+  function thm(kind, title, html, label) { return { id: D.uid(), t: 'theorem', kind: kind, title: title || '', html: html, label: label || '' }; }
+  function base(title, overrides) {
+    var d = D.newDoc();
+    d.meta.title = title;
+    d.meta.abstract = '';
+    d.blocks = [];
+    Object.keys(overrides || {}).forEach(function (k) { d.settings[k] = overrides[k]; });
+    return d;
+  }
+
+  var TEMPLATES = [
+    {
+      id: 'blank', name: 'Blank', icon: '▢', desc: 'A title and an empty page',
+      build: function () {
+        var d = base('Untitled document', { showAbstract: false });
+        d.blocks = [para('')];
+        return d;
+      }
+    },
+    {
+      id: 'article', name: 'Article', icon: '¶', desc: 'Abstract, sections, an equation, a table, references',
+      build: function () {
+        var d = base('Title of the article');
+        d.meta.abstract = 'One paragraph: the question, what you did, what you found, and why it matters.';
+        d.blocks = [
+          sec('Introduction', { label: 'sec:intro' }),
+          para('Set out the problem and what is already known about it ' + cite('knuth1984') +
+            '. End with what this article adds, and how the rest of it is organised.'),
+          sec('Method', { label: 'sec:method' }),
+          para('Describe the model. The central relation is'),
+          eq(['E = mc^2'], ['eq:main']),
+          para('where ' + im('m') + ' is the mass and ' + im('c') + ' the speed of light. Equation ' +
+            ref('eq:main', 'eqref') + ' is referenced by its label, so its number stays right when you move it.'),
+          sec('Results', { label: 'sec:results' }),
+          para('Report what you found. Tables and figures go in from the / menu on an empty line.'),
+          { id: D.uid(), t: 'table', rows: [['Quantity', 'Value', 'Uncertainty'], ['a', '1.00', '0.02'], ['b', '2.50', '0.05']],
+            align: ['l', 'c', 'c'], header: true, booktabs: true, rules: false,
+            caption: 'Main results.', label: 'tab:results', placement: 'htbp' },
+          sec('Discussion'),
+          para('What the results mean, their limits, and what should come next.'),
+          sec('Conclusion'),
+          para('The answer to the question in the introduction, in two or three sentences.'),
+          { id: D.uid(), t: 'bib' }
+        ];
+        d.bib = [{ key: 'knuth1984', author: 'D. E. Knuth', title: 'The TeXbook', journal: 'Addison-Wesley', year: '1984' }];
+        return d;
+      }
+    },
+    {
+      id: 'homework', name: 'Homework', icon: '✎', desc: 'Problems and worked solutions',
+      build: function () {
+        var d = base('Problem Set 1', { showAbstract: false, numbered: false });
+        d.meta.authors = [{ name: 'Your Name', affil: 'Course code', email: '' }];
+        d.blocks = [
+          sec('Problem 1', { numbered: false }),
+          para('<i>Evaluate ' + im('\\int_{0}^{1} x e^{x}\\,dx') + '.</i>'),
+          para('<b>Solution.</b> Integrate by parts with ' + im('u = x') + ' and ' + im('dv = e^{x}\\,dx') + ':'),
+          eq(['\\int_{0}^{1} x e^{x}\\,dx = \\left[x e^{x}\\right]_{0}^{1} - \\int_{0}^{1} e^{x}\\,dx',
+              '= e - (e - 1)', '= 1']),
+          sec('Problem 2', { numbered: false }),
+          para('<i>Show that ' + im('\\sum_{k=1}^{n} k = \\frac{n(n+1)}{2}') + '.</i>'),
+          para('<b>Solution.</b> By induction on ' + im('n') + '. For ' + im('n = 1') + ' both sides are 1. If it holds for ' +
+            im('n') + ', then'),
+          eq(['\\sum_{k=1}^{n+1} k = \\frac{n(n+1)}{2} + (n+1) = \\frac{(n+1)(n+2)}{2}']),
+          para('which is the claim for ' + im('n+1') + '.')
+        ];
+        return d;
+      }
+    },
+    {
+      id: 'lab', name: 'Lab report', icon: '⚗', desc: 'Theory, method, data table, error analysis',
+      build: function () {
+        var d = base('Lab Report: Measuring g with a Pendulum');
+        d.meta.abstract = 'What was measured, how, the result with its uncertainty, and how it compares with the accepted value.';
+        d.blocks = [
+          sec('Introduction'),
+          para('Why the experiment is done and what it tests.'),
+          sec('Theory', { label: 'sec:theory' }),
+          para('For small amplitudes the period of a simple pendulum of length ' + im('L') + ' is'),
+          eq(['T = 2\\pi\\sqrt{\\frac{L}{g}}'], ['eq:period']),
+          para('so measuring ' + im('T') + ' and ' + im('L') + ' gives ' + im('g = \\frac{4\\pi^2 L}{T^2}') + '.'),
+          sec('Apparatus and Method'),
+          list(['Measure the length of the pendulum to the centre of the bob.',
+                'Release it from a small angle and time 20 full swings.',
+                'Repeat for five different lengths.'], true),
+          { id: D.uid(), t: 'figure', src: '', filename: '', caption: 'The experimental setup.', width: 0.6, label: 'fig:setup', placement: 'htbp' },
+          sec('Results'),
+          { id: D.uid(), t: 'table', rows: [['L (m)', 'T (s)', 'g (m/s²)'], ['0.50', '1.42', '9.79'], ['0.75', '1.74', '9.78'], ['1.00', '2.01', '9.77']],
+            align: ['c', 'c', 'c'], header: true, booktabs: true, rules: false,
+            caption: 'Measured periods and the resulting values of g.', label: 'tab:data', placement: 'htbp' },
+          para('The uncertainty follows from propagating the errors in ' + im('L') + ' and ' + im('T') + ':'),
+          eq(['\\frac{\\delta g}{g} = \\sqrt{\\left(\\frac{\\delta L}{L}\\right)^2 + \\left(2\\frac{\\delta T}{T}\\right)^2}'], ['eq:error']),
+          sec('Discussion'),
+          para('Compare with the accepted value, and name the largest sources of error.'),
+          sec('Conclusion'),
+          para('The result, with its uncertainty, in one or two sentences.')
+        ];
+        return d;
+      }
+    },
+    {
+      id: 'notes', name: 'Lecture notes', icon: '❡', desc: 'Definitions, theorems and proofs',
+      build: function () {
+        var d = base('Lecture 1: Limits', { showAbstract: false });
+        d.blocks = [
+          sec('Definition of a limit'),
+          thm('definition', 'Limit', 'We write ' + im('\\lim_{x \\to a} f(x) = L') + ' if for every ' + im('\\varepsilon > 0') +
+            ' there is a ' + im('\\delta > 0') + ' such that ' + im('0 < |x - a| < \\delta') + ' implies ' + im('|f(x) - L| < \\varepsilon') + '.', 'def:limit'),
+          sec('Basic results'),
+          thm('theorem', 'Uniqueness', 'A function has at most one limit at a point.', 'thm:unique'),
+          thm('proof', '', 'Suppose ' + im('L') + ' and ' + im('M') + ' are both limits and take ' +
+            im('\\varepsilon = \\frac{|L - M|}{2}') + '. Close enough to ' + im('a') + ', ' + im('f(x)') +
+            ' is within ' + im('\\varepsilon') + ' of both, which is impossible unless ' + im('L = M') + '.'),
+          sec('Example'),
+          eq(['\\lim_{x \\to 0} \\frac{\\sin x}{x} = 1']),
+          para('Notes for the next lecture go here.')
+        ];
+        return d;
+      }
+    }
+  ];
+
+  window.PT = window.PT || {};
+  window.PT.templates = TEMPLATES;
+})();
+</script>
+<script>
 /* js/compile.js */
 /* PaperTeX — compiling the generated LaTeX to a real PDF, in the browser.
 
@@ -5414,9 +5632,15 @@ blockquote.pt-quote {
       return c.compile(tex, { additionalFiles: sidecarFiles(tex, doc) });
     }).then(function (r) {
       if (r.success && r.pdf) return { pdf: r.pdf };
+      /* TeX's own log (document.log) comes back as texLog — see the patch
+         in tools/bundle-engine.js; the callback only carries the engine's
+         housekeeping. Reading just that is why every failure used to say
+         "TeX gave no reason". */
+      var log = (r.texLog || '') + '\n' + (r.log || '') + '\n' + logs.join('\n');
       return {
-        error: firstError(logs.join('\n')) || r.error ||
-          'The document did not compile, and TeX gave no reason.'
+        error: firstError(log) || r.error ||
+          'The document did not compile, and TeX gave no reason.',
+        log: log
       };
     });
   }
@@ -5612,8 +5836,11 @@ blockquote.pt-quote {
   }
   function onKeyDown(e) {
     if (recording || editor) return;                /* the shortcuts dialog has the keyboard */
+    if (PT.palette && PT.palette.isOpen()) return;  /* so does the command palette */
     if (document.querySelector('.dlg-back')) return; /* an in-page confirm/prompt is open */
     if (e.isComposing) return;
+    /* AltGr+key types a character (@ \ { } on many layouts), never a shortcut */
+    if (e.getModifierState && e.getModifierState('AltGraph')) return;
     var c = comboOf(e);
     if (!c) return;
     var id = index[c];
@@ -5894,6 +6121,8 @@ blockquote.pt-quote {
     init: init,
     open: open,
     isOpen: function () { return !!editor; },
+    /* every registered action — the command palette searches these */
+    list: function () { return actions.slice(); },
     bindingsOf: bindingsOf,
     first: function (id) { var b = bindingsOf(id); return b.length ? pretty(b[0]) : ''; },
     pretty: pretty,
@@ -5905,6 +6134,210 @@ blockquote.pt-quote {
       return m;
     }
   };
+})();
+</script>
+<script>
+/* js/palette.js */
+/* PaperTeX — the command palette: one searchable list of everything.
+
+   Opened with Ctrl+K anywhere, or by typing \ in running text, it searches
+   the same registry the keyboard shortcuts use (js/keys.js) — every
+   command, block, symbol, structure, template and snippet — so it is never
+   out of date, and it shows each item's key as it goes, which is how
+   people learn the shortcuts.
+
+   It remembers where you were: the formula or the paragraph and the caret
+   in it. Choosing an item puts the caret back and then runs the item
+   there, so a symbol lands in the formula you were typing and a block goes
+   in after the paragraph you were in. What fits where you are is listed
+   first: maths in a formula, blocks and formatting in text. */
+(function () {
+  'use strict';
+
+  var RECENT = 'papertex.palette.recent';
+  var pal = null;
+
+  function h(t, c, x) { var e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; }
+  function recent() { try { return JSON.parse(localStorage.getItem(RECENT) || '[]'); } catch (e) { return []; } }
+  function remember(id) {
+    var r = recent().filter(function (x) { return x !== id; });
+    r.unshift(id);
+    try { localStorage.setItem(RECENT, JSON.stringify(r.slice(0, 8))); } catch (e) { /* per-session only */ }
+  }
+
+  /* where the caret is, so it can be put back */
+  function captureContext() {
+    var ae = document.activeElement, ctx = { kind: 'none', el: null, range: null };
+    if (!ae) return ctx;
+    var mf = ae.closest && ae.closest('.mfield');
+    if (mf && mf.__mf) { ctx.kind = 'math'; ctx.el = mf; return ctx; }
+    if (ae.isContentEditable) {
+      var host = ae.closest('[contenteditable="true"]');
+      var sel = window.getSelection();
+      ctx.kind = host && host.__rich ? 'text' : 'plain';
+      ctx.el = host;
+      if (sel.rangeCount) ctx.range = sel.getRangeAt(0).cloneRange();
+    }
+    return ctx;
+  }
+  function restoreContext(ctx) {
+    if (!ctx.el || !document.body.contains(ctx.el)) return;
+    ctx.el.focus();
+    if (ctx.range) {
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(ctx.range);
+    }
+  }
+
+  /* which groups suit where the caret is: lower is earlier */
+  function groupRank(group, kind) {
+    var maths = /^Maths/.test(group), snip = group === 'My snippets';
+    var order = kind === 'math'
+      ? [maths || snip, group === 'Document', group === 'New document', group === 'Insert block']
+      : kind === 'text'
+        ? [group === 'Insert block', group === 'Text', maths || snip, group === 'Document', group === 'New document']
+        : [group === 'Document', group === 'New document', group === 'Insert block', maths || snip];
+    var i = order.indexOf(true);
+    return i < 0 ? order.length : i;
+  }
+  /* formatting needs a paragraph to format */
+  function applicable(a, kind) { return a.group !== 'Text' || kind === 'text'; }
+
+  function score(a, q) {
+    if (!q) return 1;
+    var label = String(a.label || '').toLowerCase(), tex = String(a.tex || '').toLowerCase();
+    var id = String(a.id || '').toLowerCase().replace(/^[a-z]+\./, '');
+    var hay = label + ' ' + tex + ' ' + id + ' ' + String(a.group || '').toLowerCase() + ' ' + String(a.detail || '').toLowerCase();
+    var words = q.toLowerCase().split(/\s+/).filter(Boolean);
+    if (!words.every(function (w) { return hay.indexOf(w) >= 0; })) return 0;
+    var w = words[0], s = 10;
+    if (label === w || tex === '\\' + w || id === w) s = 100;
+    else if (label.indexOf(w) === 0 || tex.indexOf('\\' + w) === 0 || id.indexOf(w) === 0) s = 80;
+    else if (new RegExp('(^|[\\s\\-—(])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(label)) s = 60;
+    else if (label.indexOf(w) >= 0) s = 40;
+    return s;
+  }
+
+  function open(opts) {
+    opts = opts || {};
+    if (pal) close();
+    if (!PT.keys || !PT.keys.list) return;
+    var ctx = captureContext();
+
+    var back = h('div', 'cp-back');
+    var box = h('div', 'cp');
+    var input = h('input', 'cp-in');
+    input.type = 'text';
+    input.spellcheck = false;
+    input.setAttribute('aria-label', 'Search commands, blocks and symbols');
+    input.placeholder = ctx.kind === 'math' ? 'Search symbols and structures…' :
+      ctx.kind === 'text' ? 'Insert a block, a symbol, formatting…' : 'Search every command…';
+    var listEl = h('div', 'cp-list');
+    listEl.setAttribute('role', 'listbox');
+    var foot = h('div', 'cp-foot', '↑↓ to move · Enter to insert · Esc to close' +
+      (opts.fromBackslash ? ' · \\ again types a backslash' : ''));
+    box.appendChild(input); box.appendChild(listEl); box.appendChild(foot);
+    back.appendChild(box);
+    document.body.appendChild(back);
+
+    /* beside the caret when there is one, else near the top of the page */
+    var at = opts.anchor || (ctx.range && ctx.range.getBoundingClientRect());
+    if (at && (at.top || at.left)) {
+      box.style.left = Math.max(12, Math.min(window.innerWidth - 452, at.left - 16)) + 'px';
+      box.style.top = (at.bottom + 8 + 360 < window.innerHeight ? at.bottom + 8 : Math.max(12, at.top - 368)) + 'px';
+    } else {
+      box.classList.add('centred');
+    }
+
+    var items = [], sel = 0;
+    function render() {
+      var q = input.value.trim(), rec = recent();
+      items = PT.keys.list().filter(function (a) { return applicable(a, ctx.kind); }).map(function (a) {
+        var s = score(a, q);
+        if (!s) return null;
+        var r = rec.indexOf(a.id);
+        return { a: a, s: s + (r >= 0 ? (q ? 8 : 200) - r : 0), g: groupRank(a.group, ctx.kind) };
+      }).filter(Boolean).sort(function (x, y) {
+        return (y.s - x.s) || (x.g - y.g);
+      }).slice(0, q ? 60 : 120);
+      listEl.textContent = '';
+      sel = Math.min(sel, Math.max(0, items.length - 1));
+      if (!items.length) listEl.appendChild(h('div', 'cp-none', 'Nothing matches “' + q + '”.'));
+      var lastGroup = null;
+      items.forEach(function (it, i) {
+        var a = it.a;
+        /* without a query the list is browsed, so show where each part begins */
+        if (!q) {
+          var g = rec.indexOf(a.id) >= 0 ? 'Recently used' : a.group;
+          if (g !== lastGroup) { listEl.appendChild(h('div', 'cp-g', g)); lastGroup = g; }
+        }
+        var row = h('div', 'cp-row' + (i === sel ? ' on' : ''));
+        row.setAttribute('role', 'option');
+        var gl = h('span', 'cp-glyph');
+        if (a.glyphHTML) gl.innerHTML = a.glyphHTML; else gl.textContent = a.glyph || '';
+        row.appendChild(gl);
+        var lab = h('span', 'cp-l');
+        lab.appendChild(document.createTextNode(a.label));
+        if (q) lab.appendChild(h('small', '', a.group));
+        else if (a.detail) lab.appendChild(h('small', '', a.detail));
+        row.appendChild(lab);
+        var k = PT.keys.first(a.id);
+        if (k) row.appendChild(h('kbd', 'cp-k', k));
+        row.onmousemove = function () { if (sel !== i) { sel = i; mark(); } };
+        row.onmousedown = function (e) { e.preventDefault(); };
+        row.onclick = function () { choose(i); };
+        listEl.appendChild(row);
+      });
+      mark();
+    }
+    function mark() {
+      [].forEach.call(listEl.querySelectorAll('.cp-row'), function (r, i) { r.classList.toggle('on', i === sel); });
+      var on = listEl.querySelectorAll('.cp-row')[sel];
+      if (on) on.scrollIntoView({ block: 'nearest' });
+    }
+    function choose(i) {
+      var it = items[i];
+      if (!it) return;
+      close();
+      remember(it.a.id);
+      restoreContext(ctx);
+      /* let the field take focus (it redraws on focus) before acting in it */
+      setTimeout(function () { try { it.a.run(); } catch (e) { console.error(e); } }, 0);
+    }
+
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowDown') { e.preventDefault(); sel = Math.min(items.length - 1, sel + 1); mark(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); sel = Math.max(0, sel - 1); mark(); }
+      else if (e.key === 'PageDown') { e.preventDefault(); sel = Math.min(items.length - 1, sel + 8); mark(); }
+      else if (e.key === 'PageUp') { e.preventDefault(); sel = Math.max(0, sel - 8); mark(); }
+      else if (e.key === 'Enter') { e.preventDefault(); choose(sel); }
+      else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); restoreContext(ctx); }
+      else if (e.key === '\\' && opts.fromBackslash && !input.value) {
+        /* \ twice: the backslash itself was wanted */
+        e.preventDefault(); close(); restoreContext(ctx);
+        document.execCommand('insertText', false, '\\');
+      }
+      e.stopPropagation();   /* typing here is not a shortcut */
+    });
+    input.addEventListener('input', function () { sel = 0; render(); });
+    back.addEventListener('mousedown', function (e) {
+      if (e.target === back) { e.preventDefault(); close(); restoreContext(ctx); }
+    });
+
+    pal = { back: back };
+    render();
+    input.focus();
+  }
+
+  function close() {
+    if (!pal) return;
+    pal.back.remove();
+    pal = null;
+  }
+
+  window.PT = window.PT || {};
+  window.PT.palette = { open: open, close: close, isOpen: function () { return !!pal; } };
 })();
 </script>
 <script>
@@ -6008,19 +6441,24 @@ blockquote.pt-quote {
   function hideBar() { var bar = $('#savebar'); if (bar) bar.className = 'savebar'; state.bar = null; }
 
   /* A document that exists only in browser storage is one cleared cache
-     away from gone. Once it has real content and has not been written to a
-     file for a week, say so — once a session, and not again for three days
-     after "Later". */
+     away from gone. Once it has real content and has gone a week without
+     being written to a file, say so — once a session, and not again for
+     three days after "Later". */
   function checkBackup() {
     if (state.backupNudged || state.bar || !state.docId) return;
     var id = state.docId;
-    if (serialize(state.doc).length < serialize(D.newDoc()).length + 400) return;   /* still the starter text */
     Promise.all([S.list(), S.getMeta('snooze.' + id)]).then(function (r) {
       var rec = r[0].filter(function (x) { return x.id === id; })[0], snooze = r[1] || 0;
       if (!rec || id !== state.docId || state.bar || state.backupNudged) return;
       var week = 7 * 864e5;
       if (Date.now() < snooze) return;
-      if (rec.backedUp && (Date.now() - rec.backedUp < week || rec.updated <= rec.backedUp)) return;
+      /* a week without a copy on disk, counted from the last copy or, for a
+         document never saved to a file, from when it was started — not the
+         moment a template fills a fresh one */
+      if (Date.now() - (rec.backedUp || rec.created) < week) return;
+      if (rec.backedUp && rec.updated <= rec.backedUp) return;
+      /* a starter page or template nobody has touched is not worth a copy */
+      if (rec.updated - rec.created < 60e3) return;
       state.backupNudged = true;
       showBar('backup', '“' + rec.title + '” is kept only in this ' + (NATIVE ? 'app' : 'browser') +
         (rec.backedUp ? ', and has changed since you last saved a copy.' : '.') +
@@ -6922,6 +7360,13 @@ blockquote.pt-quote {
     add('Document', 'view.panel', 'Show or hide the LaTeX panel', [], click('#btnPanel'), { glyph: '▥' });
     add('Document', 'view.help', 'Tips and shortcuts', [], function () { $('#help').classList.add('on'); }, { menu: 'help', glyph: '?' });
     add('Document', 'view.keys', 'Customize keyboard shortcuts', [], function () { K.open(); }, { menu: 'keys', glyph: '⌨' });
+    add('Document', 'view.palette.cmd', 'Command palette', ['Ctrl+K'], function () { PT.palette.open(); },
+      { glyph: '⌕', detail: 'also: \\ in text' });
+
+    (PT.templates || []).forEach(function (t) {
+      add('New document', 'new.' + t.id, 'New: ' + t.name, [], function () { newFromTemplate(t); },
+        { glyph: t.icon, detail: t.desc });
+    });
 
     add('Text', 'text.bold', 'Bold', ['Ctrl+B'], textCmd('bold'), { glyphHTML: '<b>B</b>' });
     add('Text', 'text.italic', 'Italic', ['Ctrl+I'], textCmd('italic'), { glyphHTML: '<i>I</i>' });
@@ -7038,6 +7483,41 @@ blockquote.pt-quote {
     return new Date(t).toLocaleDateString();
   }
   function sizeText(n) { return n < 1e6 ? Math.max(1, Math.round(n / 1024)) + ' kB' : (n / 1048576).toFixed(1) + ' MB'; }
+
+  function newFromTemplate(t) {
+    addDocument(t.build(), t.id === 'blank' ? 'New document started — the previous one is under Open.'
+      : 'New ' + t.name.toLowerCase() + ' — replace the example text with your own.');
+  }
+  /* New: a blank page or a starting point */
+  function newMenu(anchor) {
+    D.closeAllPop();
+    var m = h('div', 'popmenu docmenu');
+    m.appendChild(h('div', 'popg', 'Start a new document'));
+    (PT.templates || []).forEach(function (t) {
+      var b = h('button', 'popitem tplitem');
+      b.appendChild(h('span', 'popico', t.icon));
+      var tx = h('span', 'poptx');
+      tx.appendChild(h('span', 'popname', t.name));
+      tx.appendChild(h('span', 'popdesc', t.desc));
+      b.appendChild(tx);
+      b.onclick = function () { D.closeAllPop(); newFromTemplate(t); };
+      m.appendChild(b);
+    });
+    m.appendChild(h('div', 'docfoot', 'The document open now stays under Open.'));
+    document.body.appendChild(m);
+    var r = anchor.getBoundingClientRect();
+    m.style.left = Math.max(8, Math.min(window.innerWidth - m.offsetWidth - 10, r.left + window.scrollX)) + 'px';
+    m.style.top = (r.bottom + window.scrollY + 6) + 'px';
+    var first = m.querySelector('.popitem');
+    if (first) first.focus();
+    setTimeout(function () {
+      document.addEventListener('mousedown', function off(ev) {
+        if (m.contains(ev.target)) return;
+        D.closeAllPop();
+        document.removeEventListener('mousedown', off, true);
+      }, true);
+    }, 0);
+  }
 
   /* Open: the documents kept here, newest first, and files from disk. */
   function docsMenu(anchor, openFile) {
@@ -7172,9 +7652,8 @@ blockquote.pt-quote {
 
     /* New and Open never replace the document on the page: every document
        stays in the store, reachable from Open. */
-    $('#btnNew').onclick = function () {
-      addDocument(D.newDoc(), 'New document started — the previous one is under Open.');
-    };
+    $('#btnNew').onclick = function () { newMenu($('#btnNew')); };
+    $('#btnPalette').onclick = function () { PT.palette.open(); };
     $('#btnSave').onclick = saveProject;
     /* a project file becomes a document of its own */
     function openText(text) {

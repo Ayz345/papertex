@@ -556,6 +556,44 @@ body.nopanel .side { margin-right: -380px; }
 }
 .kb-count { flex: 1 1 auto; font-size: 12px; color: var(--muted); }
 
+/* command palette */
+.cp-back { position: fixed; inset: 0; z-index: 330; }
+.cp {
+  position: fixed; width: 440px; max-width: calc(100vw - 24px);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 22px 60px -16px rgba(20, 25, 35, .42), 0 1px 3px rgba(20, 25, 35, .12);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.cp.centred { left: 50%; top: 14vh; transform: translateX(-50%); width: 560px; }
+.cp-in {
+  border: 0; border-bottom: 1px solid var(--line-2); padding: 12px 14px; font: inherit; font-size: 14px;
+  color: var(--ink); outline: none; background: transparent;
+}
+.cp-list { max-height: 330px; overflow: auto; padding: 4px; }
+.cp-g {
+  font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint);
+  padding: 9px 9px 3px;
+}
+.cp-row {
+  display: flex; align-items: center; gap: 10px; padding: 5px 8px; border-radius: 7px; cursor: pointer;
+  min-height: 32px;
+}
+.cp-row.on { background: var(--accent-soft); }
+.cp-glyph {
+  flex: 0 0 28px; width: 28px; display: flex; justify-content: center; align-items: center;
+  font-family: var(--serif); font-size: 15px; color: var(--ink); overflow: hidden; white-space: nowrap;
+}
+.cp-glyph .pv, .cp-glyph .pv-frac { transform: scale(.85); }
+.cp-l { flex: 1 1 auto; min-width: 0; font-size: 13px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-l small { margin-left: 8px; font-size: 11px; color: var(--faint); }
+.cp-k {
+  flex: 0 0 auto; font: 10.5px/1.6 var(--mono); background: var(--chrome); border: 1px solid var(--line);
+  border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; color: var(--muted);
+}
+.cp-none { padding: 18px; text-align: center; color: var(--muted); font-size: 12.5px; }
+.cp-foot { padding: 6px 12px 8px; font-size: 10.5px; color: var(--faint); border-top: 1px solid var(--line-2); }
+.tplitem .popico { width: 26px; height: 26px; font-size: 14px; }
+
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
 }

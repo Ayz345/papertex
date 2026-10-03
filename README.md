@@ -82,6 +82,10 @@ fraction instead of deleting a brace.
 
 ## Writing
 
+- `Ctrl+K` — the command palette: one search over every block, symbol, structure,
+  template and command, showing each one's shortcut; `\` in running text opens it at
+  the caret (`\` twice types a backslash)
+- **New** — start blank or from a template: article, homework, lab report, lecture notes
 - `/` on an empty line — block menu (section, equation, figure, table, list, theorem, code, bibliography, raw LaTeX)
 - `$` mid-sentence — inline formula, editable again by clicking it
 - `Ctrl+Enter` — display equation below the current block

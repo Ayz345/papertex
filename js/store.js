@@ -126,7 +126,9 @@
     return (div.textContent || '').trim() || 'Untitled document';
   }
   function record(id, json, doc, prev) {
-    return { id: id, title: titleOf(doc), updated: Date.now(), json: json, backedUp: prev ? prev.backedUp || 0 : 0 };
+    var now = Date.now();
+    return { id: id, title: titleOf(doc), updated: now, json: json, backedUp: prev ? prev.backedUp || 0 : 0,
+      created: prev && prev.created ? prev.created : now };
   }
 
   var opened = null;
@@ -163,7 +165,9 @@
   function list() {
     return be.all().then(function (rs) {
       return rs.map(function (r) {
-        return { id: r.id, title: r.title, updated: r.updated, backedUp: r.backedUp || 0, size: (r.json || '').length };
+        return { id: r.id, title: r.title, updated: r.updated, backedUp: r.backedUp || 0, size: (r.json || '').length,
+          /* records from before 'created' was kept count from their last change */
+          created: r.created || r.updated };
       }).sort(function (a, b) { return b.updated - a.updated; });
     });
   }

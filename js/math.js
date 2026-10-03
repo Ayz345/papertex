@@ -1643,7 +1643,11 @@
       if (k.length === 1) { this.resolveCI(); }
     }
 
-    if (e.ctrlKey || e.metaKey) {
+    /* AltGr arrives as Ctrl+Alt on Windows, and it is how \ { } [ ] | are
+       typed on Turkish, German and many other layouts: that is typing, not
+       a shortcut. */
+    var altGr = (e.getModifierState && e.getModifierState('AltGraph')) || (e.ctrlKey && e.altKey && k.length === 1);
+    if ((e.ctrlKey || e.metaKey) && !altGr) {
       if (k === 'a') { this.sel = { row: this.root, a: 0, b: this.root.k.length }; this.cur = { row: this.root, i: this.root.k.length }; e.preventDefault(); this.render(); return; }
       return; /* let copy/paste/undo bubble */
     }

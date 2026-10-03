@@ -99,7 +99,7 @@
 
   /* ---- blocks ---- */
   function blockTex(b, use, doc) {
-    var s = '', L = function (lab) { return lab ? '\\label{' + lab + '}' : ''; };
+    var s = '', L = function (lab) { return lab ? '\\label{' + PT.sanitize.label(lab) + '}' : ''; };
     switch (b.t) {
       case 'section': {
         var cmd = ['section', 'subsection', 'subsubsection', 'paragraph'][b.level - 1] || 'section';
@@ -119,7 +119,7 @@
         var env = (b.env === 'gather' ? 'gather' : 'align') + star;
         var body = lines.map(function (r, i) {
           var t = (b.env === 'gather' ? M.texRow(r).trim() : alignedLine(r));
-          if (b.labels && b.labels[i]) t += ' \\label{' + b.labels[i] + '}';
+          if (b.labels && b.labels[i]) t += ' \\label{' + PT.sanitize.label(b.labels[i]) + '}';
           return '  ' + t;
         }).join(' \\\\\n');
         return '\\begin{' + env + '}\n' + body + '\n\\end{' + env + '}\n';
@@ -137,12 +137,18 @@
         return out + '\\end{' + env2 + '}\n';
       }
       case 'figure': {
-        use.graphicx = true;
         var w = (b.width || 0.8);
+        /* A figure whose image has not been chosen yet would name a file
+           that does not exist, and the whole document would fail to
+           compile. Until there is an image, set a framed placeholder. */
+        var hasImage = !!(b.src && b.filename);
+        if (hasImage) use.graphicx = true;
         return '\\begin{figure}[' + (b.placement || 'htbp') + ']\n  \\centering\n' +
-          '  \\includegraphics[width=' + w + '\\linewidth]{' + (b.filename || 'figure.png') + '}\n' +
+          (hasImage
+            ? '  \\includegraphics[width=' + w + '\\linewidth]{' + String(b.filename).replace(/[{}\\%#]/g, '') + '}\n'
+            : '  \\fbox{\\parbox[c][' + (w * 0.6).toFixed(2) + '\\linewidth][c]{' + w + '\\linewidth}{\\centering\\small\\itshape Image not chosen yet}}\n') +
           (b.caption ? '  \\caption{' + inline(b.caption, use).trim() + '}\n' : '') +
-          (b.label ? '  \\label{' + b.label + '}\n' : '') +
+          (b.label ? '  \\label{' + PT.sanitize.label(b.label) + '}\n' : '') +
           '\\end{figure}\n';
       }
       case 'table': {
@@ -150,7 +156,7 @@
         if (b.rules) cols = '|' + cols + '|';
         var t = '\\begin{table}[' + (b.placement || 'htbp') + ']\n  \\centering\n';
         if (b.caption) t += '  \\caption{' + inline(b.caption, use).trim() + '}\n';
-        if (b.label) t += '  \\label{' + b.label + '}\n';
+        if (b.label) t += '  \\label{' + PT.sanitize.label(b.label) + '}\n';
         t += '  \\begin{tabular}{' + cols + '}\n';
         if (b.booktabs) { use.booktabs = true; t += '    \\toprule\n'; }
         else if (b.rules) t += '    \\hline\n';

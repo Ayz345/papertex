@@ -37,6 +37,49 @@ fs.copyFileSync(
   path.join(out, 'siglum.worker.js')
 );
 
+/* Patches. Each one names the exact text it changes and fails loudly if a
+   new engine version no longer contains it, so an upgrade cannot drop a
+   patch without anyone noticing. */
+function patch(file, what, from, to) {
+  const p = path.join(out, file);
+  const src = fs.readFileSync(p, 'utf8');
+  if (!src.includes(from)) throw new Error('bundle-engine: cannot apply "' + what + '" to ' + file + ' — the engine changed; re-check the patch');
+  fs.writeFileSync(p, src.split(from).join(to));
+}
+
+/* 1. TeX's own log on failure. The worker reads document.log only to look
+      for missing packages and never sends it back, so the app could say
+      nothing better than "TeX gave no reason". Read it before the worker
+      drops its file system, and pass it on. */
+patch('siglum.worker.js', 'texLog: read',
+  '    Module = null;\n    FS = null;',
+  '    let texLog = null;   /* PaperTeX patch: TeX\'s log when the compile failed */\n' +
+  '    if (!compileSuccess && FS) {\n' +
+  '        try { texLog = new TextDecoder().decode(FS.readFile(\'/document.log\')); } catch (e) { texLog = null; }\n' +
+  '    }\n' +
+  '    Module = null;\n    FS = null;');
+patch('siglum.worker.js', 'texLog: send',
+  '            exitCode: lastExitCode,\n            auxFilesToCache: auxFiles,',
+  '            exitCode: lastExitCode,\n            texLog,\n            auxFilesToCache: auxFiles,');
+patch('siglum.js', 'texLog: pass on',
+  '                error: result.error,\n                exitCode: result.exitCode,\n                log: result.log',
+  '                error: result.error,\n                exitCode: result.exitCode,\n                log: result.log,\n                texLog: result.texLog');
+
+/* 2. No package proxy unless one is configured. With none set, the engine
+      falls back to http://localhost:8787 — on a published site, every
+      visitor's browser would probe a port on their own machine whenever a
+      package was missing. Without a proxy the fetcher now does nothing. */
+patch('siglum.js', 'no default proxy',
+  '      this.proxyUrl = options.proxyUrl || "http://localhost:8787";\n      this.bundlesUrl = options.bundlesUrl || this.proxyUrl + "/bundles";',
+  '      this.proxyUrl = options.proxyUrl || null;   /* PaperTeX patch: no implicit localhost proxy */\n' +
+  '      this.bundlesUrl = options.bundlesUrl || (this.proxyUrl ? this.proxyUrl + "/bundles" : null);');
+patch('siglum.js', 'no proxy: no index',
+  '    async lookupPackageForFile(fileName) {\n      const index',
+  '    async lookupPackageForFile(fileName) {\n      if (!this.bundlesUrl) return null;\n      const index');
+patch('siglum.js', 'no proxy: no fetch',
+  '    async fetchPackage(packageName, options = {}) {\n',
+  '    async fetchPackage(packageName, options = {}) {\n      if (!this.proxyUrl) return null;\n');
+
 /* Keep the licence with the code we redistribute. */
 fs.copyFileSync(
   path.join(root, 'node_modules/@siglum/engine/LICENSE'),

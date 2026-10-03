@@ -145,9 +145,15 @@
       return c.compile(tex, { additionalFiles: sidecarFiles(tex, doc) });
     }).then(function (r) {
       if (r.success && r.pdf) return { pdf: r.pdf };
+      /* TeX's own log (document.log) comes back as texLog — see the patch
+         in tools/bundle-engine.js; the callback only carries the engine's
+         housekeeping. Reading just that is why every failure used to say
+         "TeX gave no reason". */
+      var log = (r.texLog || '') + '\n' + (r.log || '') + '\n' + logs.join('\n');
       return {
-        error: firstError(logs.join('\n')) || r.error ||
-          'The document did not compile, and TeX gave no reason.'
+        error: firstError(log) || r.error ||
+          'The document did not compile, and TeX gave no reason.',
+        log: log
       };
     });
   }

@@ -1919,6 +1919,10 @@ async function handleCompile(request) {
 
     // Help GC by clearing references we no longer need
     // The Module/FS will be recreated on next compile anyway
+    let texLog = null;   /* PaperTeX patch: TeX's log when the compile failed */
+    if (!compileSuccess && FS) {
+        try { texLog = new TextDecoder().decode(FS.readFile('/document.log')); } catch (e) { texLog = null; }
+    }
     Module = null;
     FS = null;
 
@@ -1940,6 +1944,7 @@ async function handleCompile(request) {
             pdfDataIsShared: true,
             syncTexData,
             exitCode: lastExitCode,
+            texLog,
             auxFilesToCache: auxFiles,
             stats
         });
@@ -1953,6 +1958,7 @@ async function handleCompile(request) {
             pdfDataIsShared: false,
             syncTexData,
             exitCode: lastExitCode,
+            texLog,
             auxFilesToCache: auxFiles,
             stats
         }, pdfData ? [pdfData.buffer] : []);

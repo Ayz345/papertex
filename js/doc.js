@@ -400,6 +400,13 @@
     /* Ctrl/⌘ shortcuts (bold, italic, inline formula …) are bindable and
        dispatched by PT.keys before the key gets here. */
     if ((ev.ctrlKey || ev.metaKey) && !ev.altKey) return;
+    /* \ in running text opens the command palette at the caret — blocks,
+       symbols, formatting; pressing \ again there types a backslash */
+    if (ev.key === '\\' && !ev.metaKey && PT.palette) {   /* AltGr+… on many layouts */
+      ev.preventDefault();
+      PT.palette.open({ fromBackslash: true });
+      return;
+    }
     if (opts.onKey) opts.onKey(ev, e);
   };
 

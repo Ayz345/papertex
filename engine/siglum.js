@@ -2160,8 +2160,8 @@ var Siglum = (() => {
      * @param {CTANFetcherOptions} [options] - Fetcher options
      */
     constructor(options = {}) {
-      this.proxyUrl = options.proxyUrl || "http://localhost:8787";
-      this.bundlesUrl = options.bundlesUrl || this.proxyUrl + "/bundles";
+      this.proxyUrl = options.proxyUrl || null;   /* PaperTeX patch: no implicit localhost proxy */
+      this.bundlesUrl = options.bundlesUrl || (this.proxyUrl ? this.proxyUrl + "/bundles" : null);
       this.mountedFiles = /* @__PURE__ */ new Set();
       this.fileCache = /* @__PURE__ */ new Map();
       this.loadedPackages = /* @__PURE__ */ new Set();
@@ -2203,6 +2203,7 @@ var Siglum = (() => {
      * @returns {Promise<string|null>} Package name or null
      */
     async lookupPackageForFile(fileName) {
+      if (!this.bundlesUrl) return null;
       const index = await this.loadFileToPackageIndex();
       return index[fileName] || null;
     }
@@ -2275,6 +2276,7 @@ var Siglum = (() => {
      * @returns {Promise<PackageResult|null>} Package result or null if not found
      */
     async fetchPackage(packageName, options = {}) {
+      if (!this.proxyUrl) return null;
       const { tlYear } = options;
       const yearLabel = tlYear ? ` (TL${tlYear})` : "";
       this.onLog(`[FETCH] ${packageName}${yearLabel}: starting fetch`);
@@ -3401,7 +3403,8 @@ var Siglum = (() => {
                 success: false,
                 error: result.error,
                 exitCode: result.exitCode,
-                log: result.log
+                log: result.log,
+                texLog: result.texLog
               });
             }
           },

@@ -183,8 +183,11 @@
   }
   function onKeyDown(e) {
     if (recording || editor) return;                /* the shortcuts dialog has the keyboard */
+    if (PT.palette && PT.palette.isOpen()) return;  /* so does the command palette */
     if (document.querySelector('.dlg-back')) return; /* an in-page confirm/prompt is open */
     if (e.isComposing) return;
+    /* AltGr+key types a character (@ \ { } on many layouts), never a shortcut */
+    if (e.getModifierState && e.getModifierState('AltGraph')) return;
     var c = comboOf(e);
     if (!c) return;
     var id = index[c];
@@ -465,6 +468,8 @@
     init: init,
     open: open,
     isOpen: function () { return !!editor; },
+    /* every registered action — the command palette searches these */
+    list: function () { return actions.slice(); },
     bindingsOf: bindingsOf,
     first: function (id) { var b = bindingsOf(id); return b.length ? pretty(b[0]) : ''; },
     pretty: pretty,

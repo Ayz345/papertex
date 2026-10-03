@@ -97,19 +97,24 @@
   function hideBar() { var bar = $('#savebar'); if (bar) bar.className = 'savebar'; state.bar = null; }
 
   /* A document that exists only in browser storage is one cleared cache
-     away from gone. Once it has real content and has not been written to a
-     file for a week, say so — once a session, and not again for three days
-     after "Later". */
+     away from gone. Once it has real content and has gone a week without
+     being written to a file, say so — once a session, and not again for
+     three days after "Later". */
   function checkBackup() {
     if (state.backupNudged || state.bar || !state.docId) return;
     var id = state.docId;
-    if (serialize(state.doc).length < serialize(D.newDoc()).length + 400) return;   /* still the starter text */
     Promise.all([S.list(), S.getMeta('snooze.' + id)]).then(function (r) {
       var rec = r[0].filter(function (x) { return x.id === id; })[0], snooze = r[1] || 0;
       if (!rec || id !== state.docId || state.bar || state.backupNudged) return;
       var week = 7 * 864e5;
       if (Date.now() < snooze) return;
-      if (rec.backedUp && (Date.now() - rec.backedUp < week || rec.updated <= rec.backedUp)) return;
+      /* a week without a copy on disk, counted from the last copy or, for a
+         document never saved to a file, from when it was started — not the
+         moment a template fills a fresh one */
+      if (Date.now() - (rec.backedUp || rec.created) < week) return;
+      if (rec.backedUp && rec.updated <= rec.backedUp) return;
+      /* a starter page or template nobody has touched is not worth a copy */
+      if (rec.updated - rec.created < 60e3) return;
       state.backupNudged = true;
       showBar('backup', '“' + rec.title + '” is kept only in this ' + (NATIVE ? 'app' : 'browser') +
         (rec.backedUp ? ', and has changed since you last saved a copy.' : '.') +
@@ -1011,6 +1016,13 @@
     add('Document', 'view.panel', 'Show or hide the LaTeX panel', [], click('#btnPanel'), { glyph: '▥' });
     add('Document', 'view.help', 'Tips and shortcuts', [], function () { $('#help').classList.add('on'); }, { menu: 'help', glyph: '?' });
     add('Document', 'view.keys', 'Customize keyboard shortcuts', [], function () { K.open(); }, { menu: 'keys', glyph: '⌨' });
+    add('Document', 'view.palette.cmd', 'Command palette', ['Ctrl+K'], function () { PT.palette.open(); },
+      { glyph: '⌕', detail: 'also: \\ in text' });
+
+    (PT.templates || []).forEach(function (t) {
+      add('New document', 'new.' + t.id, 'New: ' + t.name, [], function () { newFromTemplate(t); },
+        { glyph: t.icon, detail: t.desc });
+    });
 
     add('Text', 'text.bold', 'Bold', ['Ctrl+B'], textCmd('bold'), { glyphHTML: '<b>B</b>' });
     add('Text', 'text.italic', 'Italic', ['Ctrl+I'], textCmd('italic'), { glyphHTML: '<i>I</i>' });
@@ -1127,6 +1139,41 @@
     return new Date(t).toLocaleDateString();
   }
   function sizeText(n) { return n < 1e6 ? Math.max(1, Math.round(n / 1024)) + ' kB' : (n / 1048576).toFixed(1) + ' MB'; }
+
+  function newFromTemplate(t) {
+    addDocument(t.build(), t.id === 'blank' ? 'New document started — the previous one is under Open.'
+      : 'New ' + t.name.toLowerCase() + ' — replace the example text with your own.');
+  }
+  /* New: a blank page or a starting point */
+  function newMenu(anchor) {
+    D.closeAllPop();
+    var m = h('div', 'popmenu docmenu');
+    m.appendChild(h('div', 'popg', 'Start a new document'));
+    (PT.templates || []).forEach(function (t) {
+      var b = h('button', 'popitem tplitem');
+      b.appendChild(h('span', 'popico', t.icon));
+      var tx = h('span', 'poptx');
+      tx.appendChild(h('span', 'popname', t.name));
+      tx.appendChild(h('span', 'popdesc', t.desc));
+      b.appendChild(tx);
+      b.onclick = function () { D.closeAllPop(); newFromTemplate(t); };
+      m.appendChild(b);
+    });
+    m.appendChild(h('div', 'docfoot', 'The document open now stays under Open.'));
+    document.body.appendChild(m);
+    var r = anchor.getBoundingClientRect();
+    m.style.left = Math.max(8, Math.min(window.innerWidth - m.offsetWidth - 10, r.left + window.scrollX)) + 'px';
+    m.style.top = (r.bottom + window.scrollY + 6) + 'px';
+    var first = m.querySelector('.popitem');
+    if (first) first.focus();
+    setTimeout(function () {
+      document.addEventListener('mousedown', function off(ev) {
+        if (m.contains(ev.target)) return;
+        D.closeAllPop();
+        document.removeEventListener('mousedown', off, true);
+      }, true);
+    }, 0);
+  }
 
   /* Open: the documents kept here, newest first, and files from disk. */
   function docsMenu(anchor, openFile) {
@@ -1261,9 +1308,8 @@
 
     /* New and Open never replace the document on the page: every document
        stays in the store, reachable from Open. */
-    $('#btnNew').onclick = function () {
-      addDocument(D.newDoc(), 'New document started — the previous one is under Open.');
-    };
+    $('#btnNew').onclick = function () { newMenu($('#btnNew')); };
+    $('#btnPalette').onclick = function () { PT.palette.open(); };
     $('#btnSave').onclick = saveProject;
     /* a project file becomes a document of its own */
     function openText(text) {
