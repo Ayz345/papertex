@@ -30,6 +30,7 @@
   function blockById(doc, id) { return (doc.blocks || []).filter(function (x) { return x.id === id; })[0] || null; }
   function renderMath(root) {
     [].forEach.call(root.querySelectorAll('.imath'), function (span) {
+      if (span.__field) return;   /* being written: it is a field just now */
       try { span.contentEditable = 'false'; PT.math.renderStatic(span, JSON.parse(span.dataset.m)); } catch (e) { /* leave it */ }
     });
   }
@@ -107,13 +108,21 @@
     done.onclick = function () { st.done(); };
     back.addEventListener('mousedown', function () { st.done(); });
     root.addEventListener('keydown', function (e) {
-      if (e.key !== 'Escape' || document.querySelector('.mathpop, .popmenu')) return;
+      if (e.key !== 'Escape' || e.defaultPrevented || document.querySelector('.popmenu')) return;   /* a formula's own Esc only leaves it */
       e.preventDefault();
       e.stopPropagation();
       st.done();
     });
     current = st;
-    zoom(win, from, false);
+    /* Maths is laid out by measuring it, and while the card grows out of
+       the page it is drawn scaled down: every formula comes out squashed.
+       Once it stands at its real size, lay them all out again. */
+    zoom(win, from, false, function () {
+      if (st.closed) return;
+      [].forEach.call(win.querySelectorAll('.mfield'), function (m) { if (m.__mf) m.__mf.render(); });
+      renderMath(win);
+      if (st.draw) st.draw();
+    });
     return st;
   }
 
@@ -255,11 +264,12 @@
 
   /* the caption, edited as on the page (formulas with $ work here too) */
   function captionEditor(st, parent, onChange) {
-    var e = st.editor.richEditable('div', 'st-in st-rich', st.b.caption || '', function (v) {
+    /* one line, as a caption is: Enter does not break it */
+    var e = st.editor.lineEditable('div', 'st-in st-rich', st.b.caption || '', function (v) {
       st.b.caption = v;
       st.editor.change();
       if (onChange) onChange();
-    }, {});
+    });
     e.dataset.ph = 'Caption…';
     parent.appendChild(e);
     renderMath(e);
@@ -615,7 +625,10 @@
       var F = FORMULA[v];
       if (F) {
         /* a formula that still makes sense is kept; otherwise an example */
-        var keep = (b.fns || []).filter(function (fn) { return fn.expr && C.compile(fn.expr, F[0]).ok; });
+        var keep = (b.fns || []).filter(function (fn) {
+          var src = C.formulaOf(fn);
+          return (typeof src === 'object' || String(src).trim()) && C.compile(src, F[0]).ok;
+        });
         if (FORMULA[was] && keep.length) b.fns = v === 'surface' ? keep.slice(0, 1) : keep;
         else b.fns = [{ expr: F[2], name: '' }];
       } else {
@@ -712,14 +725,126 @@
       }
     };
 
-    function range(parent, label, lo, hi, ph0, ph1, set) {
+    /* ---- inputs written the way the page is written ---- */
+
+    /* the page's equation editor, as an input */
+    function mathField(parent, root, o) {
+      var host = h('div', 'st-in st-mf' + (o.cls ? ' ' + o.cls : ''));
+      host.dataset.ph = o.ph || '';
+      parent.appendChild(host);
+      var mark = function () { host.classList.toggle('empty', PT.math.isEmptyRow(f.root)); };
+      var f = new PT.math.MathField(host, {
+        root: root, inline: !!o.inline,
+        onChange: function (fl) { mark(); o.change(fl.root); },
+        onEnter: function () { host.blur(); },
+        onEscape: function () { host.blur(); },
+        onBlur: function () { if (o.blur) o.blur(f); }
+      });
+      /* Esc leaves the field, not the studio */
+      host.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { ev.stopPropagation(); host.blur(); } });
+      mark();
+      return f;
+    }
+    /* buttons for what is awkward to type; each says how to type it */
+    var MKEYS = [
+      ['frac', 'a/b', 'Fraction — or type /'], ['sup', 'x²', 'Power — or type ^'], ['sqrt', '√', 'Root — or type sqrt'],
+      ['paren', '( )', 'Brackets — or type ('], ['abs', '|x|', 'Absolute value — or type |'],
+      ['sum', 'Σ', 'Sum Σ — or type sum; ∞ above it adds terms until they stop mattering'],
+      ['prod', 'Π', 'Product Π — or type prod'], ['int', '∫', 'Integral — or type int; end the formula inside with dt'],
+      ['lim', 'lim', 'Limit as n → ∞ — or type lim, then n -> inf'],
+      ['@infty', '∞', 'Infinity — or type inf'], ['@pi', 'π', 'π — or type pi'], ['!', 'n!', 'Factorial — or type !']
+    ];
+    function keysRow(parent, f, mode) {
+      var row2 = h('div', 'st-mfkeys');
+      MKEYS.concat(mode === 'polar' ? [['@theta', 'θ', 'The angle θ — or type theta']] : []).forEach(function (k) {
+        var bt = h('button', 'st-mfk', k[1]);
+        bt.type = 'button';
+        bt.title = k[2];
+        bt.onmousedown = function (ev) { ev.preventDefault(); };
+        bt.onclick = function () {
+          f.host.focus();
+          if (k[0] === '!') f.insertNode(PT.math.ch('!'));
+          else if (k[0].charAt(0) === '@') f.insertSymbol(PT.symbols.byCmd[k[0].slice(1)]);
+          else f.insertBuild(k[0]);
+        };
+        row2.appendChild(bt);
+      });
+      parent.appendChild(row2);
+    }
+    /* a curve's formula: the field, its keys, and what is wrong with it */
+    function formulaBox(top, below, fn, mode) {
+      var err = h('div', 'st-fn-err');
+      var ph = mode === 'polar' ? 'e.g. 1 + cos θ' : mode === 'surface' ? 'e.g. sin x · cos y' : 'e.g. 2x² − 3x + 1';
+      /* a box still waiting to be filled — a Σ just put in, a fraction
+         with no denominator yet */
+      var gap = function (n, top) {
+        if (!n || typeof n !== 'object') return false;
+        if (n.t === 'row') return (!top && !n.k.length) || n.k.some(function (x) { return gap(x); });
+        return Object.keys(n).some(function (k) { return k !== 't' && gap(n[k]); });
+      };
+      /* While a formula is being written its unfilled boxes are not
+         mistakes yet: those are pointed out once you leave it. */
+      var check = function (r, done) {
+        var c = PT.math.isEmptyRow(r) ? { ok: true } : C.compile(r, mode);
+        var quiet = !c.ok && !done && f && f.hasFocus() && gap(r, true);
+        f.host.classList.toggle('bad', !c.ok && !quiet);
+        err.textContent = c.ok || quiet ? '' : c.err.charAt(0).toUpperCase() + c.err.slice(1) + '.';
+      };
+      var f = mathField(top, C.mathOf(C.formulaOf(fn), mode), {
+        cls: 'wide st-fn-expr', ph: ph,
+        change: function (r) { fn.m = r; delete fn.expr; check(r); st.touch(); },
+        blur: function (fl) { check(fl.root, true); }
+      });
+      check(f.root, true);
+      keysRow(below, f, mode);
+      below.appendChild(err);
+      return f;
+    }
+    /* a number, or a value such as 2π or −π/2, written as math */
+    function numField(parent, key, ph) {
+      var f = mathField(parent, C.mathOf(b[key] == null ? '' : String(b[key]), 'plain'), {
+        cls: 'num', ph: ph, inline: true,
+        change: function (r) {
+          if (PT.math.isEmptyRow(r)) { b[key] = ''; f.host.classList.remove('bad'); st.touch(); return; }
+          var p = C.plainOf(r, 'plain'), v = p != null ? C.val(p) : null;
+          f.host.classList.toggle('bad', v == null);
+          f.host.title = v == null ? 'A number, or a value such as 2π or −π/2' : '';
+          if (v != null) { b[key] = p; st.touch(); }
+        }
+      });
+      return f;
+    }
+    function range(parent, label, lo, hi, ph0, ph1) {
       var r = row(parent, label);
-      input(r, b[lo], ph0, function (v) { b[lo] = v; st.touch(); }, 'num');
+      numField(r, lo, ph0);
       r.appendChild(h('span', 'st-to', 'to'));
-      input(r, b[hi], ph1, function (v) { b[hi] = v; st.touch(); }, 'num');
+      numField(r, hi, ph1);
       return r;
     }
-    function titleRow(s) { input(row(s, 'Title'), b.title, 'above the chart (optional)', function (v) { b.title = v; st.touch(); }, 'wide'); }
+    /* text with inline formulas ("$" starts one), on one line, as on the page */
+    function legacyHTML(v) {
+      return String(v || '').split('$').map(function (part, i) {
+        if (i % 2 === 0) return escHTML(part);
+        if (!part) return '';
+        var m;
+        try { m = PT.math.parseTex(part); } catch (e) { return escHTML(part); }
+        return '<span class="imath" contenteditable="false" data-m="' + escHTML(JSON.stringify(m)).replace(/"/g, '&quot;') + '"></span>';
+      }).join('');
+    }
+    function richLine(parent, obj, key, ph, after) {
+      var v = obj[key] || '';
+      var e = editor.richEditable('div', 'st-in st-rich st-line', C.isRich(v) ? v : legacyHTML(v), function (nv) {
+        var keep = textOf(nv) || /class="imath/.test(nv);
+        if (keep) obj[key] = nv; else delete obj[key];
+        if (after) after();
+        st.touch();
+      }, { onKey: function (ev) { if (ev.key === 'Enter') ev.preventDefault(); } });
+      e.dataset.ph = ph;
+      parent.appendChild(e);
+      renderMath(e);
+      return e;
+    }
+    function titleRow(s) { richLine(row(s, 'Title'), b, 'title', 'above the chart (optional)'); }
     function gridRow(s, rebuild, fineToo) {
       var gv = b.grid === 'both' ? 'both' : (b.grid === false || b.grid === 'none') ? 'none' : 'major';
       seg(row(s, 'Grid'), [['none', 'None'], ['major', 'Lines']].concat(fineToo ? [['both', 'Fine']] : []), gv === 'both' && !fineToo ? 'major' : gv,
@@ -742,35 +867,35 @@
       }, null);
     }
     function axesBox(s, rebuild, noMiddle) {
-      seg(row(s, 'Axes'), [['box', 'Framed'], ['left', 'Arrows']].concat(noMiddle ? [] : [['middle', 'Through 0']]),
+      seg(row(s, 'Axes'), [['box', 'Framed'], ['left', 'Arrows']].concat(noMiddle ? [] : [['middle', 'Crossing at 0']]),
         noMiddle && b.axes === 'middle' ? 'box' : (b.axes || 'box'), function (v) { b.axes = v; rebuild(); });
     }
 
     /* ---- y = f(x) ---- */
     function functionPanel(P, rebuild) {
-      var s2 = section(P, 'Curves', 'Type them as on paper: 2x^2 - 3x + 1, sin x, e^(-x/2), |x|, sqrt(x).');
+      var s2 = section(P, 'Curves', 'Written as on the page: / makes a fraction, ^ a power; Σ, ∫ and lim work too — e.g. a Fourier sum Σ sin(nx)/n.');
       curveCards(s2, 0, true, 'plain');
-      button(s2, '+ Add a curve', function () { b.fns.push({ expr: '', name: '' }); st.focusFn = b.fns.length - 1; rebuild(); }, 'wide');
+      button(s2, '+ Add a curve', function () { b.fns.push({ m: PT.math.row(), name: '' }); st.focusFn = b.fns.length - 1; rebuild(); }, 'wide');
       range(s2, 'x from', 'xmin', 'xmax', b.xlog ? '0.1' : '-5', b.xlog ? '100' : '5');
-      slider(row(s2, 'Smoothness'), 50, 500, 25, b.samples || 200, function (v) { return v + ' points'; }, function (v) { b.samples = v; st.touch(); });
+      slider(row(s2, 'Curve detail'), 50, 500, 25, b.samples || 200, function (v) { return v + ' points'; }, function (v) { b.samples = v; st.touch(); });
       axesSection(P, rebuild, true);
     }
 
     /* ---- r = f(θ) ---- */
     function polarPanel(P, rebuild) {
-      var s2 = section(P, 'Curves', 'r as a formula of the angle θ (type θ, theta or t): 1 + cos θ, cos(3θ), θ/2pi, 2sin(4t).');
+      var s2 = section(P, 'Curves', 'r as a formula of the angle θ (type theta, or t): 1 + cos θ, cos 3θ, θ/2π.');
       curveCards(s2, 0, true, 'polar');
-      button(s2, '+ Add a curve', function () { b.fns.push({ expr: '', name: '' }); st.focusFn = b.fns.length - 1; rebuild(); }, 'wide');
+      button(s2, '+ Add a curve', function () { b.fns.push({ m: PT.math.row(), name: '' }); st.focusFn = b.fns.length - 1; rebuild(); }, 'wide');
       range(s2, 'θ from', 'xmin', 'xmax', '0', '2pi');
-      slider(row(s2, 'Smoothness'), 90, 1000, 30, b.samples || 360, function (v) { return v + ' points'; }, function (v) { b.samples = v; st.touch(); });
+      slider(row(s2, 'Curve detail'), 90, 1000, 30, b.samples || 360, function (v) { return v + ' points'; }, function (v) { b.samples = v; st.touch(); });
       var s6 = section(P, 'Grid');
       titleRow(s6);
       seg(row(s6, 'Angles in'), [['deg', 'Degrees'], ['rad', 'Radians (π)']], b.angles === 'rad' ? 'rad' : 'deg', function (v) { b.angles = v; rebuild(); });
       seg(row(s6, 'A spoke every'), [[15, '15°'], [30, '30°'], [45, '45°'], [90, '90°']], b.astep || 30, function (v) { b.astep = +v; rebuild(); });
       var rr = row(s6, 'Radius up to');
-      input(rr, b.ymax, 'auto', function (v) { b.ymax = v; st.touch(); }, 'num');
+      numField(rr, 'ymax', 'auto');
       rr.appendChild(h('span', 'st-to', 'rings every'));
-      input(rr, b.ystep, 'auto', function (v) { b.ystep = v; st.touch(); }, 'num');
+      numField(rr, 'ystep', 'auto');
       gridRow(s6, rebuild, true);
     }
 
@@ -778,19 +903,13 @@
     function surfacePanel(P, rebuild) {
       b.fns = b.fns && b.fns.length ? b.fns.slice(0, 1) : [{ expr: 'sin(x) cos(y)', name: '' }];
       var fn = b.fns[0];
-      var s2 = section(P, 'Surface', 'A height for every point: sin(x) cos(y), x^2 - y^2, e^(-(x^2 + y^2)), sin(sqrt(x^2 + y^2)).');
+      var s2 = section(P, 'Surface', 'A height for every point, written as on the page: sin x cos y, x² − y², a sum Σ over n, an integral ∫ … dt.');
       var top = h('div', 'st-cs-top st-formula');
       top.appendChild(h('span', 'st-y', 'z ='));
-      var ex = input(top, fn.expr, 'e.g. sin(x) cos(y)', function (v, el) {
-        fn.expr = v;
-        var c = C.compile(v, 'surface');
-        el.classList.toggle('bad', !!v.trim() && !c.ok);
-        el.title = c.ok ? '' : c.err;
-        st.touch();
-      }, 'st-fn-expr mono grow');
-      var c0 = C.compile(fn.expr, 'surface');
-      if (fn.expr && !c0.ok) { ex.classList.add('bad'); ex.title = c0.err; }
       s2.appendChild(top);
+      var below = h('div', 'st-cs-below');
+      s2.appendChild(below);
+      formulaBox(top, below, fn, 'surface');
       range(s2, 'x from', 'xmin', 'xmax', '-3', '3');
       range(s2, 'y from', 'ymin', 'ymax', '-3', '3');
       slider(row(s2, 'Detail'), 8, 60, 1, b.samples3 || 25, function (v) { return v + ' × ' + v; }, function (v) { b.samples3 = v; st.touch(); });
@@ -831,9 +950,9 @@
 
       var s6 = section(P, 'Axes');
       titleRow(s6);
-      input(row(s6, 'x label'), b.xlabel, 'e.g. $x$', function (v) { b.xlabel = v; st.touch(); }, 'wide');
-      input(row(s6, 'y label'), b.ylabel, 'e.g. $y$', function (v) { b.ylabel = v; st.touch(); }, 'wide');
-      input(row(s6, 'z label'), b.zlabel, 'e.g. $z$', function (v) { b.zlabel = v; st.touch(); }, 'wide');
+      richLine(row(s6, 'x label'), b, 'xlabel', 'type $ for a formula');
+      richLine(row(s6, 'y label'), b, 'ylabel', 'type $ for a formula');
+      richLine(row(s6, 'z label'), b, 'zlabel', 'type $ for a formula');
       range(s6, 'z range', 'zmin', 'zmax', 'auto', 'auto');
       gridRow(s6, rebuild, false);
     }
@@ -904,10 +1023,7 @@
         if (hex) sty.color = hex; else delete sty.color;
         save(); st.touch(true);
       });
-      input(nm, sty.name, 'name in the legend: ' + (src.head[col] || ''), function (v) {
-        if (v) sty.name = v; else delete sty.name;
-        save(); st.touch();
-      }, 'grow');
+      richLine(nm, sty, 'name', 'name in the legend: ' + (src.head[col] || ''), save).classList.add('grow');
 
       var m = C.model(b, doc);
       var s4 = section(P, 'Bins', m.bins ? m.bins.n + ' bins, each ' + String(+m.bins.w.toPrecision(6)) + ' wide, from ' +
@@ -915,9 +1031,9 @@
       slider(row(s4, 'How many'), 0, 40, 1, parseInt(b.bins, 10) || 0, function (v) { return v ? v + ' bins' : 'automatic'; },
         function (v) { b.bins = v || ''; if (v) b.binw = ''; st.touch(); });
       var rw = row(s4, 'Or each');
-      input(rw, b.binw, 'auto', function (v) { b.binw = v; st.touch(); }, 'num');
+      numField(rw, 'binw', 'auto');
       rw.appendChild(h('span', 'st-to', 'wide, from'));
-      input(rw, b.binstart, 'auto', function (v) { b.binstart = v; st.touch(); }, 'num');
+      numField(rw, 'binstart', 'auto');
       seg(row(s4, 'Heights'), [['count', 'Count'], ['percent', 'Percent'], ['density', 'Density']], b.histY || 'count',
         function (v) { b.histY = v; rebuild(); });
       toggle(row(s4, null), 'Write each count above its bar', b.values, function (v) { b.values = v; st.touch(); });
@@ -928,7 +1044,7 @@
         var card2 = h('div', 'st-card-s');
         var top = h('div', 'st-cs-top');
         colorPick(top, ns.color || null, C.autoHex(1), function (hex) { if (hex) ns.color = hex; else delete ns.color; st.touch(true); });
-        input(top, ns.name, 'Normal curve', function (v) { ns.name = v; st.touch(); }, 'grow');
+        richLine(top, ns, 'name', 'Normal curve').classList.add('grow');
         card2.appendChild(top);
         var sub = h('div', 'st-cs-sub');
         lineControls(sub, ns, C.look(b, { fn: true, st: ns, color: 1 }));
@@ -980,9 +1096,9 @@
           function (v) { b.barw = v / 100; st.touch(); });
       }
       if (k !== 'bar') {
-        var s5 = section(P, 'Curves over the data', 'A fitted line or a model, e.g. 2.03x + 0.1 or 21 + 69e^(-0.075x).');
+        var s5 = section(P, 'Curves over the data', 'A model to compare with the data, e.g. 21 + 69e^{−0.075x}. For a fitted curve, give a series a trendline above.');
         curveCards(s5, (b.ycols || [1]).length, false, 'plain');
-        button(s5, '+ Add a curve', function () { b.fns = b.fns || []; b.fns.push({ expr: '', name: '' }); st.focusFn = b.fns.length - 1; rebuild(); }, 'wide');
+        button(s5, '+ Add a curve', function () { b.fns = b.fns || []; b.fns.push({ m: PT.math.row(), name: '' }); st.focusFn = b.fns.length - 1; rebuild(); }, 'wide');
       }
       axesSection(P, rebuild, false);
     }
@@ -993,18 +1109,18 @@
       var s6 = section(P, 'Axes');
       titleRow(s6);
       var xl = bar ? 'Names axis' : 'x label', yl = bar ? 'Values axis' : 'y label';
-      input(row(s6, xl), b.xlabel, bar ? 'what the bars are, e.g. Country' : 'e.g. Time $t$ (s)', function (v) { b.xlabel = v; st.touch(); }, 'wide');
-      input(row(s6, yl), b.ylabel, 'formulas go between $…$', function (v) { b.ylabel = v; st.touch(); }, 'wide');
+      richLine(row(s6, xl), b, 'xlabel', bar ? 'what the bars are, e.g. Country' : 'e.g. Time t (s) — type $ for a formula');
+      richLine(row(s6, yl), b, 'ylabel', 'type $ for a formula');
       if (!isFn && !bar) range(s6, 'x range', 'xmin', 'xmax', 'auto', 'auto');
       range(s6, bar ? 'Values from' : 'y range', 'ymin', 'ymax', 'auto', 'auto');
       var rt = row(s6, 'Tick every');
       if (!bar && !b.xlog) {
         rt.appendChild(h('span', 'st-to', 'x'));
-        input(rt, b.xstep, 'auto', function (v) { b.xstep = v; st.touch(); }, 'num');
+        numField(rt, 'xstep', 'auto');
       }
       if (!b.ylog) {
         rt.appendChild(h('span', 'st-to', bar ? 'value' : 'y'));
-        input(rt, b.ystep, 'auto', function (v) { b.ystep = v; st.touch(); }, 'num');
+        numField(rt, 'ystep', 'auto');
       }
       if (b.xlog && b.ylog) rt.appendChild(h('span', 'st-hint', 'at powers of ten, on log scales'));
       if (k === 'function' || k === 'line' || k === 'scatter') {
@@ -1029,19 +1145,16 @@
           st.touch(true);
         });
         top.appendChild(h('span', 'st-y', lead));
-        var ex = input(top, fn.expr, mode === 'polar' ? 'e.g. 1 + cos θ' : 'e.g. 2x^2 - 3x + 1', function (v, el) {
-          fn.expr = v;
-          var c = C.compile(v, mode);
-          el.classList.toggle('bad', !!v.trim() && !c.ok);
-          el.title = c.ok ? '' : c.err;
-          st.touch();
-        }, 'st-fn-expr mono');
-        var c0 = C.compile(fn.expr, mode);
-        if (fn.expr && !c0.ok) { ex.classList.add('bad'); ex.title = c0.err; }
+        var below = h('div', 'st-cs-below');
+        formulaBox(top, below, fn, mode);
         if (b.fns.length > 1 || !keepOne) button(top, '×', function () { b.fns.splice(i, 1); st.touch(true); }, 'ico', 'Remove this curve');
         card2.appendChild(top);
+        card2.appendChild(below);
         var sub = h('div', 'st-cs-sub');
-        input(sub, fn.name, 'name in the legend', function (v) { fn.name = v; st.touch(); }, 'grow');
+        richLine(sub, fn, 'name', 'name in the legend — $ for maths').classList.add('grow');
+        /* a guide line or an envelope needs no entry of its own */
+        toggle(sub, 'In the legend', !fn.nolegend, function (v) { if (v) delete fn.nolegend; else fn.nolegend = true; st.touch(); },
+          'Show this curve in the legend');
         lineControls(sub, fn, L);
         if (mode === 'polar') {
           toggle(sub, 'Shade inside', fn.fill, function (v) { if (v) fn.fill = 'axis'; else delete fn.fill; st.touch(); });
@@ -1060,12 +1173,55 @@
     function fillControl(parent, sty, key, save) {
       var others = C.model(b, doc).series.filter(function (s) { return s.key !== key && (s.fn || b.kind === 'line') && !s.normal; });
       var opts = [['', 'no shading'], ['axis', 'shade down to the x axis']].concat(others.map(function (s) {
-        return [s.key, 'shade up to ' + (s.name || (s.expr ? 'y = ' + s.expr : 'the other curve'))];
+        return [s.key, 'shade up to ' + (s.name ? (C.isRich(s.name) ? textOf(s.name) : s.name.replace(/\$/g, '')) : s.fit ? 'its trendline' : 'curve ' + (parseInt(s.key.slice(1), 10) + 1))];
       }));
       select(parent, opts, sty.fill || '', function (v) {
         if (v) sty.fill = v; else delete sty.fill;
         save(); st.touch();
       }, 'Shade the area under this, or between it and another curve');
+    }
+    /* a trendline: the kind, and once fitted, its equation and R² */
+    function trendControl(sub, card2, sty, col, save) {
+      var kinds = Object.keys(C.FITS);
+      select(sub, [['', 'no trendline']].concat(kinds.map(function (k) { return [k, 'trendline: ' + C.FITS[k].toLowerCase()]; })),
+        sty.fit || '', function (v) {
+          if (v) sty.fit = v; else ['fit', 'fitR2', 'fitExtend', 'fitDash', 'fitName'].forEach(function (k) { delete sty[k]; });
+          save(); st.touch(true);
+        }, 'Fit a curve to this series by least squares');
+      if (!sty.fit) return;
+      var s = C.model(b, doc).series.filter(function (x) { return !x.fn && x.col === col; })[0];
+      var r = s && s.fit;
+      var box = h('div', 'st-fit');
+      if (!r || !r.ok) {
+        box.appendChild(h('span', 'st-fn-err', 'This trendline ' + (r ? r.err : 'has no points to fit') + '.'));
+        card2.appendChild(box);
+        return;
+      }
+      var eq = h('span', 'st-fit-eq');
+      PT.math.renderStatic(eq, PT.math.parseTex(r.tex));
+      box.appendChild(eq);
+      var r2 = h('span', 'st-fit-r2', 'R² = ' + C.r2Text(r.r2));
+      r2.title = 'How much of the spread in y the trendline explains: 1 is all of it';
+      box.appendChild(r2);
+      var ins = button(box, 'Put in the text', function () {
+        var e = PT.doc.blockFactory('eq');
+        e.lines = [PT.math.parseTex(r.tex + ' \\qquad R^{2} = ' + C.r2Text(r.r2).replace('\u2212', '-'))];
+        doc.blocks.splice(doc.blocks.indexOf(b) + 1, 0, e);
+        editor.change(true);
+        editor.render();
+        ins.textContent = 'Added under the chart ✓';
+        ins.disabled = true;
+      }, 'st-fit-ins', 'Add the equation, with R², as a numbered equation under the chart');
+      var opts = h('div', 'st-cs-sub');
+      toggle(opts, 'R² in the legend', sty.fitR2, function (v) { if (v) sty.fitR2 = true; else delete sty.fitR2; save(); st.touch(); });
+      toggle(opts, 'Across the whole axis', sty.fitExtend, function (v) { if (v) sty.fitExtend = true; else delete sty.fitExtend; save(); st.touch(); },
+        'Draw it beyond the data, from one end of the x axis to the other');
+      select(opts, [['dashed', '– – dashed'], ['solid', '—— solid'], ['dotted', '····· dotted']], sty.fitDash || 'dashed', function (v) {
+        if (v === 'dashed') delete sty.fitDash; else sty.fitDash = v;
+        save(); st.touch();
+      }, 'Trendline style');
+      card2.appendChild(box);
+      card2.appendChild(opts);
     }
     /* one column of the data as a series: on or off, and how it looks */
     function seriesCard(parent, src, col, name) {
@@ -1091,10 +1247,7 @@
           save(); st.touch(true);
         });
         var sub = h('div', 'st-cs-sub');
-        input(sub, sty.name, 'name in the legend: ' + (name || ''), function (v) {
-          if (v) sty.name = v; else delete sty.name;
-          save(); st.touch();
-        }, 'grow');
+        richLine(sub, sty, 'name', 'name in the legend: ' + (name || ''), save).classList.add('grow');
         if (b.kind === 'line') lineControls(sub, sty, L);
         if (b.kind === 'line' || b.kind === 'scatter') {
           select(sub, [['*', '● dot'], ['o', '○ ring'], ['square*', '■ square'], ['square', '□ box'], ['triangle*', '▲ triangle'],
@@ -1113,6 +1266,7 @@
           save(); st.touch();
         }, 'Error bars: a column of ± uncertainties');
         card2.appendChild(sub);
+        if (b.kind === 'line' || b.kind === 'scatter') trendControl(sub, card2, sty, col, save);
       }
       parent.appendChild(card2);
     }
@@ -1144,7 +1298,8 @@
     /* the table as it will be printed */
     st.draw = function () {
       pvBody.textContent = '';
-      var cap = h('div', 'pt-cap');
+      /* the caption spaced as the page spaces a table's, above or below it */
+      var cap = h('div', 'pt-cap pt-tcap' + (b.capBelow ? ' below' : ''));
       cap.appendChild(h('span', 'pt-capl', 'Table ' + (b.__num || '') + ': '));
       var ct = h('span');
       ct.innerHTML = PT.sanitize.clean(b.caption || '');
@@ -1177,7 +1332,7 @@
 
       var s1 = section(P, 'Look');
       var style = b.booktabs ? 'booktabs' : b.rules ? 'grid' : 'plain';
-      seg(row(s1, null), [['booktabs', 'Book rules', 'Rules above, below and under the header (booktabs)'],
+      seg(row(s1, null), [['booktabs', 'Clean', 'Rules above, below and under the header (booktabs)'],
         ['grid', 'Grid', 'A line between every cell'], ['plain', 'Plain', 'No lines']], style, function (v) {
         b.booktabs = v === 'booktabs'; b.rules = v === 'grid'; redo();
       });

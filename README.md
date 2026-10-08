@@ -178,8 +178,12 @@ shows whichever keys are current.
 
 The page sets in real Computer Modern — the faces are embedded in the file, so
 the preview matches what `article` will compile to rather than approximating it
-with Times. They come from KaTeX (MIT, see `fonts/LICENSE-KaTeX.txt`);
-`node tools/genfonts.js` regenerates `css/fonts.css` from `fonts/`.
+with Times. They come from KaTeX (MIT, see `fonts/LICENSE-KaTeX.txt`). KaTeX
+stops at English, so letters such as ç ğ ş ö ü é, Greek in text, and more
+punctuation come from CMU Serif, the same design (SIL OFL, see
+`fonts/LICENSE-CMU.txt`), cut to exactly the characters KaTeX lacks by
+`tools/subset-cmu.py`. `node tools/genfonts.js` regenerates `css/fonts.css`
+from `fonts/`.
 
 ## Output
 

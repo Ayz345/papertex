@@ -125,7 +125,17 @@
   function titleOf(d) {
     var t = d && d.meta && d.meta.title ? String(d.meta.title) : '';
     var text = '';
-    try { text = new DOMParser().parseFromString(t, 'text/html').body.textContent || ''; } catch (e) { text = ''; }
+    try {
+      var body = new DOMParser().parseFromString(t, 'text/html').body;
+      /* a formula in the title is spelled out, where the maths is loaded */
+      var M = window.PT && window.PT.math;
+      if (M && M.plainOf) {
+        [].forEach.call(body.querySelectorAll('span.imath'), function (sp) {
+          try { sp.textContent = ' ' + M.plainOf(JSON.parse(sp.getAttribute('data-m'))) + ' '; } catch (e) { sp.textContent = ''; }
+        });
+      }
+      text = (body.textContent || '').replace(/\s+/g, ' ');
+    } catch (e) { text = ''; }
     return text.replace(/​/g, '').trim() || 'Untitled document';
   }
   function record(id, json, doc, prev) {

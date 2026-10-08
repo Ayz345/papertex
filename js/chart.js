@@ -45,9 +45,48 @@
 
   /* ================================================== expressions ===== */
 
+  /* A formula comes either as text ("2x^2 - 3x + 1", the older way, and the
+     templates) or as a formula from the page's equation editor (a math
+     tree: fractions, powers, Σ with its limits). Both are turned into the
+     same tokens, parsed into one tree, and evaluated here; the tree is then
+     written out as pgfmath. What pgfmath cannot do (sums, products, limits,
+     integrals, n!) is computed here and written out as points instead. */
+
   function deg(a) { return 'deg(' + a + ')'; }
   function rad(a) { return 'rad(' + a + ')'; }
-  /* name: [arity, js, pgf] */
+  /* Γ, by Lanczos: n! for any n, not only whole ones */
+  var LANCZOS = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+    -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+  function gamma(z) {
+    if (z < 0.5) return Math.PI / (Math.sin(Math.PI * z) * gamma(1 - z));
+    z -= 1;
+    var x = LANCZOS[0];
+    for (var i = 1; i < 9; i++) x += LANCZOS[i] / (z + i);
+    var t = z + 7.5;
+    return Math.sqrt(2 * Math.PI) * Math.pow(t, z + 0.5) * Math.exp(-t) * x;
+  }
+  function fact(n) {
+    if (n === Math.floor(n)) {
+      if (n < 0) return NaN;
+      if (n > 170) return Infinity;
+      var r = 1;
+      for (var i = 2; i <= n; i++) r *= i;
+      return r;
+    }
+    return gamma(n + 1);
+  }
+  function binom(n, k) {
+    if (n === Math.floor(n) && k === Math.floor(k) && n >= 0) {
+      if (k < 0 || k > n) return 0;
+      k = Math.min(k, n - k);
+      var r = 1;
+      for (var i = 1; i <= k; i++) r = r * (n - k + i) / i;
+      return Math.round(r) === r || r > 1e15 ? r : Math.round(r);
+    }
+    return fact(n) / (fact(k) * fact(n - k));
+  }
+
+  /* name: [arity, js, pgf]; a pgf of false means pgfmath has no such thing */
   var FN = {
     sin: [1, Math.sin, function (a) { return 'sin(' + deg(a) + ')'; }],
     cos: [1, Math.cos, function (a) { return 'cos(' + deg(a) + ')'; }],
@@ -62,21 +101,23 @@
     exp: [1, Math.exp, null],
     ln: [1, Math.log, null],
     log: [1, Math.log10 || function (x) { return Math.log(x) / Math.LN10; }, function (a) { return 'log10(' + a + ')'; }],
-    log2: [1, Math.log2 || function (x) { return Math.log(x) / Math.LN2; }, null],
+    log2: [1, Math.log2 || function (x) { return Math.log(x) / Math.LN2; }, function (a) { return 'ln(' + a + ')/ln(2)'; }],
     sqrt: [1, Math.sqrt, null],
     abs: [1, Math.abs, null],
     floor: [1, Math.floor, null], ceil: [1, Math.ceil, null], round: [1, Math.round, null],
-    sign: [1, function (x) { return x > 0 ? 1 : x < 0 ? -1 : 0; }, null],
-    min: [2, Math.min, null], max: [2, Math.max, null]
+    sign: [1, function (x) { return x > 0 ? 1 : x < 0 ? -1 : 0; }, false],
+    min: [2, Math.min, null], max: [2, Math.max, null],
+    fact: [1, fact, false],
+    binom: [2, binom, false]
   };
   var ALIAS = { arcsin: 'asin', arccos: 'acos', arctan: 'atan', sgn: 'sign', cosec: 'csc', tg: 'tan', ctg: 'cot', lg: 'log' };
-  var CONST = { pi: Math.PI, e: Math.E, '\u03c0': Math.PI };
+  var CONST = { pi: Math.PI, e: Math.E, 'π': Math.PI };
 
   /* the variables a formula may use, by what is being drawn: the name as
      typed → the variable it stands for */
   var VARS = {
     plain: { x: 'x' },
-    polar: { x: 'x', t: 'x', theta: 'x', '\u03b8': 'x' },
+    polar: { x: 'x', t: 'x', theta: 'x', 'θ': 'x' },
     surface: { x: 'x', y: 'y' }
   };
   var VARHINT = {
@@ -85,10 +126,11 @@
     surface: 'use x and y as the variables'
   };
 
+  /* ---- tokens from text ---- */
   function tokenize(s) {
     s = String(s)
-      .replace(/[\u2212\u2013]/g, '-').replace(/[\u00b7\u22c5\u00d7]/g, '*').replace(/\u00f7/g, '/')
-      .replace(/\u00b2/g, '^2').replace(/\u00b3/g, '^3').replace(/\u221a/g, 'sqrt');
+      .replace(/[−–]/g, '-').replace(/[·⋅×]/g, '*').replace(/÷/g, '/')
+      .replace(/²/g, '^2').replace(/³/g, '^3').replace(/√/g, 'sqrt').replace(/∞/g, ' inf ');
     var out = [], i = 0, m;
     while (i < s.length) {
       var c = s[i];
@@ -96,45 +138,122 @@
       if ((m = /^(\d+\.?\d*|\.\d+)(e[+-]?\d+)?/i.exec(s.slice(i)))) {
         out.push({ k: 'num', v: parseFloat(m[0]) }); i += m[0].length; continue;
       }
-      if ((m = /^[A-Za-z\u03c0\u03b8]+\d*/.exec(s.slice(i)))) {
-        out.push({ k: 'id', v: m[0] }); i += m[0].length; continue;
+      if ((m = /^[A-Za-zπθ]+\d*/.exec(s.slice(i)))) {
+        var word = m[0], dm = /^(.*?)(\d+)$/.exec(word), digits = '';
+        if (dm && !FN[word.toLowerCase()]) { word = dm[1]; digits = dm[2]; }   /* log2 is a name; x2 is x·2 */
+        if (word === 'inf' || word === 'infty') out.push({ k: 'inf' });
+        else splitWord(word).forEach(function (p) { out.push({ k: 'id', v: p }); });
+        if (digits) out.push({ k: 'num', v: parseFloat(digits) });
+        i += m[0].length; continue;
       }
-      if ('+-*/^(),|'.indexOf(c) >= 0) { out.push({ k: c }); i++; continue; }
+      if ('+-*/^(),|!='.indexOf(c) >= 0) { out.push({ k: c }); i++; continue; }
       throw new Error('“' + c + '” is not something a formula can contain');
     }
     return out;
   }
 
   /* A run of letters is read greedily into the names it is made of, the way
-     "xsin" or "2pix" are meant: functions, constants and the variables. */
-  function splitWord(w, vars, mode) {
-    var parts = [], i = 0;
-    var names = Object.keys(FN).concat(Object.keys(ALIAS), Object.keys(CONST), Object.keys(vars))
+     "xsin" or "2pix" are meant; a letter that names nothing stands alone
+     (the parser then says whether it may be used). */
+  var NAMES = null;
+  function splitWord(w) {
+    if (!NAMES) NAMES = Object.keys(FN).concat(Object.keys(ALIAS), Object.keys(CONST), ['theta'])
       .sort(function (a, b) { return b.length - a.length; });
+    var parts = [], i = 0;
     while (i < w.length) {
       var hit = null;
-      for (var j = 0; j < names.length; j++) {
-        if (w.substr(i, names[j].length).toLowerCase() === names[j]) { hit = names[j]; break; }
+      for (var j = 0; j < NAMES.length; j++) {
+        if (w.substr(i, NAMES[j].length).toLowerCase() === NAMES[j]) { hit = NAMES[j]; break; }
       }
-      if (!hit) throw new Error('“' + w + '” is not a function this knows — ' + VARHINT[mode]);
-      parts.push(hit); i += hit.length;
+      if (!hit) hit = w[i];
+      parts.push(ALIAS[hit] || (hit === 'theta' ? 'θ' : hit)); i += hit.length;
     }
     return parts;
   }
 
-  function parse(src, mode) {
-    mode = VARS[mode] ? mode : 'plain';
-    var vars = VARS[mode];
-    var raw = tokenize(src), toks = [];
-    raw.forEach(function (t) {
-      if (t.k !== 'id') { toks.push(t); return; }
-      var m = /^(.*?)(\d+)$/.exec(t.v);           /* log2 is a name; x2 is x·2 */
-      var word = t.v, digits = '';
-      if (m && !FN[t.v.toLowerCase()]) { word = m[1]; digits = m[2]; }
-      splitWord(word, vars, mode).forEach(function (p) { toks.push({ k: 'id', v: ALIAS[p] || p }); });
-      if (digits) toks.push({ k: 'num', v: parseFloat(digits) });
+  /* ---- tokens from a formula of the equation editor ---- */
+  var SYMTOK = {
+    '\\pi': { k: 'id', v: 'pi' }, '\\theta': { k: 'id', v: 'θ' }, '\\infty': { k: 'inf' }, '\\to': { k: 'to' },
+    '\\rightarrow': { k: 'to' }, '\\cdot': { k: '*' }, '\\times': { k: '*' }, '\\div': { k: '/' }, '-': { k: '-' }, '\\minus': { k: '-' }
+  };
+  function mathTokens(r) {
+    var out = [], k = r.k || [], word = '', numb = '';
+    function flush() {
+      if (numb) { out.push({ k: 'num', v: parseFloat(numb) }); numb = ''; }
+      if (word) {
+        if (/^(inf|infty|infinity)$/.test(word)) out.push({ k: 'inf' });
+        else splitWord(word).forEach(function (p) { out.push({ k: 'id', v: p }); });
+        word = '';
+      }
+    }
+    k.forEach(function (n) {
+      if (n.t === 'ch') {
+        var c = n.c === '−' ? '-' : n.c;
+        if (/[0-9.]/.test(c)) { if (word) flush(); numb += c; return; }
+        if (/[A-Za-z]/.test(c)) { if (numb) flush(); word += c; return; }
+        flush();
+        if ('+-*/^(),|!='.indexOf(c) >= 0) out.push({ k: c });
+        else if (c !== ' ') throw new Error('“' + c + '” is not something a formula can contain');
+        return;
+      }
+      flush();
+      switch (n.t) {
+        case 'sym':
+          if (/^\\([,;:!> ]|q?quad|thinspace)$/.test(n.tex)) break;      /* spacing: \, before dt */
+          if (SYMTOK[n.tex]) out.push(SYMTOK[n.tex]);
+          else if (n.cls === 'fn' || n.cls === 'op') {
+            var fnm = n.tex.replace(/^\\/, '');
+            fnm = ALIAS[fnm] || fnm;
+            if (!FN[fnm]) throw new Error('“' + (n.d || n.tex) + '” is not a function this can draw');
+            out.push({ k: 'id', v: fnm });
+          } else if (/^\\[a-zA-Z]+$/.test(n.tex) && n.cls === 'var') out.push({ k: 'id', v: n.d || n.tex });
+          else throw new Error('“' + (n.d || n.tex) + '” cannot be used in a formula here');
+          break;
+        case 'fn': {
+          var nm = ALIAS[n.name] || n.name;
+          if (!FN[nm]) throw new Error('“' + n.name + '” is not a function this can draw');
+          out.push({ k: 'id', v: nm });
+          break;
+        }
+        case 'frac': out.push({ k: n.style === 'binom' ? 'binom' : 'frac', n: mathTokens(n.n), d: mathTokens(n.d) }); break;
+        case 'scr':
+          if (n.sub) out.push({ k: 'sub', t: mathTokens(n.sub) });
+          if (n.sup) { out.push({ k: '^' }); out.push({ k: 'group', t: mathTokens(n.sup) }); }
+          break;
+        case 'sqrt': out.push({ k: 'sqrt', t: mathTokens(n.k), idx: n.idx ? mathTokens(n.idx) : null }); break;
+        case 'paren': {
+          var inner = mathTokens(n.k);
+          if (n.l === '|' || n.l === '\\|') out.push({ k: 'wrap', f: 'abs', t: inner });
+          else if (n.l === '\\lfloor') out.push({ k: 'wrap', f: 'floor', t: inner });
+          else if (n.l === '\\lceil') out.push({ k: 'wrap', f: 'ceil', t: inner });
+          else { out.push({ k: '(' }); out.push.apply(out, inner); out.push({ k: ')' }); }
+          break;
+        }
+        case 'big': {
+          var op = { '\\sum': 'sum', '\\prod': 'prod', '\\int': 'int', '\\lim': 'lim' }[n.op];
+          if (!op) throw new Error('“' + (n.d || n.op) + '” cannot be drawn');
+          out.push({ k: 'big', op: op, lo: mathTokens(n.lo), hi: mathTokens(n.hi || { k: [] }) });
+          break;
+        }
+        case 'txt': {
+          var s = (n.k.k || []).map(function (c) { return c.c || ''; }).join('').replace(/\s+/g, '');
+          if (s) splitWord(s).forEach(function (p) { out.push({ k: 'id', v: p }); });
+          break;
+        }
+        case 'ci': break;     /* a command still being typed */
+        default: throw new Error('That part of the formula cannot be drawn');
+      }
     });
+    flush();
+    return out;
+  }
+
+  /* ---- the parser: tokens → a tree, with the variables in scope ---- */
+  function parseTokens(toks, scope, mode) {
     var p = 0, absDepth = 0;
+    /* "y = …", "f(x) = …": what comes after the last = */
+    for (var q = toks.length - 1; q >= 0; q--) if (toks[q].k === '=') { toks = toks.slice(q + 1); break; }
+    function sub(t, sc) { return parseTokens(t, sc || scope, mode); }
     function peek() { return toks[p]; }
     function eat(k) {
       var t = toks[p];
@@ -142,7 +261,8 @@
       p++; return t;
     }
     function startsPrimary(t) {
-      return t && (t.k === 'num' || t.k === 'id' || t.k === '(' || (t.k === '|' && absDepth === 0));
+      return t && (t.k === 'num' || t.k === 'id' || t.k === '(' || (t.k === '|' && absDepth === 0) ||
+        t.k === 'group' || t.k === 'frac' || t.k === 'binom' || t.k === 'sqrt' || t.k === 'wrap' || t.k === 'big');
     }
     function expr() {
       var a = term();
@@ -168,39 +288,101 @@
     }
     function power() {
       var a = primary();
+      while (peek() && peek().k === '!') { p++; a = { k: 'call', f: 'fact', args: [a] }; }
       if (peek() && peek().k === '^') { p++; return { k: 'bin', op: '^', a: a, b: unary() }; }
       return a;
     }
+    /* Σ_{n=1}^{∞}: the letter, where it starts, where it ends (null: ∞) */
+    function bounds(t, name) {
+      var lo = t.lo, eq = -1;
+      for (var i = 0; i < lo.length; i++) if (lo[i].k === '=') { eq = i; break; }
+      if (eq !== 1 || lo[0].k !== 'id') throw new Error('write ' + name + ' with its counter below it, e.g. n = 1');
+      var v = lo[0].v;
+      var hi = t.hi.length === 1 && t.hi[0].k === 'inf' ? null : t.hi.length ? sub(t.hi) : undefined;
+      if (hi === undefined) throw new Error(name + ' needs an end above it (a number, or ∞)');
+      return { v: v, lo: sub(lo.slice(2)), hi: hi };
+    }
+    function within(v) { var s = Object.create(scope); s[v] = v; return s; }
     function primary() {
       var t = toks[p++];
       if (!t) throw new Error('the formula ends too soon');
-      if (t.k === 'num') return { k: 'num', v: t.v };
-      if (t.k === '(') { var e = expr(); eat(')'); return e; }
-      if (t.k === '|') { absDepth++; var a = expr(); absDepth--; eat('|'); return { k: 'call', f: 'abs', args: [a] }; }
-      if (t.k === 'id') {
-        if (vars[t.v]) return { k: 'v', n: vars[t.v] };
-        if (t.v in CONST) return { k: 'const', n: t.v === '\u03c0' ? 'pi' : t.v };
-        var f = FN[t.v];
-        if (!f) throw new Error('“' + t.v + '” is not known');
-        var args = [], up = null;
-        if (peek() && peek().k === '^' && f[0] === 1) { p++; up = power(); }   /* sin^2 x */
-        if (peek() && peek().k === '(') {
-          p++;
-          args.push(expr());
-          while (peek() && peek().k === ',') { p++; args.push(expr()); }
-          eat(')');
-        } else {
-          if (f[0] !== 1) throw new Error(t.v + ' needs brackets: ' + t.v + '(a, b)');
-          /* sin x, ln 2x: the argument runs to the next + or − */
-          var b = power();
-          while (startsPrimary(peek())) b = { k: 'bin', op: '*', a: b, b: power() };
-          args.push(b);
-        }
-        if (args.length !== f[0]) throw new Error(t.v + ' takes ' + f[0] + (f[0] === 1 ? ' value' : ' values'));
-        var call = { k: 'call', f: t.v, args: args };
-        return up ? { k: 'bin', op: '^', a: call, b: up } : call;
+      switch (t.k) {
+        case 'num': return { k: 'num', v: t.v };
+        case '(': { var e = expr(); eat(')'); return e; }
+        case '|': { absDepth++; var a = expr(); absDepth--; eat('|'); return { k: 'call', f: 'abs', args: [a] }; }
+        case 'group': return sub(t.t);
+        case 'frac': return { k: 'bin', op: '/', a: sub(t.n), b: sub(t.d) };
+        case 'binom': return { k: 'call', f: 'binom', args: [sub(t.n), sub(t.d)] };
+        case 'sqrt': return t.idx ? { k: 'bin', op: '^', a: sub(t.t), b: { k: 'bin', op: '/', a: { k: 'num', v: 1 }, b: sub(t.idx) } }
+          : { k: 'call', f: 'sqrt', args: [sub(t.t)] };
+        case 'wrap': return { k: 'call', f: t.f, args: [sub(t.t)] };
+        case 'inf': throw new Error('∞ goes only at the end of a Σ, a Π, an integral or a limit');
+        case 'sub': throw new Error('a subscript can only follow log, Σ, Π or lim');
+        case 'big': return big(t);
+        case 'id': return named(t);
       }
       throw new Error('“' + t.k + '” is out of place');
+    }
+    function big(t) {
+      if (t.op === 'sum' || t.op === 'prod') {
+        var bd = bounds(t, t.op === 'sum' ? 'Σ' : 'Π');
+        var saveS = scope; scope = within(bd.v);
+        var body = term();
+        scope = saveS;
+        return { k: t.op, i: bd.v, lo: bd.lo, hi: bd.hi, body: body };
+      }
+      if (t.op === 'lim') {
+        var lo = t.lo;
+        if (!(lo.length === 3 && lo[0].k === 'id' && lo[1].k === 'to' && lo[2].k === 'inf'))
+          throw new Error('write the limit as n → ∞ under “lim”');
+        var s0 = scope; scope = within(lo[0].v);
+        var lb = term();
+        scope = s0;
+        return { k: 'lim', i: lo[0].v, body: lb };
+      }
+      /* ∫ from a to b of …, ending in dt */
+      if (!t.lo.length || !t.hi.length) throw new Error('an integral needs its two ends, below and above ∫');
+      var end = -1;
+      for (var j = p; j + 1 < toks.length; j++) {
+        if (toks[j].k === 'id' && toks[j].v === 'd' && toks[j + 1].k === 'id' && toks[j + 1].v.length === 1) { end = j; break; }
+      }
+      if (end < 0) throw new Error('end the integral with dt (or du, ds …)');
+      var v = toks[end + 1].v;
+      var ib = parseTokens(toks.slice(p, end), within(v), mode);
+      p = end + 2;
+      var inf = function (tt) { return tt.length === 1 && tt[0].k === 'inf'; };
+      var neg = function (tt) { return tt.length === 2 && tt[0].k === '-' && tt[1].k === 'inf'; };
+      return { k: 'int', i: v, body: ib,
+        lo: inf(t.lo) ? { k: 'num', v: Infinity } : neg(t.lo) ? { k: 'num', v: -Infinity } : sub(t.lo),
+        hi: inf(t.hi) ? { k: 'num', v: Infinity } : neg(t.hi) ? { k: 'num', v: -Infinity } : sub(t.hi) };
+    }
+    function named(t) {
+      if (scope[t.v]) return { k: 'v', n: scope[t.v] };
+      if (t.v in CONST) return { k: 'const', n: t.v === 'π' ? 'pi' : t.v };
+      var f = FN[t.v];
+      if (!f) throw new Error('“' + t.v + '” is not a variable here — ' + VARHINT[mode]);
+      var base = null, args = [], up = null;
+      if (peek() && peek().k === 'sub') {
+        if (t.v !== 'log') throw new Error('only log takes a subscript (its base)');
+        base = sub(toks[p++].t);
+      }
+      if (peek() && peek().k === '^' && f[0] === 1) { p++; up = power(); }   /* sin^2 x */
+      if (peek() && peek().k === '(') {
+        p++;
+        args.push(expr());
+        while (peek() && peek().k === ',') { p++; args.push(expr()); }
+        eat(')');
+      } else {
+        if (f[0] !== 1) throw new Error(t.v + ' needs brackets: ' + t.v + '(a, b)');
+        /* sin x, ln 2x: the argument runs to the next + or − */
+        var b = power();
+        while (startsPrimary(peek())) b = { k: 'bin', op: '*', a: b, b: power() };
+        args.push(b);
+      }
+      if (args.length !== f[0]) throw new Error(t.v + ' takes ' + f[0] + (f[0] === 1 ? ' value' : ' values'));
+      var call = base ? { k: 'bin', op: '/', a: { k: 'call', f: 'ln', args: args }, b: { k: 'call', f: 'ln', args: [base] } }
+        : { k: 'call', f: t.v, args: args };
+      return up ? { k: 'bin', op: '^', a: call, b: up } : call;
     }
     if (!toks.length) throw new Error('empty');
     var ast = expr();
@@ -208,36 +390,136 @@
     return ast;
   }
 
-  /* f(x, y) */
+  function parse(src, mode) {
+    mode = VARS[mode] ? mode : 'plain';
+    var toks = src && typeof src === 'object' ? mathTokens(src) : tokenize(src);
+    return parseTokens(toks, Object.assign(Object.create(null), VARS[mode]), mode);
+  }
+
+  /* ---- evaluating: the tree as a function of the variables (env) ---- */
+  /* a series is added until its terms stop mattering; one that never
+     settles has no value there */
+  var MAXTERMS = 20000;
   function evaluator(n) {
     switch (n.k) {
       case 'num': return function () { return n.v; };
-      case 'v': return n.n === 'y' ? function (x, y) { return y; } : function (x) { return x; };
+      case 'v': var name = n.n; return function (env) { return env[name]; };
       case 'const': var c = CONST[n.n]; return function () { return c; };
-      case 'neg': var a = evaluator(n.a); return function (x, y) { return -a(x, y); };
+      case 'neg': var a = evaluator(n.a); return function (env) { return -a(env); };
       case 'call': {
         var f = FN[n.f][1], as = n.args.map(evaluator);
-        return as.length === 1 ? function (x, y) { return f(as[0](x, y)); }
-          : function (x, y) { return f(as[0](x, y), as[1](x, y)); };
+        return as.length === 1 ? function (env) { return f(as[0](env)); }
+          : function (env) { return f(as[0](env), as[1](env)); };
       }
       case 'bin': {
         var l = evaluator(n.a), r = evaluator(n.b);
         switch (n.op) {
-          case '+': return function (x, y) { return l(x, y) + r(x, y); };
-          case '-': return function (x, y) { return l(x, y) - r(x, y); };
-          case '*': return function (x, y) { return l(x, y) * r(x, y); };
-          case '/': return function (x, y) { return l(x, y) / r(x, y); };
-          case '^': return function (x, y) { return Math.pow(l(x, y), r(x, y)); };
+          case '+': return function (env) { return l(env) + r(env); };
+          case '-': return function (env) { return l(env) - r(env); };
+          case '*': return function (env) { return l(env) * r(env); };
+          case '/': return function (env) { return l(env) / r(env); };
+          case '^': return function (env) { return Math.pow(l(env), r(env)); };
         }
+        break;
+      }
+      case 'sum': case 'prod': {
+        var lo = evaluator(n.lo), hi = n.hi ? evaluator(n.hi) : null, body = evaluator(n.body), v = n.i, prod = n.k === 'prod';
+        return function (env) {
+          var a = Math.ceil(lo(env) - 1e-9), z = hi ? Math.floor(hi(env) + 1e-9) : Infinity;
+          if (!isFinite(a)) return NaN;
+          var keep = env[v], acc = prod ? 1 : 0, quiet = 0, flips = 0, last = 0, before = 0, i, term;
+          var lo2 = Infinity, hi2 = -Infinity;      /* the partial sums over the second half of the run */
+          if (z - a > 1e6) z = Infinity;
+          for (i = a; i <= z; i++) {
+            env[v] = i;
+            term = body(env);
+            before = acc;
+            if (prod) acc *= term; else acc += term;
+            if (!isFinite(acc)) break;
+            if (z === Infinity) {
+              var small = prod ? Math.abs(term - 1) : Math.abs(term);
+              quiet = small <= 1e-13 * Math.max(1, Math.abs(acc)) ? quiet + 1 : 0;
+              if (quiet >= 8 && i - a > 8) break;
+              flips = !prod && term * last < 0 ? flips + 1 : 0;
+              last = term;
+              if (i - a >= MAXTERMS / 2) { if (acc < lo2) lo2 = acc; if (acc > hi2) hi2 = acc; }
+              if (i - a >= MAXTERMS) {
+                /* signs taking turns (1 − 1/2 + 1/3 …): the sum lies between
+                   the last two partial sums. Slow to settle (1/n², or a
+                   Fourier series Σ sin(nx)/n): the partial sums still sway a
+                   little, and the middle of the swaying is the sum. Still
+                   drifting (1 + 1/2 + 1/3 …): no value. */
+                if (flips > 100 && small < 1e-2 * Math.max(1, Math.abs(acc))) acc = (acc + before) / 2;
+                else if (hi2 - lo2 <= 3e-3 * Math.max(1, Math.abs(acc))) acc = (hi2 + lo2) / 2;
+                else acc = NaN;
+                break;
+              }
+            }
+          }
+          env[v] = keep;
+          return acc;
+        };
+      }
+      case 'lim': {
+        var lb = evaluator(n.body), lv = n.i;
+        return function (env) {
+          var keep = env[lv], prev = NaN, val = NaN;
+          for (var k = 1; k <= 30; k++) {
+            env[lv] = Math.pow(2, k);
+            val = lb(env);
+            if (!isFinite(val)) { val = NaN; break; }
+            if (Math.abs(val - prev) <= 1e-10 * Math.max(1, Math.abs(val))) break;
+            if (k === 30 && Math.abs(val - prev) > 1e-5 * Math.max(1, Math.abs(val))) val = NaN;
+            prev = val;
+          }
+          env[lv] = keep;
+          return val;
+        };
+      }
+      case 'int': {
+        var ia = evaluator(n.lo), iz = evaluator(n.hi), ib = evaluator(n.body), iv = n.i;
+        return function (env) {
+          var a = ia(env), z = iz(env), keep = env[iv];
+          var g = function (t) { env[iv] = t; return ib(env); };
+          var v = integrate(g, a, z);
+          env[iv] = keep;
+          return v;
+        };
       }
     }
     return function () { return NaN; };
+  }
+  /* adaptive Gauss–Legendre; never evaluates at the ends, so ∞ (by a change
+     of variable) and an end where the integrand blows up both work */
+  var GX = [-0.9061798459386640, -0.5384693101056831, 0, 0.5384693101056831, 0.9061798459386640];
+  var GW = [0.2369268850561891, 0.4786286704993665, 0.5688888888888889, 0.4786286704993665, 0.2369268850561891];
+  function gl5(f, a, b) {
+    var m = (a + b) / 2, h = (b - a) / 2, s = 0;
+    for (var k = 0; k < 5; k++) s += GW[k] * f(m + h * GX[k]);
+    return s * h;
+  }
+  function adapt(f, a, b, whole, eps, depth, budget) {
+    var m = (a + b) / 2, l = gl5(f, a, m), r = gl5(f, m, b);
+    budget.n -= 10;
+    if (depth <= 0 || budget.n <= 0 || Math.abs(l + r - whole) <= eps || !isFinite(l + r)) return l + r;
+    return adapt(f, a, m, l, eps / 2, depth - 1, budget) + adapt(f, m, b, r, eps / 2, depth - 1, budget);
+  }
+  function integrate(f, a, b) {
+    if (isNaN(a) || isNaN(b)) return NaN;
+    if (a === b) return 0;
+    if (a > b) return -integrate(f, b, a);
+    var g = f, lo = a, hi = b;
+    if (a === -Infinity && b === Infinity) return integrate(f, -Infinity, 0) + integrate(f, 0, Infinity);
+    if (b === Infinity) { g = function (t) { var u = 1 - t; return f(a + t / u) / (u * u); }; lo = 0; hi = 1; }
+    else if (a === -Infinity) { g = function (t) { var u = 1 - t; return f(b - t / u) / (u * u); }; lo = 0; hi = 1; }
+    var whole = gl5(g, lo, hi);
+    return adapt(g, lo, hi, whole, 1e-10 * Math.max(1, Math.abs(whole)), 40, { n: 6000 });
   }
 
   /* and readable: only the brackets pgfmath needs. A minus sign in front of
      anything but a plain number or name keeps its brackets: older pgfmath
      read -x^2 as (-x)^2. vm says what each variable is written as (a log
-     axis samples x as 10^x). */
+     axis samples x as 10^x). Throws where pgfmath cannot follow. */
   var PREC = { '+': 1, '-': 1, '*': 2, '/': 2, '^': 4 };
   function prec(n) { return n.k === 'bin' ? PREC[n.op] : n.k === 'neg' ? 3 : 9; }
   function pgfPretty(n, vm) {
@@ -251,6 +533,7 @@
       case 'neg': return '-' + wrap(n.a, prec(n.a) < 9, vm);
       case 'call': {
         var args = n.args.map(function (a) { return pgfPretty(a, vm); }), f = FN[n.f];
+        if (f[2] === false) throw new Error('no pgfmath');
         return f[2] ? f[2](args.join(',')) : n.f + '(' + args.join(',') + ')';
       }
       case 'bin': {
@@ -260,18 +543,120 @@
         return l + (n.op === '+' || n.op === '-' ? ' ' + n.op + ' ' : n.op) + r;
       }
     }
-    return '0';
+    throw new Error('no pgfmath');
   }
   function wrap(n, need, vm) { var s = pgfPretty(n, vm); return need ? '(' + s + ')' : s; }
 
-  /* mode: 'plain' (y = f(x)), 'polar' (r = f(θ)) or 'surface' (z = f(x, y)) */
+  /* src: text or a formula from the equation editor. mode: 'plain'
+     (y = f(x)), 'polar' (r = f(θ)) or 'surface' (z = f(x, y)).
+     pgf is null when the formula must go into the .tex as points. */
   function compile(src, mode) {
     try {
-      var ast = parse(src, mode);
-      return { ok: true, ast: ast, f: evaluator(ast), pgf: pgfPretty(ast), pgfWith: function (vm) { return pgfPretty(ast, vm); } };
+      if (src && typeof src === 'object' && src.k && !src.k.length) throw new Error('empty');
+      var ast = parse(src, mode), g = evaluator(ast), env = {};
+      var pgf = null;
+      try { pgf = pgfPretty(ast); } catch (e) { pgf = null; }
+      return {
+        ok: true, ast: ast, pgf: pgf,
+        f: function (x, y) { env.x = x; env.y = y; var v = g(env); return typeof v === 'number' ? v : NaN; },
+        pgfWith: function (vm) { return pgfPretty(ast, vm); }
+      };
     } catch (e) {
       return { ok: false, err: e.message };
     }
+  }
+
+  /* the formula a curve, a polar curve or a surface was given */
+  function formulaOf(fn) { return fn && fn.m && fn.m.k && fn.m.k.length ? fn.m : (fn && fn.expr) || ''; }
+  function hasFormula(fn) { var s = formulaOf(fn); return typeof s === 'object' ? true : !!String(s).trim(); }
+
+  /* ---- back the other way: a tree as the equation editor's formula, and
+     as plain text (what ranges are stored as) ---- */
+  function symItem(cmd, d, cls) {
+    var it = PT.symbols && PT.symbols.byCmd[cmd];
+    return PT.math.sym(it ? it.tex : '\\' + cmd, it ? it.d : d, it ? it.cls : cls || 'var');
+  }
+  function toMath(n, mode) {
+    var M = PT.math, out = [];
+    function chars(s) { String(s).split('').forEach(function (c) { out.push(M.ch(c)); }); }
+    function rowOf(x) { return M.row(toMath(x, mode)); }
+    function atomic(x) { return x.k === 'num' || x.k === 'v' || x.k === 'const' || x.k === 'call'; }
+    function paren(x) { var p = M.paren('(', ')'); p.k = rowOf(x); out.push(p); }
+    function put(x, need) { if (need) paren(x); else out.push.apply(out, toMath(x, mode)); }
+    switch (n.k) {
+      case 'num': chars(fmt(n.v)); break;
+      case 'v':
+        if (n.n === 'x' && mode === 'polar') out.push(symItem('theta', 'θ'));
+        else chars(n.n);
+        break;
+      case 'const': if (n.n === 'pi') out.push(symItem('pi', 'π')); else chars('e'); break;
+      case 'neg': out.push(M.ch('-')); put(n.a, n.a.k === 'bin' && (n.a.op === '+' || n.a.op === '-')); break;
+      case 'call': {
+        var f = n.f, a0 = n.args[0];
+        if (f === 'sqrt') { var s = M.sqrt(); s.k = rowOf(a0); out.push(s); break; }
+        if (f === 'abs' || f === 'floor' || f === 'ceil') {
+          var d = { abs: ['|', '|'], floor: ['\\lfloor', '\\rfloor'], ceil: ['\\lceil', '\\rceil'] }[f];
+          var pp = M.paren(d[0], d[1]); pp.k = rowOf(a0); out.push(pp); break;
+        }
+        if (f === 'fact') { put(a0, !atomic(a0)); out.push(M.ch('!')); break; }
+        if (f === 'binom') { var bn = M.frac(rowOf(a0), rowOf(n.args[1]), 'binom'); out.push(bn); break; }
+        var known = { asin: 'arcsin', acos: 'arccos', atan: 'arctan' }[f] || f;
+        if (/^(sin|cos|tan|cot|sec|csc|arcsin|arccos|arctan|sinh|cosh|tanh|exp|ln|log|min|max)$/.test(known)) out.push(M.fn(known));
+        else { var tx = M.txt(); tx.k = M.row(known.split('').map(function (c) { return M.ch(c); })); out.push(tx); }
+        var pa = M.paren('(', ')');
+        pa.k = M.row([].concat.apply([], n.args.map(function (x, i) { return (i ? [M.ch(',')] : []).concat(toMath(x, mode)); })));
+        out.push(pa);
+        break;
+      }
+      case 'bin':
+        if (n.op === '/' && n.a.k === 'neg') { out.push(M.ch('-')); out.push(M.frac(rowOf(n.a.a), rowOf(n.b))); break; }
+        if (n.op === '/') { out.push(M.frac(rowOf(n.a), rowOf(n.b))); break; }
+        if (n.op === '^') { put(n.a, !(n.a.k === 'num' || n.a.k === 'v' || n.a.k === 'const')); out.push(M.scr(null, rowOf(n.b))); break; }
+        if (n.op === '*') {
+          put(n.a, prec(n.a) < 2);
+          var right = toMath(n.b, mode);
+          var lastNum = out.length && out[out.length - 1].t === 'ch' && /[0-9.]/.test(out[out.length - 1].c);
+          var firstNum = right.length && right[0].t === 'ch' && /[0-9.]/.test(right[0].c);
+          if (lastNum && firstNum) out.push(symItem('cdot', '⋅', 'bin'));
+          if (n.b.k === 'neg' || prec(n.b) < 2) paren(n.b); else out.push.apply(out, right);
+          break;
+        }
+        put(n.a, false);
+        out.push(M.ch(n.op));
+        put(n.b, n.op === '-' && prec(n.b) <= 1);
+        break;
+      default: break;
+    }
+    return out;
+  }
+  function plain(n) {
+    switch (n.k) {
+      case 'num': return fmt(n.v);
+      case 'v': return n.n;
+      case 'const': return n.n;
+      case 'neg': return '-' + (prec(n.a) < 9 ? '(' + plain(n.a) + ')' : plain(n.a));
+      case 'call': return n.f + '(' + n.args.map(plain).join(', ') + ')';
+      case 'bin': {
+        var my = PREC[n.op];
+        var l = plain(n.a), r = plain(n.b);
+        if (n.op === '^' ? prec(n.a) <= my : prec(n.a) < my) l = '(' + l + ')';
+        if (n.b.k === 'neg' || prec(n.b) < my || (prec(n.b) === my && (n.op === '-' || n.op === '/'))) r = '(' + r + ')';
+        return l + (n.op === '+' || n.op === '-' ? ' ' + n.op + ' ' : n.op) + r;
+      }
+    }
+    return '';
+  }
+  /* a formula, for the equation editor to show: its own tree, or the text
+     of an older chart turned into one */
+  function mathOf(src, mode) {
+    if (src && typeof src === 'object') return JSON.parse(JSON.stringify(src));
+    if (!String(src || '').trim()) return PT.math.row();
+    try { return PT.math.row(toMath(parse(src, mode), mode)); } catch (e) { return PT.math.row(String(src).split('').map(function (c) { return PT.math.ch(c); })); }
+  }
+  /* a formula as LaTeX, for a legend, a comment, an equation in the text */
+  function texOf(src, mode) {
+    if (src && typeof src === 'object') return PT.math.texRow(src);
+    try { return PT.math.texRow(PT.math.row(toMath(parse(src, mode), mode))); } catch (e) { return PT.latex.esc(String(src)); }
   }
 
   /* ======================================================= numbers ===== */
@@ -312,6 +697,41 @@
   function round(v, step) {          /* away from float noise: 0.30000000000000004 */
     var d = Math.max(0, -Math.floor(Math.log10(step)) + 2);
     return +v.toFixed(Math.min(d, 15));
+  }
+  /* How long the plot's axes are on paper, in pt, from the document's page
+     and the chart's width: x and y as the model has them (a horizontal bar
+     chart has its values across), less room for the tick labels and the
+     axis names; f is the text size the labels are set in. */
+  function plotRoom(b, doc, horiz) {
+    var S = (doc && doc.settings) || {};
+    var paper = { a4paper: 597.5, letterpaper: 614.3, a5paper: 419.5 }[S.paper] || 597.5;
+    var mg = String(S.margin || '2.5cm'), v = parseFloat(mg) || 2.5;
+    var m = /in/.test(mg) ? v * 72.27 : /mm/.test(mg) ? v * 2.845 : /pt/.test(mg) ? v : v * 28.45;
+    var tw = paper - 2 * m;
+    if (+S.columns === 2) tw = (tw - 10) / 2;
+    var w = clamp(+b.width || 0.75, 0.2, 1) * tw, hgt = w * clamp(+b.aspect || 0.62, 0.3, 1.2);
+    var across = Math.max(40, w - 45), down = Math.max(30, hgt - 30);
+    return { x: horiz ? down : across, y: horiz ? across : down, across: across, down: down, f: parseFloat(S.fontsize) || 11 };
+  }
+  /* 1, 2, 5, 10 … : the next round step up */
+  function bumpStep(s) {
+    var mag = Math.pow(10, Math.floor(Math.log10(s) + 1e-9)), r = s / mag;
+    return (r < 1.5 ? 2 : r < 3 ? 5 : 10) * mag;
+  }
+  /* the step, widened until its labels fit along an axis `len` pt long:
+     side by side (about half an em a character, an em between) or, up the
+     side of the plot, a line apart */
+  function roomyStep(lo, hi, step, len, fpt, upright) {
+    if (!(len > 0) || !(hi > lo) || !(step > 0)) return step;
+    for (var guard = 0; guard < 8; guard++) {
+      var tk = ticks(lo, hi, step);
+      if (tk.length < 3) return step;
+      var need = upright ? 1.6 * fpt
+        : (Math.max.apply(null, tk.map(function (t) { return tickText(t, step).length; })) * 0.5 + 1) * fpt;
+      if (len / (tk.length - 1) >= need) return step;
+      step = bumpStep(step);
+    }
+    return step;
   }
   function ticks(lo, hi, step) {
     var out = [], v = Math.ceil(lo / step - 1e-9) * step;
@@ -506,6 +926,162 @@
     };
   }
 
+  /* ===================================================== trendlines ===== */
+
+  /* The best curve of a kind through a series' points, by least squares:
+     its formula (to draw and to write into the .tex), the equation as a
+     reader would write it, and R², how much of the spread it explains. */
+  var FITS = {
+    linear: 'Straight line', quad: 'Quadratic', cubic: 'Cubic', exp: 'Exponential', log: 'Logarithmic', power: 'Power'
+  };
+  /* polynomial coefficients a0 … ad for points (X, Y), by the normal
+     equations, solved with partial pivoting */
+  function polyFit(X, Y, d) {
+    var n = d + 1, A = [], i, j, k;
+    for (i = 0; i < n; i++) { A.push([]); for (j = 0; j <= n; j++) A[i].push(0); }
+    X.forEach(function (x, t) {
+      var pw = [], v = 1;
+      for (i = 0; i < 2 * n; i++) { pw.push(v); v *= x; }
+      for (i = 0; i < n; i++) { for (j = 0; j < n; j++) A[i][j] += pw[i + j]; A[i][n] += pw[i] * Y[t]; }
+    });
+    for (i = 0; i < n; i++) {
+      var piv = i;
+      for (k = i + 1; k < n; k++) if (Math.abs(A[k][i]) > Math.abs(A[piv][i])) piv = k;
+      var tmp = A[i]; A[i] = A[piv]; A[piv] = tmp;
+      if (!(Math.abs(A[i][i]) > 1e-12)) return null;
+      for (k = i + 1; k < n; k++) {
+        var f = A[k][i] / A[i][i];
+        for (j = i; j <= n; j++) A[k][j] -= f * A[i][j];
+      }
+    }
+    var a = [];
+    for (i = n - 1; i >= 0; i--) {
+      var s = A[i][n];
+      for (j = i + 1; j < n; j++) s -= A[i][j] * a[j];
+      a[i] = s / A[i][i];
+    }
+    return a;
+  }
+  /* 4 significant figures, as LaTeX: 2.031, 0.0153, 6.02 \cdot 10^{23} */
+  function sig(v, plus) {
+    var s;
+    if (v === 0) s = '0';
+    else if (Math.abs(v) >= 1e6 || Math.abs(v) < 1e-3) {
+      var k = Math.floor(Math.log10(Math.abs(v))), m = +(v / Math.pow(10, k)).toPrecision(4);
+      if (Math.abs(m) >= 10) { m /= 10; k++; }
+      s = String(m) + ' \\cdot 10^{' + k + '}';
+    } else s = String(+v.toPrecision(4));
+    return plus && v >= 0 ? '+' + s : s;
+  }
+  /* "+ 3" or "- 3", the way a sum is written on paper and in pgfmath */
+  function signed(v, first, num) {
+    var mag = num(Math.abs(v));
+    if (first) return v < 0 ? '-' + mag : mag;
+    return v < 0 ? ' - ' + mag : ' + ' + mag;
+  }
+  function fitCurve(kind, pts) {
+    var X = [], Y = [];
+    pts.forEach(function (p) { if (isFinite(p[0]) && isFinite(p[1])) { X.push(p[0]); Y.push(p[1]); } });
+    var n = X.length, deg = { linear: 1, quad: 2, cubic: 3 }[kind];
+    var distinct = X.filter(function (x, i) { return X.indexOf(x) === i; }).length;
+    var need = deg ? deg + 1 : 2;
+    if (distinct < need) return { err: 'needs at least ' + need + ' points with different x' };
+    var expr, tex, f;
+    if (deg) {
+      /* fitted around the middle of the data and scaled, so x near 2000
+         (years) loses nothing to rounding */
+      var c = X.reduce(function (a, x) { return a + x; }, 0) / n;
+      var sc = Math.max.apply(null, X.map(function (x) { return Math.abs(x - c); })) || 1;
+      var al = polyFit(X.map(function (x) { return (x - c) / sc; }), Y, deg);
+      if (!al) return { err: 'cannot be fitted to these points' };
+      var be = al.map(function (a, k) { return a / Math.pow(sc, k); });      /* in powers of (x − c) */
+      var centred = deg >= 2 && Math.abs(c) > 4 * sc;
+      var co = be;
+      if (!centred) {
+        /* expanded: the coefficient of x^m collects every (x − c)^k, k ≥ m */
+        co = [];
+        for (var m = 0; m <= deg; m++) {
+          var s = 0;
+          for (var k = m; k <= deg; k++) s += be[k] * binom(k, m) * Math.pow(-c, k - m);
+          co.push(s);
+        }
+      }
+      /* a term that is only rounding (6.7·10⁻¹⁶x² in a perfect cubic) is left out */
+      var R = centred ? sc : Math.max.apply(null, X.map(Math.abs)) || 1;
+      var big = Math.max.apply(null, co.map(function (v, q) { return Math.abs(v) * Math.pow(R, q); }));
+      co = co.map(function (v, q) { return Math.abs(v) * Math.pow(R, q) < 1e-9 * big ? 0 : v; });
+      var base = centred ? '(x' + (c < 0 ? ' + ' + fmt(-c) : ' - ' + fmt(c)) + ')' : 'x';
+      var baseTex = centred ? '(x' + (c < 0 ? ' + ' + sig(-c) : ' - ' + sig(c)) + ')' : 'x';
+      var e = '', t = '', first = true;
+      for (var q = deg; q >= 0; q--) {
+        if (co[q] === 0) continue;
+        var pw = q === 0 ? '' : q === 1 ? base : base + '^' + q;
+        var pwt = q === 0 ? '' : q === 1 ? baseTex : baseTex + '^{' + q + '}';
+        e += signed(co[q], first, fmt) + (pw ? '*' + pw : '');
+        var mag = sig(Math.abs(co[q]));
+        t += (first ? (co[q] < 0 ? '-' : '') : (co[q] < 0 ? ' - ' : ' + ')) + (pwt && mag === '1' ? '' : mag) + pwt;
+        first = false;
+      }
+      expr = e || '0'; tex = t || '0';
+      f = function (x) { var s = 0; for (var k = deg; k >= 0; k--) s = s * (x - c) + be[k]; return s; };
+    } else if (kind === 'exp') {
+      if (Y.some(function (y) { return y <= 0; })) return { err: 'needs every y above 0' };
+      var l = polyFit(X, Y.map(Math.log), 1);
+      if (!l) return { err: 'cannot be fitted to these points' };
+      var A = Math.exp(l[0]), B = l[1];
+      expr = fmt(A) + '*e^(' + fmt(B) + '*x)';
+      tex = sig(A) + 'e^{' + sig(B) + 'x}';
+      f = function (x) { return A * Math.exp(B * x); };
+    } else if (kind === 'log') {
+      if (X.some(function (x) { return x <= 0; })) return { err: 'needs every x above 0' };
+      var g = polyFit(X.map(Math.log), Y, 1);
+      if (!g) return { err: 'cannot be fitted to these points' };
+      expr = fmt(g[0]) + signed(g[1], false, fmt) + '*ln(x)';
+      tex = sig(g[0]) + (g[1] < 0 ? ' - ' : ' + ') + sig(Math.abs(g[1])) + '\\ln x';
+      f = function (x) { return g[0] + g[1] * Math.log(x); };
+    } else if (kind === 'power') {
+      if (X.some(function (x) { return x <= 0; }) || Y.some(function (y) { return y <= 0; })) return { err: 'needs every x and y above 0' };
+      var pp = polyFit(X.map(Math.log), Y.map(Math.log), 1);
+      if (!pp) return { err: 'cannot be fitted to these points' };
+      var PA = Math.exp(pp[0]), PB = pp[1];
+      expr = fmt(PA) + '*x^' + (PB < 0 ? '(' + fmt(PB) + ')' : fmt(PB));
+      tex = sig(PA) + 'x^{' + sig(PB) + '}';
+      f = function (x) { return PA * Math.pow(x, PB); };
+    } else return { err: 'is not a kind of trendline' };
+    var mean = Y.reduce(function (a, y) { return a + y; }, 0) / n, ssr = 0, sst = 0;
+    X.forEach(function (x, i) { var r = Y[i] - f(x); ssr += r * r; sst += (Y[i] - mean) * (Y[i] - mean); });
+    var r2 = sst > 0 ? 1 - ssr / sst : 1;
+    return { ok: true, expr: expr, tex: 'y = ' + tex, r2: r2, f: f, lo: Math.min.apply(null, X), hi: Math.max.apply(null, X) };
+  }
+  function r2Text(r2) { return (r2 >= 0.9995 && r2 < 1 ? r2.toFixed(4) : r2.toFixed(3)).replace('-', '−'); }
+
+  /* each data series' trendline, drawn as a curve of its colour */
+  function trendlines(b, out) {
+    out.series.slice().forEach(function (s) {
+      var st = s.st || {};
+      if (s.fn || !FITS[st.fit]) return;
+      var r = fitCurve(st.fit, s.pts);
+      s.fit = r;
+      if (!r.ok) { out.errors.push('A ' + FITS[st.fit].toLowerCase() + ' trendline ' + r.err + '.'); return; }
+      var c = compile(r.expr);
+      if (!c.ok) return;
+      var lo = st.fitExtend ? out.x[0] : r.lo, hi = st.fitExtend ? out.x[1] : r.hi;
+      if ((st.fit === 'log' || st.fit === 'power' || out.xlog) && lo <= 0) lo = r.lo;
+      var pts = [], N = out.samples;
+      for (var k = 0; k < N; k++) {
+        var x = out.xlog ? lo * Math.pow(hi / lo, k / (N - 1)) : lo + (hi - lo) * k / (N - 1);
+        pts.push([x, r.f(x)]);
+      }
+      var L = look(b, s);
+      var name = st.fitName || ('$' + r.tex + '$' + (st.fitR2 ? ', $R^2 = ' + r2Text(r.r2).replace('−', '-') + '$' : ''));
+      out.series.push({
+        name: name, named: true, fn: true, fit: true, of: s.col, key: 'fit' + s.col, c: c, pgf: c.pgf, src: r.expr, mode: 'plain',
+        pts: pts, color: s.color, dom: [lo, hi],
+        st: { color: L.hex, dash: DASHES.indexOf(st.fitDash) >= 0 ? st.fitDash : 'dashed', thick: 'thick' }
+      });
+    });
+  }
+
   /* ======================================================== layout ===== */
 
   function model(b, doc) {
@@ -609,6 +1185,8 @@
         if (fys.length) out.band = true;
         if (!allY.length) allY = fys;
       }
+      /* trendlines: the best curve of a kind through each series */
+      if (!out.cats && !out.bar) trendlines(b, out);
       out.y = out.ylog ? autoLog(allY, yr, false) : autoY(allY, yr, false, out.values ? 0.1 : 0);
       /* bars stand on 0: no margin below it when they all go up */
       var ylo = Math.min.apply(null, allY), yhi = Math.max.apply(null, allY);
@@ -631,6 +1209,16 @@
       if (out.wholeX && out.xstep < 1) out.xstep = 1;
     }
     out.ystep = yst > 0 && (out.y[1] - out.y[0]) / yst <= 60 ? yst : niceStep(out.y[1] - out.y[0], 6);
+    /* A narrow plot — a small figure, a column of a two-column page — has
+       no room for that many labels: they would run into each other. The
+       step widens until they fit, here and in the PDF alike (pgfplots is
+       given the same step). A step you set yourself is kept. */
+    out.room = plotRoom(b, doc, out.horiz);
+    if (!out.cats && !out.hist && !out.xlog && !(xs > 0)) {
+      out.xstep = roomyStep(out.x[0], out.x[1], out.xstep, out.room.x, out.room.f, out.horiz);
+      if (out.wholeX && out.xstep < 1) out.xstep = 1;
+    }
+    if (!out.ylog && !(yst > 0)) out.ystep = roomyStep(out.y[0], out.y[1], out.ystep, out.room.y, out.room.f, !out.horiz);
     /* function plots: the drawn y range is what was asked or what the curve
        spans, rounded outward to whole ticks */
     if (kind === 'function' && !out.ylog && !(yr[0] != null && yr[1] != null)) {
@@ -663,9 +1251,11 @@
     return out;
   }
 
+  /* a curve can be left out of the legend (an envelope, a guide line) */
+  function inLegend(s) { return !(s.st && s.st.nolegend); }
   function legendPlace(b, m, named) {
-    var pos = b.legend === false ? 'none' : (b.legendPos || 'auto');
-    var want = pos !== 'none' && m.series.length > 0 && (pos !== 'auto' || m.series.length > 1 || m.series.some(named));
+    var pos = b.legend === false ? 'none' : (b.legendPos || 'auto'), vis = m.series.filter(inLegend);
+    var want = pos !== 'none' && vis.length > 0 && (pos !== 'auto' || vis.length > 1 || vis.some(named));
     return want ? (LEGEND_POS.indexOf(pos) >= 0 ? pos : corner(m)) : null;
   }
 
@@ -679,6 +1269,20 @@
   /* The legend goes in whichever corner the data leaves emptiest. */
   function corner(m) {
     var C = [['north east', 1, 1], ['north west', 0, 1], ['south east', 1, 0], ['south west', 0, 0]], n = [0, 0, 0, 0];
+    /* The key's own size, as a share of the plot: as wide as its longest
+       entry plus the sample line, a line per entry — so the corner chosen
+       is the one where the key itself would cover the least, not a fixed
+       quarter of the plot. */
+    var R = m.room, lw = 0.5, lh = 0.4;
+    if (R) {
+      var longest = 0;
+      m.series.forEach(function (s) {
+        var t = s.name ? String(s.name).replace(/<[^>]*>|\$/g, '') : s.src ? 'y = ' + (typeof s.src === 'string' ? s.src : 'f(x)') : '';
+        longest = Math.max(longest, t.length);
+      });
+      lw = clamp((longest * 0.5 + 3.5) * R.f / R.across, 0.2, 0.9);
+      lh = clamp((m.series.length * 1.3 + 0.6) * R.f / R.down, 0.15, 0.9);
+    }
     m.series.forEach(function (s) {
       var w = s.fn ? 0.1 : 1;           /* a curve is many samples, a point is one */
       var bars = !s.fn && (m.bar || m.hist);
@@ -687,7 +1291,8 @@
         (bars ? [0.2, 0.4, 0.6, 0.8, 1] : [1]).forEach(function (f) {
           var q = spot(m, p[0], (p.base || 0) + p[1] * f), nx = q[0], ny = q[1];
           C.forEach(function (c, i) {
-            if ((c[1] ? nx > 0.5 : nx < 0.5) && (c[2] ? ny > 0.6 && ny <= 1.05 : ny < 0.4 && ny >= -0.05)) n[i] += w;
+            if ((c[1] ? nx > 1 - lw && nx <= 1.02 : nx < lw && nx >= -0.02) &&
+                (c[2] ? ny > 1 - lh && ny <= 1.05 : ny < lh && ny >= -0.05)) n[i] += w;
           });
         });
       });
@@ -702,16 +1307,16 @@
   function curves(fns, lo, hi, color0, out) {
     var ys = [], N = out.samples;
     (fns || []).forEach(function (fn, i) {
-      if (!String(fn.expr || '').trim()) return;
-      var c = compile(fn.expr);
-      if (!c.ok) { out.errors.push('y = ' + fn.expr + ': ' + c.err); return; }
+      if (!hasFormula(fn)) return;
+      var c = compile(formulaOf(fn));
+      if (!c.ok) { out.errors.push('Curve ' + (i + 1) + ': ' + c.err + '.'); return; }
       var pts = [];
       for (var k = 0; k < N; k++) {
         var x = out.xlog ? lo * Math.pow(hi / lo, k / (N - 1)) : lo + (hi - lo) * k / (N - 1), y = c.f(x);
         pts.push([x, y]);
         if (isFinite(y)) ys.push(y);
       }
-      out.series.push({ name: fn.name || '', expr: fn.expr, pgf: c.pgf, c: c, pts: pts, color: color0 + i, fn: true, st: fn, key: 'f' + i });
+      out.series.push({ name: fn.name || '', src: formulaOf(fn), mode: 'plain', pgf: c.pgf, c: c, pts: pts, color: color0 + i, fn: true, st: fn, key: 'f' + i });
     });
     return ys;
   }
@@ -856,16 +1461,16 @@
     out.samples = clamp(parseInt(b.samples, 10) || 360, 20, 1000);
     var rs = [];
     (b.fns || []).forEach(function (fn, i) {
-      if (!String(fn.expr || '').trim()) return;
-      var c = compile(fn.expr, 'polar');
-      if (!c.ok) { out.errors.push('r = ' + fn.expr + ': ' + c.err); return; }
+      if (!hasFormula(fn)) return;
+      var c = compile(formulaOf(fn), 'polar');
+      if (!c.ok) { out.errors.push('Curve ' + (i + 1) + ': ' + c.err + '.'); return; }
       var pts = [];
       for (var k = 0; k < out.samples; k++) {
         var t = lo + (hi - lo) * k / (out.samples - 1), r = c.f(t);
         pts.push([t, r]);
         if (isFinite(r)) rs.push(Math.abs(r));
       }
-      out.series.push({ name: fn.name || '', expr: fn.expr, pgf: c.pgf, pts: pts, color: i, fn: true, st: fn, key: 'f' + i });
+      out.series.push({ name: fn.name || '', src: formulaOf(fn), mode: 'polar', pgf: c.pgf, c: c, pts: pts, color: i, fn: true, st: fn, key: 'f' + i });
     });
     var top = val(b.ymax);
     if (!(top > 0)) {
@@ -908,14 +1513,14 @@
     if (!(out.y[1] > out.y[0])) { out.errors.push('The y range must go from smaller to larger.'); out.y[1] = out.y[0] + 1; }
     out.n = clamp(parseInt(b.samples3, 10) || 25, 6, 60);
     var fn = (b.fns || [])[0] || { expr: '' };
-    var c = compile(fn.expr || '', 'surface');
+    var c = compile(formulaOf(fn), 'surface');
     out.z = [];
     var zs = [];
-    if (!String(fn.expr || '').trim()) out.errors.push('Type a formula in x and y, e.g. sin(x) cos(y).');
-    else if (!c.ok) out.errors.push('z = ' + fn.expr + ': ' + c.err);
+    if (!hasFormula(fn)) out.errors.push('Type a formula in x and y, e.g. sin(x) cos(y).');
+    else if (!c.ok) out.errors.push(c.err.charAt(0).toUpperCase() + c.err.slice(1) + '.');
     else {
       out.pgf = c.pgf;
-      out.expr = fn.expr;
+      out.src = formulaOf(fn);
       for (var j = 0; j < out.n; j++) {
         var row = [];
         for (var i = 0; i < out.n; i++) {
@@ -982,7 +1587,13 @@
   }
 
   /* "Speed $v$ (m/s)": text, with formulas between dollar signs */
+  /* A title, an axis label or a legend name: written in the studio as on the
+     page (text with inline formulas, stored as the page's HTML), or, in
+     charts made before that, as text with formulas between dollar signs. */
+  function isRich(str) { return /<[a-z]|&(amp|lt|gt|nbsp|quot|#\d+);/i.test(String(str || '')); }
+  var INLINE = null;      /* the page's text-to-LaTeX, while a chart is being written out */
   function labelInto(target, str) {
+    if (isRich(str)) { richLabelInto(target, str); return; }
     String(str || '').split('$').forEach(function (part, i) {
       if (!part) return;
       if (i % 2 === 0) { target.appendChild(document.createTextNode(part)); return; }
@@ -993,6 +1604,7 @@
     });
   }
   function labelTex(str, use) {
+    if (isRich(str)) return INLINE ? INLINE(str, use).trim() : PT.latex.esc(cellText(str));
     var esc = PT.latex.esc;
     return String(str || '').split('$').map(function (part, i) {
       if (i % 2 === 0) return esc(part);
@@ -1025,7 +1637,11 @@
     fill(span);       /* in the page already: formulas measure themselves */
     return fo;
   }
-  function legendText(s) { return s.name || (s.expr ? 'y = ' + s.expr : ''); }
+  /* about as long as the legend line will be, in characters */
+  function legendText(s) {
+    if (s.name) return isRich(s.name) ? cellText(s.name) : s.name.replace(/\$/g, '');
+    return s.src ? 'y = ' + texOf(s.src, s.mode).replace(/\\(frac|left|right|sqrt)/g, '').replace(/\\[a-z]+|[{}^_]/gi, ' ').replace(/\s+/g, '') : '';
+  }
   function valueText(v) {
     var s = String(+v.toFixed(2));
     return s.replace('-', '\u2212');
@@ -1130,7 +1746,7 @@
     var lx = outer ? area.ml + area.pw + 0.8 * U : east ? area.ml + area.pw - leg.w - 0.4 * U : area.ml + 0.4 * U;
     var ly = outer || north ? area.mt + (outer ? 0 : 0.4 * U) : area.mt + area.ph - leg.h - 0.4 * U;
     el('rect', { x: lx, y: ly, width: leg.w, height: leg.h, 'class': 'pt-chlegend' }, svg);
-    m.series.forEach(function (s, i) {
+    m.series.filter(inLegend).forEach(function (s, i) {
       var L = look(b, s), col = '#' + L.hex, sw = lineWidth(L, P);
       var yy = ly + 0.2 * U + i * 1.35 * U + 0.675 * U;
       if (L.bars) {
@@ -1144,15 +1760,16 @@
       html(svg, lx + 1.8 * U, yy - 0.7 * U, leg.w - 2 * U, 1.4 * U, 'l', function (d) {
         if (s.html) richLabelInto(d, s.html);
         else if (s.name) labelInto(d, s.name);
-        else labelInto(d, '$' + (m.kind === 'polar' ? 'r' : 'y') + ' = ' + exprTex(s.expr) + '$');
+        else labelInto(d, '$' + (m.kind === 'polar' ? 'r' : 'y') + ' = ' + texOf(s.src, s.mode) + '$');
       });
     });
   }
   function legendSize(m) {
     if (!m.legend) return null;
     var lw = 0;
-    m.series.forEach(function (s) { lw = Math.max(lw, legendText(s).replace(/\$/g, '').length); });
-    return { w: (lw * 0.55 + 2.8) * U, h: m.series.length * 1.35 * U + 0.4 * U };
+    var vis = m.series.filter(inLegend);
+    vis.forEach(function (s) { lw = Math.max(lw, legendText(s).length); });
+    return { w: (lw * 0.55 + 2.8) * U, h: vis.length * 1.35 * U + 0.4 * U };
   }
 
   function drawCartesian(target, b, doc, opts, m) {
@@ -1649,6 +2266,7 @@
   function customName(hex) { return 'ptc' + hex.toLowerCase().replace(/[0-9]/g, function (d) { return 'ghijklmnop'[d]; }); }
 
   function tex(b, doc, use, inline) {
+    INLINE = inline;
     var m = model(b, doc);
     use.pgfplots = true;
     var body = m.kind === 'pie' ? texPie(b, m, use, inline)
@@ -1667,7 +2285,7 @@
   }
   function legendTex(s, m, use, inline) {
     return s.html ? inline(s.html, use).trim() : s.name ? labelTex(s.name, use)
-      : s.expr ? '$' + (m.kind === 'polar' ? 'r' : 'y') + ' = ' + PT.math.texRow(PT.math.parseTex(exprTex(s.expr))) + '$' : '';
+      : s.src ? '$' + (m.kind === 'polar' ? 'r' : 'y') + ' = ' + texOf(s.src, s.mode) + '$' : '';
   }
   function axisWrap(env, o, plots) {
     return '  \\begin{tikzpicture}\n    \\begin{' + env + '}[\n      ' + o.join(',\n      ') + '\n    ]\n' + plots +
@@ -1684,6 +2302,14 @@
     return o;
   }
 
+  /* a number for a list of points: six figures are plenty on paper */
+  function pfmt(v) { return isFinite(v) ? fmt(+v.toPrecision(6)) : 'nan'; }
+  function asPoints(s, opts) {
+    var lead = s.mode === 'polar' ? 'r' : 'y';
+    return '% ' + lead + ' = ' + texOf(s.src, s.mode).replace(/\n/g, ' ') + '   (worked out by PaperTeX: pgfmath ' +
+      'cannot compute it)\n      \\addplot[' + opts.join(', ') + '] coordinates {' +
+      s.pts.map(function (p) { return '(' + (s.mode === 'polar' ? pfmt(p[0] * 180 / Math.PI) : pfmt(p[0])) + ',' + pfmt(p[1]) + ')'; }).join(' ') + '}';
+  }
   function texCartesian(b, m, use, inline) {
     var axes = axesOf(b), middle = axes === 'middle', grid = gridOf(b), H = m.horiz;
     var o = sizeTex(b, clamp(+b.aspect || 0.62, 0.3, 1.2));
@@ -1720,7 +2346,7 @@
       if (vl) o.push('ylabel style={at={(ticklabel* cs:1)}, anchor=south}');
     }
     if (m.keep) o.push('unbounded coords=jump', 'restrict y to domain=' + fmt(m.keep[0]) + ':' + fmt(m.keep[1]));
-    else if (m.ylog && m.band) o.push('unbounded coords=jump');
+    else if ((m.ylog && m.band) || m.series.some(function (s) { return s.fn && !s.pgf && s.src; })) o.push('unbounded coords=jump');
     var nbar = m.series.filter(function (s) { return !s.fn; }).length || 1;
     var barw = clamp(+b.barw || 0.8, 0.2, 1);
     var bar = H ? 'xbar' : 'ybar';
@@ -1740,9 +2366,11 @@
     var pathName = function (s) { return 'ptp' + s.key; };
     var t = '';
     function fnPlot(s, opts) {
-      if (m.xlog) return '\\addplot[' + opts.concat(['domain=' + fmt(lg(m.x[0])) + ':' + fmt(lg(m.x[1])), 'samples=' + m.samples]).join(', ') +
+      if (!s.pgf) return asPoints(s, opts);
+      if (m.xlog) return '\\addplot[' + opts.concat(['domain=' + fmt(lg((s.dom || m.x)[0])) + ':' + fmt(lg((s.dom || m.x)[1])), 'samples=' + m.samples]).join(', ') +
         '] ({10^x}, {' + s.c.pgfWith({ x: '10^x' }) + '})';
-      return '\\addplot[' + opts.concat(['domain=' + fmt(m.x[0]) + ':' + fmt(m.x[1]), 'samples=' + m.samples]).join(', ') + '] {' + s.pgf + '}';
+      var dom = s.dom || m.x;
+      return '\\addplot[' + opts.concat(['domain=' + fmt(dom[0]) + ':' + fmt(dom[1]), 'samples=' + m.samples]).join(', ') + '] {' + s.pgf + '}';
     }
     /* an area down to the axis; on a log y axis \closedcycle would close at
        1, so it is closed by hand at the bottom */
@@ -1767,6 +2395,7 @@
         if (m.hist || m.bar) opts.unshift('sharp plot');
         if (under) t += '      ' + fnPlot(s, ['draw=none', 'fill=' + cn, 'fill opacity=' + FILL_OPACITY, 'forget plot']) + closeDown(s) + ';\n';
         if (named[s.key]) opts.push('name path=' + pathName(s));
+        if (m.legend && !inLegend(s)) opts.push('forget plot');
         t += '      ' + fnPlot(s, opts) + ';\n';
       } else if (s.bins) {
         opts = ['fill=' + cn + '!75', 'draw=' + cn + '!50!black'];
@@ -1786,9 +2415,10 @@
         }
         if (under) t += '      \\addplot[draw=none, fill=' + cn + ', fill opacity=' + FILL_OPACITY + (b.smooth ? ', smooth' : '') + ', forget plot] ' + coordsOf(s) + closeDown(s) + ';\n';
         if (named[s.key]) opts.push('name path=' + pathName(s));
+        if (m.legend && !inLegend(s)) opts.push('forget plot');
         t += '      \\addplot[' + opts.concat(errs).join(', ') + '] ' + coordsOf(s) + ';\n';
       }
-      if (m.legend) t += '      \\addlegendentry{' + legendTex(s, m, use, inline) + '}\n';
+      if (m.legend && inLegend(s)) t += '      \\addlegendentry{' + legendTex(s, m, use, inline) + '}\n';
     });
     m.fills.forEach(function (f) {
       if (f.to === 'axis') return;
@@ -1851,12 +2481,20 @@
     m.series.forEach(function (s) {
       var L = look(b, s), cn = colorName(L.hex, use);
       var opts = [cn, L.thick].concat(L.dash !== 'solid' ? [L.dash] : [], ['domain=' + fmt(m.t[0]) + ':' + fmt(m.t[1]), 'samples=' + m.samples]);
-      if (s.st && s.st.fill) {
-        t += '      \\addplot[draw=none, fill=' + cn + ', fill opacity=' + FILL_OPACITY + ', domain=' + fmt(m.t[0]) + ':' + fmt(m.t[1]) +
-          ', samples=' + m.samples + ', forget plot] ({deg(x)}, {' + s.pgf + '}) -- cycle;\n';
+      if (m.legend && !inLegend(s)) opts.push('forget plot');
+      var fillOpts = ['draw=none', 'fill=' + cn, 'fill opacity=' + FILL_OPACITY, 'forget plot'];
+      if (!s.pgf) {
+        opts = opts.filter(function (o) { return !/^(domain|samples)=/.test(o); });
+        if (s.st && s.st.fill) t += '      ' + asPoints(s, fillOpts) + ' -- cycle;\n';
+        t += '      ' + asPoints(s, opts) + ';\n';
+      } else {
+        if (s.st && s.st.fill) {
+          t += '      \\addplot[' + fillOpts.concat(['domain=' + fmt(m.t[0]) + ':' + fmt(m.t[1]), 'samples=' + m.samples]).join(', ') +
+            '] ({deg(x)}, {' + s.pgf + '}) -- cycle;\n';
+        }
+        t += '      \\addplot[' + opts.join(', ') + '] ({deg(x)}, {' + s.pgf + '});\n';
       }
-      t += '      \\addplot[' + opts.join(', ') + '] ({deg(x)}, {' + s.pgf + '});\n';
-      if (m.legend) t += '      \\addlegendentry{' + legendTex(s, m, use, inline) + '}\n';
+      if (m.legend && inLegend(s)) t += '      \\addlegendentry{' + legendTex(s, m, use, inline) + '}\n';
     });
     return axisWrap('polaraxis', o, t);
   }
@@ -1882,7 +2520,19 @@
     var opts = [m.style === 'mesh' ? 'mesh' : 'surf'];
     if (m.style === 'surf') opts.push(m.smooth ? 'shader=interp' : 'shader=faceted', 'faceted color=black!45');
     opts.push('samples=' + m.n, 'domain=' + fmt(m.x[0]) + ':' + fmt(m.x[1]), 'y domain=' + fmt(m.y[0]) + ':' + fmt(m.y[1]));
-    var t = m.pgf ? '      \\addplot3[' + opts.join(', ') + '] {' + m.pgf + '};\n' : '';
+    var t = '';
+    if (m.pgf) t = '      \\addplot3[' + opts.join(', ') + '] {' + m.pgf + '};\n';
+    else if (m.z.length) {
+      /* computed here, row by row: x across, y down */
+      opts = opts.filter(function (o) { return !/^(samples|domain|y domain)=/.test(o); }).concat(['mesh/rows=' + m.n, 'mesh/cols=' + m.n]);
+      var pts = [];
+      for (var j = 0; j < m.n; j++) for (var i = 0; i < m.n; i++) {
+        pts.push('(' + pfmt(m.x[0] + (m.x[1] - m.x[0]) * i / (m.n - 1)) + ',' + pfmt(m.y[0] + (m.y[1] - m.y[0]) * j / (m.n - 1)) + ',' + pfmt(m.z[j][i]) + ')');
+      }
+      t = '      % z = ' + texOf(m.src, 'surface') + '   (worked out by PaperTeX: pgfmath cannot compute it)\n' +
+        '      \\addplot3[' + opts.join(', ') + '] coordinates {' + pts.join(' ') + '};\n';
+      o.push('unbounded coords=jump');
+    }
     return axisWrap('axis', o, t);
   }
 
@@ -1901,6 +2551,8 @@
   window.PT = window.PT || {};
   window.PT.chart = {
     compile: compile, parse: parse, parseCSV: parseCSV, num: num, val: val, model: model, look: look,
+    mathOf: mathOf, texOf: texOf, plainOf: function (src, mode) { var c = compile(src, mode); return c.ok ? plain(c.ast) : null; },
+    formulaOf: formulaOf, FITS: FITS, r2Text: r2Text, isRich: isRich,
     draw: draw, tex: tex, preamble: preamble, source: source, cellText: cellText,
     COLORS: COLORS, THICK: THICK, DASHES: DASHES, MARKS: MARKS, MSIZE: MSIZE, LEGEND_POS: LEGEND_POS, CMAPS: CMAPS,
     autoHex: autoHex, cmapAt: cmapAt

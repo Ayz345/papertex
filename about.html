@@ -55,7 +55,7 @@
   .topnav__links a:hover { background: rgba(255, 254, 251, .75); color: #1d1f23; }
   .topnav__links a[aria-current] { color: #1d1f23; font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); border-radius: 7px 7px 0 0; }
   .topnav .open { margin-top: 0; }
-  @media (max-width: 760px) { .topnav__in { padding: 6px 16px; } .topnav__links { order: 3; flex: 1 0 100%; overflow-x: auto; flex-wrap: nowrap; } .topnav__links a:focus-visible { outline-offset: -2px; } }
+  @media (max-width: 760px) { .topnav__in { padding: 6px 16px; } .topnav__links { order: 3; flex: 1 0 100%; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; } .topnav__links::-webkit-scrollbar { display: none; } .topnav__links a:focus-visible { outline-offset: -2px; } }
   @media (prefers-reduced-motion: reduce) { * { transition-duration: .001ms !important; } }
   /* parts the author still has to write — impossible to miss */
   .todo {

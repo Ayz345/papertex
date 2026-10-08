@@ -91,10 +91,10 @@ button { font: inherit; color: inherit; }
 .no-js .hero__demo, .no-js .hero__demo * { animation: none !important; }   /* no pause control here, so nothing blinks */
 
 /* Pause in the hero stops everything in it, CSS blinks and pulses included */
-.hero__demo.is-paused, .hero__demo.is-paused * { animation-play-state: paused !important; }
 
 /* split headings: each word rises out of its own mask */
-.w { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: .08em; margin-bottom: -.08em; }
+.w { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: .08em; margin-bottom: -.08em;
+      padding-right: .12em; margin-right: -.12em; }   /* room for an italic letter's overhang */
 .w > span { display: inline-block; will-change: transform; }
 
 /* ------------------------------------------------------- scroll progress */
@@ -214,7 +214,7 @@ button { font: inherit; color: inherit; }
 }
 
 /* ------------------------------------------------------------------- hero */
-.hero { padding: 56px 0 96px; }
+.hero { padding: 56px 0 96px; overflow-x: clip; }   /* the code card slides in from the right: never past a phone's edge */
 .hero__grid { display: flex; flex-wrap: wrap; align-items: center; gap: 56px 64px; }
 .hero__copy { flex: 1 1 440px; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
 .pill {
@@ -270,7 +270,9 @@ button { font: inherit; color: inherit; }
   position: relative; display: flex; align-items: center; justify-content: center; gap: 3px;
   min-height: 70px; font-family: var(--serif); font-size: 21px; color: #14100c;
 }
-.mi { font-family: var(--math); font-style: italic; }
+/* the hero's hand-set letters; not .mi, which is the formula engine's atom class
+   (the Try-it box drew every digit and operator italic through it) */
+.hmi { font-family: var(--math); font-style: italic; }
 .eq__int { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; line-height: 1; min-width: 26px; padding-right: 2px; }
 .eq__lim { position: relative; display: grid; place-items: center; height: 15px; min-width: 22px; font-size: 12.5px; }
 .eq__lim > * { grid-area: 1 / 1; }
@@ -280,7 +282,7 @@ button { font: inherit; color: inherit; }
 .slot.is-active { border: 1.5px solid var(--accent); background: var(--accent-soft); animation: slot-pulse 1s ease-in-out infinite; }
 @keyframes slot-pulse { 50% { box-shadow: 0 0 0 4px rgba(154, 91, 6, .14); } }
 .eq__body { display: inline-flex; align-items: flex-start; padding-left: 2px; }
-.eq__body > .mi { align-self: center; }
+.eq__body > .hmi { align-self: center; }
 .eq__sup { font-size: 13.5px; margin-top: -3px; display: inline-flex; align-items: flex-start; }
 .eq__sup2 { font-size: 10px; margin-top: -3px; font-family: var(--serif); }
 .eq__rest { display: inline-flex; align-items: center; gap: 2px; }
@@ -317,6 +319,7 @@ button { font: inherit; color: inherit; }
 .code__body {
   margin: 0; padding: 14px 18px 18px; font: 12.5px/1.75 var(--mono); color: #e9e6df;
   white-space: pre; overflow-x: auto; tab-size: 2;
+  scrollbar-width: thin; scrollbar-color: #5a5f68 transparent;
 }
 .code__body .k { color: var(--amber); }
 .code__hl { display: inline-block; min-width: calc(100% + 36px); margin: 0 -18px; padding: 0 18px; background: rgba(240, 198, 124, .13); color: #f6dca8; }
@@ -342,7 +345,7 @@ button { font: inherit; color: inherit; }
 .doc-card__text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
 .doc-card__title { font-family: var(--serif); font-size: 16.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .doc-card__when { font-size: 13px; color: var(--muted); }
-.doc-card svg { fill: none; stroke: var(--accent-ink); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; transition: transform .25s var(--spring); }
+.doc-card svg { flex: 0 0 16px; fill: none; stroke: var(--accent-ink); stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; transition: transform .25s var(--spring); }
 .doc-card:hover svg { transform: translateX(4px); }
 
 /* ----------------------------------------------------------------- try it */
@@ -351,39 +354,94 @@ button { font: inherit; color: inherit; }
 .try__grid { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 40px 72px; }
 .try__copy { flex: 1 1 340px; min-width: 0; }
 .try__box { flex: 1 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
-.try__label { font-size: 13.5px; font-weight: 600; color: #3d4148; }
-.try__field {
-  display: flex; align-items: center; gap: 4px; padding: 4px 4px 4px 16px; border-radius: var(--radius);
-  background: #fff; box-shadow: 0 0 0 1px #c9c5bd; transition: box-shadow .2s ease;
+.try__keys-help { list-style: none; margin: 18px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 14px; color: var(--muted); }
+.try__keys-help li { display: inline-flex; align-items: center; gap: 4px; }
+.try kbd, .try__typed kbd {
+  display: inline-block; min-width: 1.6em; padding: 1px 6px; border-radius: 5px; text-align: center;
+  font: 600 12px/1.5 var(--ui); color: var(--ink); background: #fff;
+  box-shadow: inset 0 -1.5px 0 #cfcac1, 0 0 0 1px #d9d4cb;
 }
-.try__field:focus-within {
-  box-shadow: 0 0 0 2px var(--accent), 0 10px 26px -18px rgba(92, 58, 10, .8);
-  outline: 2px solid transparent; outline-offset: 2px;   /* shows in Windows high-contrast, where shadows don't */
+
+/* the toolbar: the editor's structures, one press each */
+.try__bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 6px; border-radius: 12px;
+  background: #f3f1ec; box-shadow: inset 0 0 0 1px #e1ddd5;
 }
-.try__field input {
-  flex: 1 1 auto; min-width: 0; min-height: 46px; border: 0; outline: 0; background: transparent;
-  font: 18px var(--mono); color: var(--ink);
+.try__bar button {
+  position: relative; display: inline-flex; align-items: center; justify-content: center;
+  min-width: 36px; height: 40px; padding: 0 7px; border: 0; border-radius: 8px; background: transparent; cursor: pointer;
+  color: #14100c; font: 17px/1 var(--serif);
+  transition: background-color .15s ease, transform .18s var(--ease), box-shadow .2s ease;
 }
-.try__out {
-  min-height: 140px; padding: 24px; border-radius: var(--radius); background: #f6f3ec; box-shadow: inset 0 0 0 1px var(--line-soft);
-  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; color: #14100c; line-height: 1.25;
-  font-family: var(--serif); font-size: 32px;
+.try__bar button:hover { background: #fff; transform: translateY(-2px); box-shadow: 0 0 0 1px #e1ddd5, 0 8px 14px -10px rgba(30, 28, 24, .5); }
+.try__bar button:active { transform: translateY(1px) scale(.92); transition-duration: .06s; }
+.try__sep { width: 1px; height: 24px; margin: 0 4px; background: #d6d1c7; }
+.try__clear {
+  position: absolute; top: 8px; right: 8px; z-index: 1; display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer;
+  transition: background-color .15s ease, color .15s ease, transform .18s var(--ease);
 }
-.try__out .t { display: inline-block; }
-.try__out .t--var { font-family: var(--math); font-style: italic; }
-.try__out .t--big { font-family: var(--big); }
-.try__out .t--over { border-top: 1.5px solid #14100c; padding-top: 1px; }
-.try__out .placeholder { font: 15px var(--ui); color: var(--muted); }
+.try__clear:hover { background: var(--accent-soft); color: var(--accent-ink); }
+.try__clear:active { transform: scale(.9); }
+.try__clear svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; transition: transform .25s var(--spring); }
+.try__clear:hover svg { transform: rotate(90deg); }
+.tb-m { font-family: var(--serif); white-space: nowrap; }
+.tb-i { font-family: var(--math); font-style: italic; }
+.tb-m sup, .tb-m sub { font-size: .62em; }
+.tb-ovl { border-top: 1.2px solid currentColor; padding: 0 1px; }
+.tb-big { font: 21px/1 var(--serif); }
+.tb-t { font: 15px var(--serif); }
+.tb-frac { display: inline-flex; flex-direction: column; align-items: center; font: italic 11.5px/1.05 var(--math); }
+.tb-frac i:first-child { border-bottom: 1.2px solid currentColor; padding: 0 2px 1px; }
+.tb-mat { display: inline-grid; grid-template-columns: 6px 6px; gap: 2px; padding: 2px 3px; border-left: 1.3px solid currentColor; border-right: 1.3px solid currentColor; border-radius: 4px; }
+.tb-mat i { width: 6px; height: 6px; border: 1px solid currentColor; border-radius: 1px; }
+
+/* the equation, on paper, the way the editor shows it */
+.try__sheet {
+  position: relative; padding: 26px 22px 14px; border-radius: 4px; background: var(--paper);
+  box-shadow: var(--shadow-sheet); cursor: text;
+}
+.try__eq { position: relative; display: flex; align-items: center; justify-content: center; min-height: 128px; padding: 0 44px; }
+.try__mf {
+  display: inline-block; max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: 10px 8px; border-radius: 6px;
+  font-family: var(--serif); font-size: 30px; color: #14100c; line-height: 1.2; outline: none; white-space: nowrap;
+  transition: background-color .2s ease, box-shadow .2s ease;
+  /* a thin bar, room kept for it, so the box does not jump taller when it appears */
+  scrollbar-width: thin; scrollbar-color: #d9cbb2 transparent; scrollbar-gutter: stable;
+}
+.try__mf:hover { background: #fffaf0; }
+.try__mf:focus, .try__mf.mf-on { background: #fffaf0; box-shadow: 0 0 0 1.5px #e6c98f; }
+.try__mf:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; box-shadow: none; }   /* one ring */
+.try__num { position: absolute; right: 0; top: 50%; transform: translateY(-50%); font: 17px var(--serif); color: #14100c; }
+.try__sheet.is-empty .try__eq::after {
+  content: "Click here and type  int"; position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  font: 15px var(--ui); color: var(--muted); pointer-events: none; white-space: nowrap;
+  transition: opacity .2s ease;
+}
+.try__sheet.is-empty .try__eq:hover::after { opacity: 0; }   /* the empty slot shows there instead */
+.try__typed {
+  overflow: hidden; display: flex; flex-wrap: wrap; align-items: center; gap: 5px; min-height: 30px; margin: 10px 0 0; padding-top: 10px;
+  border-top: 1px dashed #e4dfd5; font: 13px var(--mono); color: var(--ink-2);
+}
+.try__typed kbd { font-size: 11px; animation: keyIn .3s var(--spring) both; }
+.try__run { white-space: pre; color: var(--accent-ink); max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.try__typed-l { font: 13px var(--ui); color: var(--muted); }
+@keyframes keyIn { from { transform: translateY(6px) scale(.8); opacity: 0; } }
+.chip.chip--math { font-family: var(--serif); font-size: 16px; }
+.chip--math sup { font-size: .65em; line-height: 0; }
 .try__tex {
   display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 16px; border-radius: 9px;
   background: var(--night); color: #f6dca8; font: 14px/1.5 var(--mono);
 }
 .try__texlabel { flex: 0 0 auto; font: 650 11px var(--ui); letter-spacing: .12em; color: #a9adb4; }
-.try__tex code { flex: 1 1 auto; min-width: 0; overflow-x: auto; white-space: pre; color: #f6dca8; font-size: 14px; padding: 6px 0; }
+.try__tex code { flex: 1 1 auto; min-width: 0; overflow-x: auto; white-space: pre; color: #f6dca8; font-size: 14px; padding: 6px 0;
+  scrollbar-width: thin; scrollbar-color: #5a5f68 transparent; }
 .try__tex code.flash { animation: flash .6s ease-out; }
 @keyframes flash { from { color: #fff; text-shadow: 0 0 12px rgba(240, 198, 124, .9); } }
 .chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 4px; }
-.chips__label { font-size: 13px; color: var(--muted); padding-right: 4px; }
+.chips__label { font-size: 13px; color: var(--muted); padding-right: 4px; flex: 1 0 100%; }   /* its own row: the chips split evenly under it */
+.chips > .chip { flex: 1 1 auto; }
+.chip--math sub { font-size: .65em; line-height: 0; }
 .chip {
   position: relative; overflow: hidden; isolation: isolate;
   min-height: 44px; padding: 0 12px; border: 0; border-radius: 8px; cursor: pointer;
@@ -427,7 +485,6 @@ button { font: inherit; color: inherit; }
 .fp__math .t--var { font-family: var(--math); font-style: italic; }
 .fp__math .t--big { font-family: var(--big); }
 .fp__tag { font-size: 11.5px; color: var(--muted); border: 1px dashed #b3aea5; border-radius: 4px; padding: 1px 6px; }
-.plot__stage.is-paused .caret { animation-play-state: paused; }
 .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 18px; }
 .steps li { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); transition: color .3s ease; }
 .steps__dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px #b3aea5; transition: background-color .3s ease, box-shadow .3s ease, transform .3s var(--spring); }
@@ -449,7 +506,7 @@ button { font: inherit; color: inherit; }
 /* -------------------------------------------------------- chart gallery */
 .gallery { padding: 64px 0 56px; }
 .gallery .lead { max-width: 34em; }
-.gal { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; }
+.gal { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; align-items: start; }
 .gc {
   position: relative; display: flex; flex-direction: column; gap: 10px; min-width: 0;
   background: var(--paper); border-radius: var(--radius); padding: 14px 14px 0; overflow: hidden;
@@ -498,7 +555,8 @@ button { font: inherit; color: inherit; }
 .gc__dot { fill: var(--accent); stroke: #fffefb; stroke-width: 1.2; }
 .gc__fill { fill: var(--amber); fill-opacity: .55; }
 .gc__bound { stroke: #5c3a0a; stroke-width: 1.2; stroke-dasharray: 3 3; }
-.gc__val { font: italic 13px var(--math); fill: #14100c; }
+.gc__val { font: 13px var(--serif); fill: #14100c; }
+.gc__val .it { font-family: var(--math); font-style: italic; }
 #surfQuads path { stroke: rgba(20, 16, 12, .32); stroke-width: .5; stroke-linejoin: round; }
 
 /* -------------------------------------------------------- table → chart */
@@ -552,7 +610,8 @@ button { font: inherit; color: inherit; }
 .data__pt { fill: #14100c; cursor: default; transition: r .2s ease; }
 .data__legend { font: 11.5px var(--serif); fill: #14100c; }
 .data__legend path { stroke: var(--accent); stroke-width: 1.9; }
-.data__legend .it { font-style: italic; }
+.data__legend .it { font-family: var(--math); font-style: italic; }
+#plotCap sup { font-size: .72em; line-height: 0; }
 .data__tex { align-self: flex-end; width: 90%; margin-top: -30px; margin-right: -16px; border-radius: var(--radius); background: var(--night); box-shadow: var(--shadow-code); min-height: 110px; }
 
 /* ----------------------------------------------------------- how it works */
@@ -627,7 +686,8 @@ button { font: inherit; color: inherit; }
 .privacy .wrap { position: relative; }
 .privacy .h2 { color: var(--paper); }
 .privacy__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 32px 48px; }
-.privacy__item { display: flex; flex-direction: column; gap: 10px; padding: 20px; margin: -20px; border-radius: 12px; transition: background-color .3s ease, transform .3s var(--ease); }
+.privacy__item { --pi: min(20px, var(--gutter, 20px)); display: flex; flex-direction: column; gap: 10px; padding: var(--pi); margin: calc(-1 * var(--pi));   /* the hover box stays inside the gutter */
+  border-radius: 12px; transition: background-color .3s ease, transform .3s var(--ease); }
 .privacy__item:hover { background: rgba(255, 255, 255, .04); transform: translateY(-3px); }
 .privacy__item h3 { margin: 0; font-size: 17px; font-weight: 650; color: var(--paper); }
 .privacy__item p { margin: 0; color: #b9bcc2; font-size: 15px; }
@@ -727,8 +787,13 @@ button { font: inherit; color: inherit; }
   .data__sheet { padding: 22px 18px 40px; }
   .data__tex { margin-right: -8px; }
   .try, .desktop, .privacy { padding: 72px 0; }
+  .try__eq { padding: 0 30px 0 0; min-height: 110px; }
+  .try__mf { font-size: 24px; }
+  .try__sheet { padding: 22px 12px 12px; }
   /* on a phone the LaTeX wraps, so the part that changes is always in view */
   .code__body, .try__tex code { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .plot__tex { min-height: 170px; }                        /* the wrapped lines fit: no jump while it types */
+  .nav.is-stuck .nav__links { display: none; }              /* once scrolling, the bar is one row */
 }
 @media (max-width: 480px) {
   .hero__code .code__hl { min-height: 3.5em; }   /* the typed line wraps: keep its height steady */
@@ -743,3 +808,10 @@ button { font: inherit; color: inherit; }
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
   .caret { animation: none; }
 }
+
+/* small phones: the hero's sample LaTeX at a size whose lines fit; the
+   pill without its separators, which were left hanging at a line end */
+@media (max-width: 480px) { .hero__code .code__body { font-size: 10.5px; } }
+@media (max-width: 400px) { .pill i { display: none; } .pill { gap: 4px 14px; } }
+/* a phone held sideways: the bar scrolls away with the page */
+@media (max-height: 500px) { .nav { position: static; } }

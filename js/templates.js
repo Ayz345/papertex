@@ -207,6 +207,29 @@
             xmin: '0', xmax: '1', ymin: '0', ymax: '1', axes: 'left', xlabel: '$x$', ylabel: '$y$', width: 0.6, aspect: 0.8,
             caption: 'The region between the two curves, shaded.', label: 'fig:area'
           }),
+          sec('Series, integrals and limits'),
+          para('A formula is written as on the page, so it can be a sum to infinity: the Fourier series ' +
+            im('\\sum_{n=1}^{\\infty} \\frac{\\sin nx}{n}') + ' adds up to a sawtooth, and its first terms already show the shape. ' +
+            'Integrals and limits work the same way.'),
+          chart('function', {
+            fns: [{ m: M.parseTex('\\sum_{n=1}^{\\infty} \\frac{\\sin(nx)}{n}'), name: 'the whole series' },
+              { m: M.parseTex('\\sum_{n=1}^{4} \\frac{\\sin(nx)}{n}'), name: 'its first four terms', dash: 'dashed' }],
+            xmin: '-2pi', xmax: '2pi', axes: 'middle', xlabel: '$x$', ylabel: '$y$',
+            caption: 'A Fourier series and one of its partial sums.', label: 'fig:fourier'
+          }),
+          chart('function', {
+            fns: [{ m: M.parseTex('\\int_0^x e^{-t^2}\\,dt'), name: '' }],
+            xmin: '-3', xmax: '3', axes: 'middle', xlabel: '$x$', ylabel: '$y$', width: 0.6,
+            caption: 'The area under the bell curve up to ' + im('x') + ', computed point by point.', label: 'fig:erf'
+          }),
+          sec('A trendline'),
+          para('Give a series a trendline and the best straight line, parabola or exponential is fitted to it, with its equation and ' +
+            im('R^2') + ' ready to put in the text.'),
+          chart('scatter', {
+            data: 'Mass (kg)\tStretch (cm)\n0.1\t2.1\n0.2\t3.9\n0.3\t6.2\n0.4\t7.8\n0.5\t10.1\n0.6\t11.9',
+            style: { 1: { fit: 'linear', fitR2: true } }, xlabel: 'Mass $m$ (kg)', ylabel: 'Stretch $x$ (cm)', xmin: '0', ymin: '0',
+            caption: 'A spring obeys Hooke’s law: the stretch grows in proportion to the mass.', label: 'fig:spring'
+          }),
           sec('A logarithmic scale'),
           para('Numbers that grow by a factor each step lie on a straight line when the axis is logarithmic (Table ' + ref('tab:chips') + ').'),
           chips,

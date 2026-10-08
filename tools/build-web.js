@@ -65,7 +65,9 @@ if (engineArg) engineOrigin = new URL(engineArg).origin;
 else if (withTexlive) engineOrigin = null;               /* same origin: 'self' covers it */
 else engineOrigin = CDN_ORIGIN;
 
-html = html.replace(/(<meta name="papertex-engine" content=")[^"]*(")/, (_, a, b) => a + (engineArg || '') + b);
+/* said outright, so the page need not probe for TeX Live: an address, the
+   site's own engine/texlive/, or the public CDN (js/compile.js) */
+html = html.replace(/(<meta name="papertex-engine" content=")[^"]*(")/, (_, a, b) => a + (engineArg || (withTexlive ? 'engine/texlive' : 'cdn')) + b);
 const cspRe = /(<meta http-equiv="Content-Security-Policy" content=")([^"]*)(")/;
 const cspMatch = cspRe.exec(html);
 if (!cspMatch) fail('papertex.html has no Content-Security-Policy meta tag');
@@ -127,6 +129,7 @@ if (/PLACEHOLDER home page/.test(fs.readFileSync(path.join(out, 'index.html'), '
 /* 4. licences of what the app ships */
 fs.mkdirSync(path.join(out, 'LICENSES'), { recursive: true });
 fs.copyFileSync(path.join(root, 'fonts', 'LICENSE-KaTeX.txt'), path.join(out, 'LICENSES', 'KaTeX-fonts.txt'));
+fs.copyFileSync(path.join(root, 'fonts', 'LICENSE-CMU.txt'), path.join(out, 'LICENSES', 'CMU-Serif-font.txt'));
 fs.copyFileSync(path.join(root, 'engine', 'LICENSE-siglum.txt'), path.join(out, 'LICENSES', 'siglum-engine.txt'));
 fs.copyFileSync(path.join(root, 'LICENSE'), path.join(out, 'LICENSES', 'PaperTeX.txt'));
 /* the home page's libraries: js/vendor/NAME-LICENSE.txt ships as LICENSES/NAME.txt */

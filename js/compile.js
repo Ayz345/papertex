@@ -18,6 +18,9 @@
   };
 
   var scriptPromise = null, compiler = null, assetsChecked = false;
+  /* the engine takes one progress callback, when it is made; each compile
+     brings its own, so the engine's calls are passed to the current one */
+  var progressTo = null;
 
   /* Where the wasm engine and TeX Live come from, first match wins:
        1. <meta name="papertex-engine" content="https://your.host/tl2025"> —
@@ -32,6 +35,10 @@
     assetsChecked = true;
     var meta = document.querySelector('meta[name="papertex-engine"]');
     var base = meta && meta.content.trim().replace(/\/+$/, '');
+    /* a site built with tools/build-web.js says where TeX Live is, so there
+       is nothing to probe for (and no 404 in the console when it is the CDN) */
+    if (base === 'engine/texlive') { local(); return Promise.resolve(); }
+    if (base === 'cdn') return Promise.resolve();
     if (base) {
       CFG.wasm = base + '/busytex.wasm';
       CFG.bundles = base + '/bundles';
@@ -68,6 +75,7 @@
   }
 
   function getCompiler(onProgress) {
+    progressTo = onProgress || null;
     if (compiler) return Promise.resolve(compiler);
     /* A page opened straight off disk has the opaque origin "null", and no
        browser will start a Worker from one. Nothing here can work around it;
@@ -80,7 +88,7 @@
         wasmUrl: CFG.wasm,
         bundlesUrl: CFG.bundles,
         workerUrl: CFG.worker,
-        onProgress: onProgress
+        onProgress: function (stage, detail) { if (progressTo) progressTo(stage, detail); }
       };
       if (CFG.ctanProxy) opts.ctanProxyUrl = CFG.ctanProxy;
       compiler = new S.SiglumCompiler(opts);

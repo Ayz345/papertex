@@ -151,6 +151,21 @@ function toAccelerator(combo) {
   return parts.map((p) => mods[p] || p).concat(key).join('+');
 }
 
+/* Spelling is checked in the document's language. Left alone, Chromium
+   checks in the computer's language, so on a Turkish Windows every English
+   word came up red. Each language names the dictionaries to try, best first. */
+const SPELL = {
+  en: ['en-US', 'en-GB', 'en'], de: ['de-DE', 'de'], fr: ['fr-FR', 'fr'],
+  es: ['es-ES', 'es'], it: ['it-IT', 'it'], tr: ['tr-TR', 'tr'], pt: ['pt-PT', 'pt-BR', 'pt']
+};
+ipcMain.on('papertex:spellLang', (e, code) => {
+  const ses = e.sender.session;
+  const have = ses.availableSpellCheckerLanguages || [];
+  const pick = (SPELL[code] || []).find((l) => have.includes(l));
+  if (!pick) return;
+  try { ses.setSpellCheckerLanguages([pick]); } catch (err) { /* keep the current one */ }
+});
+
 ipcMain.on('papertex:shortcuts', (_e, map) => {
   if (map && typeof map === 'object') { menuKeys = Object.assign({}, menuKeys, map); buildMenu(); }
 });

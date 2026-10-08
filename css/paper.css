@@ -6,6 +6,7 @@
   --pm: 94px;
   --fs: 14.6px;
   --ls: 1;
+  --plh: calc(1.42 * var(--ls));   /* the paragraph's line height, for parts that set their own */
   position: relative;
   width: var(--pw);
   min-height: var(--ph-px);
@@ -18,9 +19,9 @@
     0 2px 4px rgba(30, 28, 24, .07),
     0 18px 48px -16px rgba(30, 28, 24, .28);
   border-radius: 2px;
-  font-family: "PaperTeX", "Latin Modern Roman", "CMU Serif", "Times New Roman", Times, serif;
+  font-family: "PaperTeX", "PaperTeX AMS", "Latin Modern Roman", "CMU Serif", "Times New Roman", Times, serif;
   font-size: var(--fs);
-  line-height: calc(1.42 * var(--ls));
+  line-height: var(--plh);
   text-align: justify;
   hyphens: auto;
   counter-reset: none;
@@ -45,7 +46,10 @@
   font-size: 1.72em; font-weight: 700; line-height: 1.2;
   margin: .2em 0 .55em; text-align: center; letter-spacing: -.005em;
 }
-.pt-authors { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.6em; align-items: flex-start; }
+.pt-authors { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.6em; align-items: flex-start; position: relative; }
+/* "+ author" hangs beside the names without taking room, so the names stay
+   centred on the page (its width and the gap are given back on the right) */
+.pt-authors > .pt-addauth { width: 64px; margin-right: calc(-64px - 1.6em); white-space: nowrap; padding-inline: 0; }
 .pt-author { position: relative; min-width: 6em; }
 .pt-aname { font-size: 1.02em; text-align: center; }
 .pt-aaff { font-size: .82em; text-align: center; color: #4a4038; }
@@ -63,6 +67,11 @@
   opacity: 0; transition: opacity .15s;
 }
 .paper:hover .pt-addauth, .paper:hover .pt-tailadd, .paper:hover .pt-bibadd { opacity: .75; }
+/* the end-of-document button is how a new user finds the block list, so it
+   stays in sight, and is drawn as firmly as the table and figure buttons
+   that sit just above it when the paper is hovered */
+.pt-tailadd { opacity: .6; font-size: 12px; padding: 4px 12px; color: #6f604f; border-color: #bfae98; }
+.paper:hover .pt-tailadd, .pt-tailadd:focus-visible { opacity: 1; }
 .pt-addauth:hover, .pt-tailadd:hover, .pt-bibadd:hover { opacity: 1; border-color: #b8860b; color: #8b5a00; }
 .pt-date { text-align: center; margin-top: .7em; font-size: .95em; }
 
@@ -77,6 +86,16 @@
 .pt-body.pt-two .blk-eq, .pt-body.pt-two .pt-fig, .pt-body.pt-two .pt-tabw { break-inside: avoid; }
 
 .blk { position: relative; }
+/* "Show it" in the compile error box: the block it means lights up as the
+   page scrolls to it, then fades (.pt-flash, 1.6 s, app.js) */
+.pt-flash { border-radius: 4px; animation: pt-flash 1.6s ease-out both; }
+@keyframes pt-flash {
+  0%, 35% { background-color: rgba(240, 186, 80, .2); box-shadow: 0 0 0 5px rgba(240, 186, 80, .2), 0 0 0 6px rgba(201, 146, 54, .55); }
+  100% { background-color: rgba(240, 186, 80, 0); box-shadow: 0 0 0 5px rgba(240, 186, 80, 0), 0 0 0 6px rgba(201, 146, 54, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pt-flash { animation: none; background-color: rgba(240, 186, 80, .2); box-shadow: 0 0 0 6px rgba(240, 186, 80, .2); }
+}
 .blk-in > *:first-child { margin-top: 0; }
 
 .pt-sec {
@@ -87,7 +106,9 @@ h2.pt-sec { font-size: 1.28em; }
 h3.pt-sec { font-size: 1.12em; }
 h4.pt-sec { font-size: 1.0em; }
 h5.pt-sec { font-size: .98em; font-style: italic; font-weight: 600; }
-.blk-section .blk-in { margin: 1.35em 0 .5em; }
+/* a heading is set ragged-right, as LaTeX sets it; the heading is inline,
+   so the line it sits on has to say so, or a long heading is justified */
+.blk-section .blk-in { margin: 1.35em 0 .5em; text-align: left; }
 .blk-section:first-child .blk-in { margin-top: 0; }
 .pt-secnum { font-weight: 700; margin-right: .6em; }
 .blk-section .pt-sec { margin: 0; }
@@ -95,7 +116,7 @@ h5.pt-sec { font-size: .98em; font-style: italic; font-weight: 600; }
 .pt-para { margin: 0 0 .55em; text-indent: 1.4em; }
 .blk-para + .blk-para .pt-para { margin-top: 0; }
 .blk-section + .blk-para .pt-para,
-.blk-eq + .blk-para .pt-para { text-indent: 0; }
+.blk-eq + .blk-para .pt-para, .blk-list + .blk-para .pt-para { text-indent: 0; }
 
 blockquote.pt-quote {
   margin: .8em 2em; font-size: .95em; border-left: 2px solid #e6ddd0; padding-left: 1em;
@@ -103,8 +124,11 @@ blockquote.pt-quote {
 
 /* lists */
 .pt-list { list-style: none; margin: .5em 0 .7em; padding: 0 0 0 1.4em; }
-.pt-li { position: relative; display: flex; gap: .5em; margin: .18em 0; text-align: left; }
-.pt-mk { flex: 0 0 auto; min-width: 1.2em; user-select: none; color: #241c14; }
+/* the label sits on the first line's baseline, however tall that line is,
+   right-aligned in its column (10. and up fit), and the item is justified,
+   all as in LaTeX */
+.pt-li { position: relative; display: flex; gap: .5em; margin: .18em 0; text-align: justify; align-items: baseline; }
+.pt-mk { flex: 0 0 auto; min-width: 1.6em; text-align: right; user-select: none; -webkit-user-select: none; color: #241c14; }
 .pt-litext { flex: 1 1 auto; outline: none; }
 
 /* theorems */
@@ -112,11 +136,73 @@ blockquote.pt-quote {
 .pt-thmh { font-weight: 700; margin-right: .45em; }
 .pt-thm-proof .pt-thmh { font-weight: 400; font-style: italic; }
 .pt-thmt { font-style: italic; margin-right: .35em; }
-.pt-thmt:empty::before { content: attr(data-ph); color: #c3b6a6; }
+/* "(title)" is an offer, not part of the page: it shows only while the
+   theorem or proof is being edited, and takes no room otherwise */
+.pt-thm .pt-thmt:empty { margin-right: 0; }
+.pt-thm .pt-thmt:empty::before { content: none; }
+.pt-thm:focus-within .pt-thmt:empty { margin-right: .35em; }
+.pt-thm:focus-within .pt-thmt:empty::before { content: attr(data-ph); color: #c3b6a6; }
 .pt-thmb { font-style: italic; }
+/* Italic runs (a theorem's statement, the "Proof." head, <i>, <em>) come from
+   the italic face, whose ascent and descent differ from the upright one's: at
+   the paragraph's line height their box stood out of the line and opened it
+   up by 1-2px. At line-height 1 they sit inside the line; a formula among them
+   keeps the paragraph's line height for its own box. */
+.paper i, .paper em, .pt-thmb, .pt-thmt, .pt-thm-proof .pt-thmh, .pt-bibf.f-title { line-height: 1; }
+.paper i .imath, .paper em .imath, .pt-thmb .imath, .pt-thmt .imath { line-height: var(--plh); }
 .pt-thm-proof .pt-thmb, .pt-thm-remark .pt-thmb, .pt-thm-example .pt-thmb { font-style: normal; }
 .pt-thm-definition .pt-thmb { font-style: normal; }
 .pt-qed { float: right; }
+/* Blocks that belong to the theorem or proof above them (an equation, a
+   paragraph: .blk-inenv, set by doc.js): on screen a thin rule in the
+   margin joins them to it, and their text takes the environment's style —
+   slanted in a theorem, upright in a proof, a definition, a remark, an
+   example. The end-of-proof square moves to the last of them: on the last
+   line of an unnumbered equation (.pt-qedhere, where \qedhere puts it),
+   or under a numbered one or a paragraph (.pt-qedend). */
+.blk:has(+ .blk-inenv) > .blk-in, .blk-inenv > .blk-in { position: relative; }
+.blk:has(+ .blk-inenv) > .blk-in::before, .blk-inenv > .blk-in::before {
+  content: ''; position: absolute; left: -12px; top: .35em; bottom: 0;
+  border-left: 2px solid #efe5d4; pointer-events: none;
+}
+/* reaching up across the space between blocks, so the rule is unbroken */
+.blk.blk-inenv > .blk-in::before { top: -1.8em; }
+.blk-inenv:not(:has(+ .blk-inenv)) > .blk-in::before { bottom: .35em; }
+.blk-inenv .pt-eqw { margin-top: .5em; }
+.blk-inenv .pt-para { font-style: italic; }
+.blk-inenv:is(.blk-inproof, [data-env="definition"], [data-env="remark"], [data-env="example"]) .pt-para { font-style: normal; }
+.pt-eqline:has(> .pt-qedhere)::before { content: ''; flex: 0 0 1.6em; }
+.pt-qed.pt-qedhere { float: none; flex: 0 0 1.6em; text-align: right; }
+.pt-qed.pt-qedend { float: none; display: block; text-align: right; line-height: 1; margin-top: -.15em; }
+.pt-para + .pt-qed.pt-qedend { margin-top: -.5em; }
+@media print { .blk-inenv > .blk-in::before, .blk:has(+ .blk-inenv) > .blk-in::before { display: none; } }
+
+/* footnotes: the mark in the text (.ftnote, its number as its text) is a
+   superscript that opens the note; the notes themselves (.pt-fnotes) follow
+   the body under LaTeX's short rule, in footnote size, each with its mark
+   set right in a 1.8em box, as \@makefntext does */
+.ftnote {
+  font-size: .7em; line-height: 0; vertical-align: .55em; padding: 0 .1em; margin-left: .04em;
+  color: #9a5b06; cursor: pointer; border-radius: 2px;
+  user-select: none; -webkit-user-select: none;
+}
+.ftnote:hover { background: rgba(236, 178, 72, .2); }
+.pt-fnotes { margin-top: 2.2em; font-size: .82em; line-height: 1.38; text-align: justify; }
+.pt-fnotes::before {
+  content: ''; display: block; width: 40%; max-width: 12em; height: 0; margin-bottom: .55em;
+  border-top: max(.04em, 1px) solid currentColor;
+}
+.pt-fn { margin: .2em 0; border-radius: 3px; cursor: pointer; transition: background-color .12s; }
+.pt-fn:hover { background: rgba(236, 178, 72, .12); }
+.pt-fn > sup {
+  display: inline-block; min-width: 2.5em; text-align: right; padding-right: .15em;
+  font-size: .72em; line-height: 0; vertical-align: .5em;
+}
+.pt-fntx:empty::before { content: 'Empty note \2014  click to write it'; color: #c3b6a6; font-style: italic; }
+@media print {
+  .ftnote { color: inherit; }
+  .pt-fntx:empty::before { content: none; }
+}
 
 /* code + raw */
 .pt-codew, .pt-raww { margin: .8em 0; position: relative; }
@@ -127,20 +213,46 @@ blockquote.pt-quote {
   color: #2c241b; overflow-x: auto;
 }
 .pt-raw { background: #fdf6ee; border-color: #f0dcc0; color: #7a4b12; }
+/* The hover controls of code, raw, figure and table blocks float over the
+   block instead of standing in the flow, so they leave no blank gap when
+   hidden; on a touch screen (no hover) they stay in the flow and visible. */
 .pt-codebar, .pt-rawl {
-  display: flex; justify-content: flex-end; margin-bottom: 3px;
+  display: flex; justify-content: flex-end; align-items: center; gap: 4px;
+  position: absolute; top: .4em; right: .45em; z-index: 3;
+  padding: 2px 4px; border-radius: 5px; background: rgba(250, 247, 242, .94);
   font: 400 10px/1 ui-sans-serif, system-ui, sans-serif; color: #a2937f;
   opacity: 0; transition: opacity .15s;
 }
+.pt-rawl { background: rgba(253, 246, 238, .94); }
 .pt-codew:hover .pt-codebar, .pt-raww:hover .pt-rawl { opacity: 1; }
 .pt-lang { font: inherit; border: 1px solid #e4d9c8; border-radius: 4px; background: #fff; padding: 1px 4px; }
 
+/* A page break takes up the rest of its page (its height is set by the
+   page guides in app.js), so what follows starts on the next page. The
+   empty rest of the page is shaded faintly, with the reason at its top. */
 .pt-pagebreak {
-  margin: 1em 0; border-top: 2px dashed #d8c9b4; text-align: center;
-  font: 500 9px/1 ui-sans-serif, system-ui, sans-serif; text-transform: uppercase;
+  position: relative; margin: 0; min-height: 1.6em; box-sizing: border-box;
+  border-top: 1.5px dashed #d8c9b4;
+  background: repeating-linear-gradient(135deg, transparent 0 9px, rgba(176, 154, 126, .07) 9px 10px)
+    0 0 / 100% var(--pb-rest, 100%) no-repeat;
+  text-align: center; font: 500 9px/1 ui-sans-serif, system-ui, sans-serif; text-transform: uppercase;
   letter-spacing: .1em; color: #b09a7e;
 }
-.pt-pagebreak span { position: relative; top: -.55em; background: #fff; padding: 0 .6em; }
+.pt-pagebreak span { position: relative; top: -.55em; background: #fffefb; padding: 0 .6em; }
+/* the desk between the two sheets, wider than the sheet so it hides its
+   side shadow there */
+.pt-pagebreak::after {
+  content: ''; position: absolute; top: var(--pb-gap-at, 100%); height: var(--pb-gap, 0);
+  left: calc(-1 * var(--pm) - 40px); right: calc(-1 * var(--pm) - 40px);
+  background: var(--desk, #e4e2de);
+  box-shadow: inset 0 8px 9px -8px rgba(30, 28, 24, .22), inset 0 -8px 9px -8px rgba(30, 28, 24, .16);
+}
+#guides .guide.forced { border-top: 0; }
+#guides .guide.forced span { top: -.5em; right: auto; left: 50%; transform: translateX(-50%); }
+@media print {
+  .pt-pagebreak { height: 0 !important; min-height: 0; border: 0; background: none; break-after: page; page-break-after: always; }
+  .pt-pagebreak span, .pt-pagebreak::after { display: none; }
+}
 
 .pt-toc { margin: 1em 0 1.4em; text-align: left; }
 .pt-toch { font-weight: 700; font-size: 1.28em; text-align: center; margin-bottom: .5em; }
@@ -159,35 +271,65 @@ blockquote.pt-quote {
 .pt-figimg.over .pt-drop, .pt-drop:hover { border-color: #b8860b; color: #8b6914; background: #fffbf2; }
 .pt-dropi { font-size: 26px; line-height: 1; margin-bottom: .3em; }
 .pt-dropsub { font-size: 10.5px; opacity: .75; margin-top: .25em; }
+.pt-fig { position: relative; }
+.pt-figimg img { display: block; margin: 0 auto; }
 .pt-figctl {
-  display: flex; align-items: center; justify-content: center; gap: .6em; margin-top: .4em;
-  font: 400 10.5px/1 ui-sans-serif, system-ui, sans-serif; color: #9a8a76;
+  display: flex; align-items: center; justify-content: center; gap: .6em;
+  position: absolute; left: 50%; z-index: 3; width: max-content;
+  transform: translate(-50%, calc(-100% - .6em));
+  padding: 5px 10px; border: 1px solid #eadfcd; border-radius: 8px; background: rgba(255, 254, 251, .95);
+  box-shadow: 0 4px 12px -8px rgba(60, 40, 10, .4);
+  font: 400 10.5px/1 ui-sans-serif, system-ui, sans-serif; color: #7a6a55;
   opacity: 0; transition: opacity .15s;
 }
 .pt-fig:hover .pt-figctl { opacity: 1; }
 .pt-figctl input[type=range] { width: 110px; accent-color: #b8860b; }
 .pt-fign { font-family: Consolas, monospace; }
-.pt-cap { font-size: .88em; text-align: center; margin-top: .45em; line-height: 1.4; }
-.pt-capl { font-weight: 700; }
+/* captions as LaTeX's article sets them: text size, the label not bold */
+.pt-cap { font-size: 1em; text-align: center; margin-top: .45em; }
+.pt-capl { font-weight: 400; }
 .pt-capt { outline: none; }
 .pt-tcap { margin: 0 0 .45em; }
 
 /* tables */
-.pt-tabw { margin: 1em 0; }
-.pt-table { border-collapse: collapse; margin: 0 auto; font-size: .93em; }
-.pt-table th, .pt-table td { padding: .22em .7em; vertical-align: top; }
+.pt-tabw { margin: 1em 0; position: relative; }
+/* A table wider than the column scrolls in its own box instead of running
+   off the sheet (or, in two columns, over the other column). Rows line up
+   on the baseline, as LaTeX's tabular does, whatever a cell holds. */
+.pt-table {
+  border-collapse: collapse; margin: 0 auto; font-size: 1em;   /* a tabular is set at text size in the PDF */
+  display: block; width: max-content; max-width: 100%; overflow-x: auto;
+  scrollbar-width: thin; scrollbar-color: #e2d5bf transparent;
+}
+.pt-table th, .pt-table td { padding: 0; vertical-align: baseline; }
 .pt-table.booktabs tr:first-child { border-top: 1.4px solid #14100c; }
 .pt-table.booktabs tr.hdr { border-bottom: .8px solid #14100c; }
 .pt-table.booktabs tr:last-child { border-bottom: 1.4px solid #14100c; }
+/* on a screen that snaps both to one pixel, the heavy rules get two so the
+   top/bottom rule still reads heavier than the midrule */
+@media (max-resolution: 1.49dppx) {
+  .pt-table.booktabs tr:first-child { border-top-width: 2px; }
+  .pt-table.booktabs tr:last-child { border-bottom-width: 2px; }
+}
 .pt-table.ruled th, .pt-table.ruled td { border: .7px solid #14100c; }
 .pt-table th { font-weight: 700; }
 .al-l { text-align: left; } .al-c { text-align: center; } .al-r { text-align: right; }
-.pt-cell { outline: none; min-width: 2.4em; min-height: 1.2em; }
+/* the padding is the editable's own, not the cell's: a click anywhere in
+   the cell lands in the text (on the cell's padding it used to go nowhere,
+   and only a double-click got in) */
+.pt-cell { outline: none; min-width: 2.4em; min-height: 1.2em; padding: .22em .7em; }
+/* (the table's controls stay in the flow: floated, they covered the next
+   paragraph; LaTeX leaves room after a table float anyway) */
 .pt-tabctl {
   display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; margin-top: .5em;
   opacity: 0; transition: opacity .15s;
 }
 .pt-tabw:hover .pt-tabctl { opacity: 1; }
+@media (hover: none) {
+  .pt-codebar, .pt-rawl { position: static; justify-content: flex-end; background: none; margin-bottom: 3px; }
+  .pt-figctl { position: static; transform: none; margin: .4em auto 0; box-shadow: none; }
+  .pt-codebar, .pt-rawl, .pt-figctl, .pt-tabctl, .pt-addauth, .pt-tailadd, .pt-bibadd, .pt-xauth, .pt-bibx, .pt-bibup, .pt-bibdn { opacity: .75; }
+}
 .pt-tabctl button, .pt-alg {
   font: 400 10.5px/1 ui-sans-serif, system-ui, sans-serif;
   border: 1px solid #e4d9c8; background: #fff; color: #7a6a55;
@@ -202,32 +344,100 @@ blockquote.pt-quote {
 .pt-bibh { font-weight: 700; font-size: 1.28em; margin-bottom: .5em; text-align: left; }
 .pt-bibi { display: flex; gap: .5em; margin: .3em 0; align-items: baseline; }
 .pt-bibn { flex: 0 0 auto; }
-.pt-bibb { flex: 1 1 auto; }
+.pt-bibb { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 .pt-bibf { outline: none; }
 .pt-bibf.f-title { font-style: italic; }
 .pt-bibkey {
   font: 400 10px/1.4 Consolas, monospace; color: #a2937f; background: #f7f2ea;
   border-radius: 3px; padding: 1px 4px; outline: none; flex: 0 0 auto;
+  max-width: 12em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .pt-bibx {
   border: 0; background: transparent; color: #b4290f; cursor: pointer;
   opacity: 0; font-size: 13px; padding: 0 3px;
 }
+.pt-bibup, .pt-bibdn {
+  border: 0; background: transparent; color: #8a7a68; cursor: pointer;
+  opacity: 0; font-size: 12px; line-height: 1; padding: 0 2px; border-radius: 3px;
+}
 .pt-bibi:hover .pt-bibx { opacity: .6; }
+.pt-bibi:hover .pt-bibup, .pt-bibi:hover .pt-bibdn, .pt-bibi:focus-within .pt-bibup, .pt-bibi:focus-within .pt-bibdn { opacity: .6; }
+.pt-bibup:hover, .pt-bibdn:hover { opacity: 1 !important; color: #8b5a00; background: rgba(236, 178, 72, .15); }
+.pt-bibup:disabled, .pt-bibdn:disabled { opacity: 0 !important; pointer-events: none; }
+/* an entry with nothing in it yet: "[ ]", and it is left out of the LaTeX */
+.pt-bibn.empty { color: #c3b6a6; }
+/* on a touch screen the entry buttons stay in sight (these rules come after the
+   hover:none block above, so they need saying again here) */
+@media (hover: none) { .pt-bibi .pt-bibx, .pt-bibi .pt-bibup, .pt-bibi .pt-bibdn { opacity: .75; } }
+@media print { .pt-bibup, .pt-bibdn { display: none; } .pt-bibi:has(> .pt-bibn.empty) { display: none; } }
 .pt-bibx:hover { opacity: 1 !important; }
 .pt-bibsep { color: #14100c; }
-
-/* equations */
-.pt-eqw { margin: .85em 0; }
-.pt-eqline { display: flex; align-items: center; gap: 1em; margin: .28em 0; }
-.pt-eqf {
-  flex: 1 1 auto; text-align: center; outline: none; border-radius: 4px;
-  padding: .2em .3em; min-height: 1.6em; transition: background .12s, box-shadow .12s;
+/* A reference entry is four fields (author, title, journal or publisher,
+   year), not one line of text. On screen each field always shows its
+   extent with a faint underline, and the one with the caret is tinted. Its
+   name stands in the margin beside the entry, like a form's label: never
+   over the text being typed, and nothing in the line moves when the entry
+   takes focus, so a click lands in the field it was aimed at. (In two
+   columns the margin of the right column is the gap, so no label there.) */
+.pt-bibi { position: relative; }
+.pt-bibf { border-radius: 2px; box-shadow: inset 0 -1px 0 #efe6d8; transition: box-shadow .12s, background-color .12s; }
+.pt-bibi:hover .pt-bibf, .pt-bibi:focus-within .pt-bibf { box-shadow: inset 0 -1px 0 #ddcfb8; }
+.pt-bibi .pt-bibf:focus { box-shadow: inset 0 -1.5px 0 #d9a441; background: rgba(236, 178, 72, .13); }
+.pt-body:not(.pt-two) .pt-bibi:has(.pt-bibf:focus)::before {
+  position: absolute; right: 100%; top: .3em; margin-right: 12px;
+  font: 600 8.5px/1.25 ui-sans-serif, system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase;
+  color: #a08a6c; text-align: right; white-space: pre; pointer-events: none;
 }
-.pt-eqf:hover { background: #fdfaf4; }
-.pt-eqf:focus { background: #fffaf0; box-shadow: inset 0 0 0 1px #f0dcb8; }
-.pt-eqnum { flex: 0 0 auto; cursor: pointer; user-select: none; }
+.pt-body:not(.pt-two) .pt-bibi:has(.f-author:focus)::before { content: 'Author(s)'; }
+.pt-body:not(.pt-two) .pt-bibi:has(.f-title:focus)::before { content: 'Title'; }
+.pt-body:not(.pt-two) .pt-bibi:has(.f-journal:focus)::before { content: 'Journal /\A publisher'; }
+.pt-body:not(.pt-two) .pt-bibi:has(.f-year:focus)::before { content: 'Year'; }
+/* a phone's page has no margin to speak of: the tint alone shows the field */
+@media (max-width: 760px) { .pt-bibi:has(.pt-bibf:focus)::before { content: none !important; } }
+@media print { .pt-bibf { box-shadow: none !important; background: none !important; } .pt-bibi::before { content: none !important; } }
+
+/* equations. In a numbered block every line keeps an empty column on the
+   left as wide as the number's on the right, so the formula is centred on
+   the text width, as LaTeX centres it; the number sits on the formula's
+   baseline. A formula wider than the line scrolls inside its own box rather
+   than pushing its number off the page or, in two columns, spilling into
+   the other column. */
+.pt-eqw { margin: .85em 0; }
+.pt-eqline { display: flex; align-items: baseline; margin: .28em 0; }
+.pt-eqw:has(.pt-eqnum) .pt-eqline::before,
+.pt-eqw:has(.pt-eqnum) .pt-eqline:not(:has(> .pt-eqnum))::after { content: ''; flex: 0 0 3.2em; }
+.pt-eqf {
+  flex: 1 1 auto; min-width: 0; text-align: center; outline: none; border-radius: 4px;
+  padding: .2em .3em; min-height: 1.6em; transition: background .12s, box-shadow .12s;
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; scrollbar-color: #e2d5bf transparent;
+}
+.pt-eqf:hover { background: #faf5ea; box-shadow: inset 0 0 0 1px #f2e6d0; }
+.pt-eqf:focus, .pt-eqf.mf-on { background: #fffaf0; box-shadow: inset 0 0 0 1px #f0dcb8; }
+.pt-eqnum { flex: 0 0 3.2em; text-align: right; cursor: pointer; user-select: none; -webkit-user-select: none; }
 .pt-eqnum:hover { color: #b8860b; }
+/* an empty equation shows where to write, also when not focused */
+.pt-eqf > .mroot > .mph:only-child { border-color: #e6dccb; }
+/* An equation with nothing in it (.pt-eqempty, doc.js) writes nothing to
+   the LaTeX, but stays in sight on the page, numbered or not, so it can be
+   found and filled in or deleted: a dashed box the height of a line, with
+   its empty slot and a word saying what it is. */
+.pt-eqw.pt-eqempty .pt-eqf { outline: 1px dashed #d8c9b0; outline-offset: -1px; }
+.pt-eqw.pt-eqempty .pt-eqf.mf-on, .pt-eqw.pt-eqempty .pt-eqf:focus { outline-color: #e2c690; }
+.pt-eqw.pt-eqempty .pt-eqf > .mroot > .mph:only-child { border-color: #cdbfa8; }
+.pt-eqw.pt-eqempty .pt-eqf:not(.mf-on):not(:focus)::after {
+  content: 'empty equation'; margin-left: .7em; vertical-align: .1em;
+  font: 400 11px/1 ui-sans-serif, system-ui, sans-serif; color: #b3a389; pointer-events: none;
+}
+@media print { .pt-eqw.pt-eqempty { display: none; } }
+/* in a matrix or cases display (.mf-inmat, math.js): how to get another row */
+.pt-eqw:has(.pt-eqf.mf-inmat) { position: relative; }
+.pt-eqw:has(.pt-eqf.mf-inmat)::after {
+  content: 'Enter in the last row adds a row \00B7  \22EE  for columns';
+  position: absolute; right: 0; top: 100%; margin-top: 1px;
+  font: 400 10.5px/1.3 ui-sans-serif, system-ui, sans-serif; color: #a08a6c; font-style: normal;
+  white-space: nowrap; pointer-events: none;
+}
+@media print { .pt-eqw::after { content: none !important; } }
 
 /* placeholders */
 [data-ph]:empty::before,
@@ -235,24 +445,77 @@ blockquote.pt-quote {
   content: attr(data-ph); color: #c9bcab; pointer-events: none;
 }
 .pt-para:empty::before { text-indent: 0; }
+/* The caret shows where you are writing; a ring around the whole paragraph
+   (the page's general focus ring) only gets in the way of reading it. */
+.paper [contenteditable]:focus-visible { outline: none; }
 
 /* inline math + cross references */
-/* the padding is only room for the hover highlight; the negative margin
-   takes it back so the formula sits exactly where TeX would set it */
+/* The padding is room for the highlight and makes a one-letter formula easy
+   to click; the negative margin takes it back so the formula sits exactly
+   where TeX would set it. A formula sets its own lines: the paragraph's
+   first-line indent, justification and hyphenation are not passed into it
+   (the indent used to push the formula and its superscripts to the right). */
 .imath {
-  display: inline-block; padding: 0 .08em; margin: 0 -.08em; border-radius: 3px; cursor: pointer;
-  transition: background .12s;
+  display: inline-block; padding: 0 .16em; margin: 0 -.16em; border-radius: 3px; cursor: pointer;
+  transition: background .12s, box-shadow .12s;
+  text-indent: 0; text-align: left; white-space: nowrap; hyphens: none;
 }
-.imath:hover { background: #fdf3dd; box-shadow: 0 0 0 1px #f0dcb8; }
-.imath:empty::before { content: "□"; color: #c9bcab; }
+/* the formula's own glyphs (the maths font stands taller than the text's)
+   do not open up the line: the line keeps the paragraph's spacing */
+.imath .mroot { line-height: 0; }
+/* see-through, so the end of a slanted letter just before stays visible */
+.imath:hover { background: rgba(236, 178, 72, .13); box-shadow: 0 0 0 1px rgba(214, 160, 70, .38); }
+/* being written, right there in the line */
+.imath.editing, .imath.editing:hover { background: rgba(240, 186, 80, .15); box-shadow: 0 0 0 1px rgba(201, 146, 54, .62); cursor: text; }
+.imath-f { outline: none; }
+/* a formula that may wrap where TeX would break it (math.js renderInline):
+   its pieces are the boxes, and the formula flows with the text between them */
+.imath.mbreak { display: inline; white-space: normal; }
+/* a selection inside a formula: one band over the run (math.js drawSel) */
+.mfield .msel { background: none; }
+.mselbox { position: absolute; pointer-events: none; background: rgba(240, 186, 80, .32); border-radius: 2px; }
+/* in the contents and the outline a formula is part of the title, not
+   something to open */
+.pt-toc .imath, .ol-item .imath { cursor: inherit; }
+.pt-toc .imath:hover, .ol-item .imath:hover { background: none; box-shadow: none; }
+/* a finger needs more to land on than a pointer; the margin takes the
+   room back, so the line is not opened up */
+@media (pointer: coarse) { .imath { padding: 8px .16em; margin: -8px -.16em; } }
+.mroot, .mfield { text-indent: 0; }
 .xref {
-  color: #9a5b06; cursor: default; border-bottom: 1px dotted #d9b877;
+  color: #9a5b06; cursor: default;
+  text-decoration: underline dotted #d9b877; text-decoration-thickness: 1px; text-underline-offset: .14em;
 }
-.xref.bad { color: #b4290f; border-bottom-color: #e8a99b; }
+.xref.bad { color: #b4290f; text-decoration-color: #e8a99b; }
+/* \underline over words and a formula: one line, under the formula too (a
+   text decoration does not reach into the formula's box) */
+.paper u { text-decoration-thickness: 1px; text-underline-offset: .14em; }
+.paper u .imath { position: relative; }
+.paper u .imath::after {
+  content: ''; position: absolute; left: .16em; right: .16em; bottom: .23em;
+  border-bottom: 1px solid currentColor; pointer-events: none;
+}
+@media (pointer: coarse) { .paper u .imath::after { bottom: calc(.23em + 8px); } }
+/* Selected text on the sheet is amber, like a selection inside a formula
+   (.mselbox); a formula wholly inside the selection (.sel, set by app.js) is
+   one band of the same colour instead of a patch per glyph. */
+.paper ::selection { background: #f8e0ad; }
+.imath.sel, .imath.sel:hover { background: #f8e0ad; box-shadow: none; border-radius: 0; }
+.imath.sel ::selection { background: transparent; }
+/* editing aids added with the rules above stay off paper */
+@media print {
+  .xref { text-decoration: none; }
+  .pt-eqf > .mroot > .mph:only-child { border-color: transparent; }
+}
 
 /* =============================================================== MATH LAYOUT */
 .mfield { outline: none; display: inline-block; }
-.mroot { display: inline-block; }
+/* A formula never breaks inside itself (TeX does not break display maths,
+   and a part that wrapped while being measured came out a line too tall —
+   y = 1/x² threw the x² up through the bar). It is never bold either: a
+   heading or table header around it does not embolden maths in LaTeX, and
+   the maths fonts have no bold face to draw it with; \mathbf has .mbold. */
+.mroot { display: inline-block; white-space: nowrap; font-weight: 400; }
 .mrow { display: inline; }
 
 .mi { font-style: normal; }
@@ -271,10 +534,32 @@ blockquote.pt-quote {
    itself while you are working in that formula. */
 .mph {
   display: inline-block; width: .62em; height: .95em; vertical-align: -.14em;
+  min-width: 5px; min-height: 8px; box-sizing: border-box;
   border: 1px dashed transparent; border-radius: 2px; background: transparent;
 }
+/* in a formula written in the line, the slots of a text-style fraction or
+   script are small: a little more box to see and aim at */
+.imath .mph { min-width: 6px; min-height: 9px; }
+/* the caret in an empty slot stands inside its box, not on its edge */
+.mph + .mcaret { transform: translateX(-.31em); }
 .mfield:hover .mph, .imath:hover .mph { border-color: #cdbfa8; background: #fdfaf3; }
-.mfield:focus .mph { border-color: #d9a441; background: #fff8e6; }
+.mfield:focus .mph, .mfield.mf-on .mph { border-color: #d9a441; background: #fff8e6; }
+/* The part the caret is in — a sub- or superscript, a numerator, a root, a
+   cell (.mslot-on, set by math.js while the formula has focus): tinted and
+   ringed, so it is plain where the next key lands. Paint only — no padding
+   or border, which would move what the layout pass measured. */
+.mfield:focus .mslot-on, .mfield.mf-on .mslot-on, .imath.editing .mslot-on {
+  background: rgba(236, 178, 72, .26); box-shadow: 0 0 0 1px rgba(201, 146, 54, .7); border-radius: 2px;
+}
+/* the slots around it — the denominator a subscript sits in — keep a
+   fainter ring, so Right arrow leaving only the inner one is visible */
+.mfield.mf-on .mrow:not(.mroot):has(.mslot-on), .imath.editing .mrow:not(.mroot):has(.mslot-on) {
+  box-shadow: 0 0 0 1px rgba(201, 146, 54, .3); border-radius: 2px;
+}
+.mfield:focus .mslot-on > .mph, .mfield.mf-on .mslot-on > .mph, .imath.editing .mslot-on > .mph {
+  border-style: solid; border-color: #b8860b; background: #ffefc7;
+}
+@media print { .mslot-on, .mslot-on > .mph { background: none !important; box-shadow: none !important; } }
 
 .mcaret {
   display: inline-block; width: 0; height: 1.05em; vertical-align: -.18em;
@@ -297,7 +582,10 @@ blockquote.pt-quote {
 /* fractions */
 .mfrac { display: inline-block; text-align: center; vertical-align: -.5em; padding: 0 .12em; }
 .mnum, .mden { display: block; }
-.mbar { display: block; height: max(.04em, 1px); background: currentColor; }
+/* Rules (fraction bars, the root's vinculum, overlines) are drawn as a border,
+   not a filled box: a border keeps one whole device pixel at 125% and 150%,
+   where a 1px box at a fractional position came out 1 or 2 pixels thick. */
+.mbar { display: block; height: 0; border-top: max(.04em, 1px) solid currentColor; }
 
 /* scripts */
 .mscr { display: inline-block; text-align: left; }
@@ -311,7 +599,7 @@ blockquote.pt-quote {
 .mrad { display: inline-block; position: relative; }
 .mvinc {
   position: absolute; left: 0; right: 0; top: -.1em; pointer-events: none;
-  height: max(.04em, 1px); background: currentColor;
+  height: 0; border-top: max(.04em, 1px) solid currentColor;
 }
 .mrootidx { display: inline-block; margin-right: -.42em; position: relative; top: -.5em; }
 
@@ -350,16 +638,23 @@ blockquote.pt-quote {
 .macc-vec .maccm { font-size: .55em; }
 .maccr {
   position: absolute; left: 0; right: 0; top: -.1em; pointer-events: none;
-  height: max(.04em, 1px); background: currentColor;
+  height: 0; border-top: max(.04em, 1px) solid currentColor;
 }
 .maccr.maccu { top: auto; bottom: 0; }
 .mbold { font-weight: 700; }
+/* \mathbf: bold and upright — letters in the text face's bold, since the
+   maths italic has no bold to draw them with (\boldsymbol keeps them slanted) */
+.mbf .m-var { font-style: normal; font-family: "PaperTeX", serif; }
 
 /* matrices */
 .mmat { display: inline-block; }
 /* columns 2\arraycolsep apart, rows at the 12pt array baselineskip */
 .mgrid { display: inline-grid; gap: 0 1em; line-height: 1.2; align-items: baseline; justify-items: center; }
 .mcell { display: inline-block; }
+/* an empty cell's slot is big enough to aim at (a bare slot was 3-4 px wide
+   in a cases display, and a click beside it went to the formula's start) */
+.mmat .mph { min-width: .8em; min-height: 1em; }
+.mmat .mph + .mcaret { transform: translateX(-.4em); }
 /* cases: entries flush left, a quad between value and condition, rows
    opened up by amsmath's \arraystretch 1.2, and the null delimiter that
    \right. leaves on the right */
@@ -419,8 +714,10 @@ blockquote.pt-quote {
 .pt-table.zebra:not(.hashead) tr:nth-child(2n) > * { background: #ededed; }
 .pt-table.boldfirst td:first-child { font-weight: 700; }
 .pt-table.plainhead th { font-weight: 400; }
-.pt-table.sz-small { font-size: .84em; }
-.pt-table.sz-footnotesize { font-size: .76em; }
+/* \small, \footnotesize, \large relative to the 11pt body, as in the PDF */
+.pt-table.sz-small { font-size: .91em; }
+.pt-table.sz-footnotesize { font-size: .82em; }
+.pt-table.sz-large { font-size: 1.1em; }
 .pt-tabctl button.big { font-weight: 600; color: #7a4f10; border-color: #e8d4a8; background: #fffaf0; }
 @media print { .pt-chedit { display: none !important; } .pt-chart:hover .pt-chsvg { outline: none; } }
 

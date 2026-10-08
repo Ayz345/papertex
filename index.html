@@ -16,6 +16,7 @@
 <meta name="theme-color" content="#e4e2de">
 <link rel="icon" href="desktop/papertex.png">
 <link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/paper.css">
 <link rel="stylesheet" href="css/landing.css">
 <script src="js/landing-boot.js"></script>
 </head>
@@ -87,11 +88,11 @@
                 <span class="eq__sign">∫</span>
                 <span class="eq__lim"><span class="slot" id="slotLo"></span><span class="lim" id="limLo">−∞</span></span>
               </span>
-              <span class="eq__body" id="eqBody"><i class="mi">e</i><span class="eq__sup"><span>−</span><i class="mi">x</i><span class="eq__sup2">2</span></span></span>
+              <span class="eq__body" id="eqBody"><i class="hmi">e</i><span class="eq__sup"><span>−</span><i class="hmi">x</i><span class="eq__sup2">2</span></span></span>
               <span class="eq__rest" id="eqRest">
-                <span class="eq__dx"><i class="mi">dx</i></span>
+                <span class="eq__dx"><i class="hmi">dx</i></span>
                 <span class="eq__rel">=</span>
-                <span class="eq__sqrt"><span>√</span><span class="eq__rad" id="eqRad"><i class="mi">π</i></span></span>
+                <span class="eq__sqrt"><span>√</span><span class="eq__rad" id="eqRad"><i class="hmi">π</i></span></span>
               </span>
               <span class="caret" id="eqCaret"></span>
               <span class="eq__num">(1)</span>
@@ -139,33 +140,60 @@ in equation~<span class="k">\eqref</span>{eq:gauss} and prove in ...
     <div class="try__copy">
       <p class="eyebrow" data-reveal>Try it here</p>
       <h2 class="h2" data-split>Type the name of what you want.</h2>
-      <p class="lead" data-reveal>No backslashes, no braces. <code>alpha</code> becomes α, <code>x1</code> becomes x₁, <code>-&gt;</code> becomes →, and <code>int_0^1</code> puts bounds on an integral. The LaTeX writes itself underneath.</p>
-      <p class="small" data-reveal>This box is a small sample. In the editor, <code>int</code>, <code>frac</code> and <code>matrix</code> build real structures you fill in with ↵ and Tab.</p>
+      <p class="lead" data-reveal>This is the editor’s own equation box. Type <code>int</code> and an integral appears with empty bounds — fill them in, <kbd>Tab</kbd> moves on. <code>/</code> makes a fraction, <code>^</code> a power, <code>alpha</code> becomes α. The LaTeX writes itself underneath.</p>
+      <ul class="try__keys-help" data-reveal>
+        <li><kbd>Tab</kbd> next box</li>
+        <li><kbd>Space</kbd> done with this part</li>
+        <li><kbd>←</kbd><kbd>→</kbd> move</li>
+        <li><kbd>Backspace</kbd> undo a conversion</li>
+      </ul>
     </div>
 
     <div class="try__box" data-reveal>
-      <label class="try__label" for="tryInput">Your formula</label>
-      <div class="try__field">
-        <input id="tryInput" type="text" value="alpha^2 + x1 -> inf" maxlength="80" spellcheck="false" autocomplete="off" autocapitalize="off">
-        <button class="iconbtn" type="button" id="tryClear" aria-label="Clear the formula">
+      <div class="try__bar" role="toolbar" aria-label="Insert into the formula" id="tryBar">
+        <button type="button" data-build="frac" title="Fraction (or type /)" aria-label="Fraction"><span class="tb-frac"><i>a</i><i>b</i></span></button>
+        <button type="button" data-build="sup" title="Power (or type ^)" aria-label="Power"><span class="tb-m">x<sup>2</sup></span></button>
+        <button type="button" data-build="sub" title="Index (or type _)" aria-label="Index"><span class="tb-m">x<sub>i</sub></span></button>
+        <button type="button" data-build="sqrt" title="Square root (or type sqrt)" aria-label="Square root"><span class="tb-m">√<span class="tb-ovl">x</span></span></button>
+        <button type="button" data-build="int" title="Integral with bounds (or type int)" aria-label="Integral with bounds"><span class="tb-big">∫</span></button>
+        <button type="button" data-build="sum" title="Sum with limits (or type sum)" aria-label="Sum"><span class="tb-big">∑</span></button>
+        <button type="button" data-build="lim" title="Limit (or type lim)" aria-label="Limit"><span class="tb-t">lim</span></button>
+        <button type="button" data-build="paren" title="Brackets that grow (or type a bracket)" aria-label="Brackets"><span class="tb-t">( )</span></button>
+        <button type="button" data-build="matrix2" title="2 × 2 matrix (or type matrix)" aria-label="Matrix"><span class="tb-mat"><i></i><i></i><i></i><i></i></span></button>
+        <span class="try__sep" aria-hidden="true"></span>
+        <button type="button" data-sym="alpha" title="alpha" aria-label="alpha"><span class="tb-m tb-i">α</span></button>
+        <button type="button" data-sym="pi" title="pi" aria-label="pi"><span class="tb-m tb-i">π</span></button>
+        <button type="button" data-sym="infty" title="inf" aria-label="infinity"><span class="tb-m">∞</span></button>
+        <button type="button" data-sym="to" title="-&gt;" aria-label="arrow"><span class="tb-m">→</span></button>
+        <button type="button" data-sym="leq" title="&lt;=" aria-label="less or equal"><span class="tb-m">≤</span></button>
+        <button type="button" data-sym="pm" title="+-" aria-label="plus or minus"><span class="tb-m">±</span></button>
+      </div>
+
+      <div class="try__sheet" id="trySheet">
+        <button class="try__clear" type="button" id="tryClear" title="Clear" aria-label="Clear the formula">
           <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>
         </button>
+        <div class="try__eq">
+          <div class="try__mf" id="tryField" role="textbox" aria-multiline="false" aria-label="Formula. Type int for an integral, / for a fraction, Tab to move to the next box." aria-describedby="tryTex"></div>
+          <span class="try__num" aria-hidden="true">(1)</span>
+        </div>
+        <p class="try__typed" id="tryTyped" aria-hidden="true"><span class="try__typed-l">Click the formula and type</span></p>
       </div>
-      <div class="try__out" id="tryOut" aria-hidden="true"></div>
+
       <div class="try__tex">
         <span class="try__texlabel">LaTeX</span>
         <code id="tryTex"></code>
         <button class="btn btn--tiny" type="button" id="tryCopy"><span>Copy</span></button>
         <span class="sr-only" role="status" id="tryStatus"></span>
       </div>
-      <div class="chips">
-        <span class="chips__label">Examples</span>
-        <button class="chip" type="button" data-ex="alpha^2 + beta^2 = 1">alpha^2 + beta^2 = 1</button>
-        <button class="chip" type="button" data-ex="int_0^1 x^2 dx">int_0^1 x^2 dx</button>
-        <button class="chip" type="button" data-ex="sum_(i=1)^n a_i^2">sum_(i=1)^n a_i^2</button>
-        <button class="chip" type="button" data-ex="e^(-x^2/2)">e^(-x^2/2)</button>
-        <button class="chip" type="button" data-ex="lim_(n->inf) 1/n = 0">lim_(n-&gt;inf) 1/n = 0</button>
-        <button class="chip" type="button" data-ex="sqrt(2) +- 0.1">sqrt(2) +- 0.1</button>
+      <div class="chips" id="tryChips">
+        <span class="chips__label">Watch it typed</span>
+        <button class="chip chip--math" type="button" data-ex="int01">∫<sub>0</sub><sup>1</sup> x<sup>2</sup> dx</button>
+        <button class="chip chip--math" type="button" data-ex="gauss">∫ e<sup>−x²</sup> = √π</button>
+        <button class="chip chip--math" type="button" data-ex="basel">∑ 1/k<sup>2</sup></button>
+        <button class="chip chip--math" type="button" data-ex="lim">lim (1 + 1/n)<sup>n</sup></button>
+        <button class="chip chip--math" type="button" data-ex="matrix">matrix</button>
+        <button class="chip chip--math" type="button" data-ex="pyth">√(a<sup>2</sup> + b<sup>2</sup>)</button>
       </div>
     </div>
   </div>
@@ -221,7 +249,7 @@ in equation~<span class="k">\eqref</span>{eq:gauss} and prove in ...
           </g>
           <circle class="plot__pen" id="fpPen" r="5" cx="50" cy="160"/>
         </svg>
-        <figcaption id="plotCap">Figure 2: <span id="plotCapText">A damped wave, y = sin 2x · e^(−x/4), inside its envelope.</span></figcaption>
+        <figcaption id="plotCap">Figure 2: <span id="plotCapText">A damped wave, <i>y</i> = sin 2<i>x</i> · <i>e</i><sup>−<i>x</i>/4</sup>, inside its envelope.</span></figcaption>
       </figure>
     </div>
   </div>
@@ -412,7 +440,7 @@ in equation~<span class="k">\eqref</span>{eq:gauss} and prove in ...
             <g id="dataPts"></g>
             <g class="data__legend" id="dataLegend">
               <circle cx="232" cy="38" r="3"/><text x="242" y="42">measured</text>
-              <path d="M224 58h16"/><text x="246" y="62" class="it">20 + 60e<tspan dy="-5" font-size="8.5" id="legendK">−t/11</tspan></text>
+              <path d="M224 58h16"/><text x="246" y="62">20 + 60<tspan class="it">e</tspan><tspan dy="-5" font-size="8.5">−<tspan class="it">t</tspan>/<tspan id="legendK">11</tspan></tspan></text>
             </g>
           </svg>
           <figcaption id="dataCap">Figure 1: <span id="dataCapText">Measured temperature and the fitted model.</span></figcaption>
@@ -561,6 +589,8 @@ in equation~<span class="k">\eqref</span>{eq:gauss} and prove in ...
 <script src="js/store.js"></script>
 <script src="js/templates.js"></script>
 <script src="js/home.js"></script>
+<script src="js/symbols.js"></script>
+<script src="js/math.js"></script>
 <script src="js/landing.js"></script>
 </body>
 </html>

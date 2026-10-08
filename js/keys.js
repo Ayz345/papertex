@@ -179,7 +179,9 @@
 
   /* -------------------------------------------------------------- dispatch */
   function inFormField(t) {
-    return t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName);
+    /* not the text box a formula keeps the focus in: undo there is the
+       document's */
+    return t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) && !(t.classList && t.classList.contains('mf-proxy'));
   }
   function onKeyDown(e) {
     if (recording || editor) return;                /* the shortcuts dialog has the keyboard */
@@ -279,7 +281,7 @@
         seen[a.group].push(a);
       });
       if (groups.indexOf('My snippets') < 0) { groups.push('My snippets'); seen['My snippets'] = []; }
-      var shown = 0;
+      var shown = 0, formShown = false;
       groups.forEach(function (g) {
         var list = seen[g].filter(function (a) { return matches(a, q); });
         var isSnip = g === 'My snippets';
@@ -289,10 +291,10 @@
         var sec = h('div', 'kb-sec');
         sec.appendChild(h('div', 'kb-h', g));
         list.forEach(function (a) { sec.appendChild(row(a)); shown++; });
-        if (snipForm) sec.appendChild(snippetForm());
+        if (snipForm) { sec.appendChild(snippetForm()); formShown = true; }
         body.appendChild(sec);
       });
-      if (!shown && q) body.appendChild(h('div', 'kb-empty', 'Nothing matches “' + q + '”.'));
+      if (!shown && !formShown && q) body.appendChild(h('div', 'kb-empty', 'Nothing matches “' + q + '”.'));
       var n = Object.keys(user.bind).length;
       count.textContent = n ? n + ' changed from the defaults' : 'All defaults';
       body.scrollTop = keepScroll;

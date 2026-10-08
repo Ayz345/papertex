@@ -50,7 +50,34 @@
   function normalizeDoc(d) {
     if (!d || typeof d !== 'object' || !Array.isArray(d.blocks)) throw new Error('not a document');
     var base = D.newDoc();
-    d.meta = Object.assign({}, base.meta, d.meta && typeof d.meta === 'object' ? d.meta : {});
+    var meta = d.meta && typeof d.meta === 'object' ? d.meta : {};
+    var plainHead = !meta.headHtml, plainBib = !meta.bibHtml;
+    d.meta = Object.assign({}, base.meta, meta);
+    if (plainBib && Array.isArray(d.bib)) {
+      /* Written before reference entries took italics and formulas: their
+         plain text becomes the same text as rich text. */
+      var esc1 = function (s) { return String(s == null ? '' : s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); };
+      d.bib.forEach(function (e) {
+        if (!e || typeof e !== 'object') return;
+        ['author', 'title', 'journal', 'year', 'note'].forEach(function (k) { if (e[k]) e[k] = esc1(e[k]); });
+      });
+    }
+    d.meta.bibHtml = true;
+    if (plainHead) {
+      /* Written before titles, names, dates and theorem titles could hold
+         formulas: their plain text becomes the same text as rich text. */
+      var asHTML = function (s) { return String(s == null ? '' : s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); };
+      d.meta.title = asHTML(d.meta.title);
+      if (d.meta.date !== '\\today') d.meta.date = asHTML(d.meta.date);
+      d.meta.authors = (Array.isArray(d.meta.authors) ? d.meta.authors : []).map(function (a) {
+        a = a && typeof a === 'object' ? a : {};
+        return Object.assign({}, a, { name: asHTML(a.name), affil: asHTML(a.affil) });
+      });
+      (Array.isArray(d.blocks) ? d.blocks : []).forEach(function (b) {
+        if (b && b.t === 'theorem' && b.title) b.title = asHTML(b.title);
+      });
+      d.meta.headHtml = true;
+    }
     d.settings = Object.assign({}, base.settings, d.settings && typeof d.settings === 'object' ? d.settings : {});
     d.bib = Array.isArray(d.bib) ? d.bib.filter(function (e) { return e && typeof e === 'object'; }) : [];
     d.blocks = d.blocks.filter(function (b) { return b && typeof b === 'object' && typeof b.t === 'string'; });
@@ -178,10 +205,14 @@
     updateUndoBtns();
   }
   function restore(json) {
+    /* the block the caret was in keeps it, through undo and redo */
+    var ae = document.activeElement, blk = ae && ae.closest ? ae.closest('[data-bid]') : null;
+    var part = ae && ae.closest ? ae.closest('[data-part]') : null;
     state.doc = JSON.parse(json);
     state.lastSnap = json;
     state.editor.doc = state.doc;
     applyPaperVars();
+    if (blk) state.editor.focusBlock(blk.dataset.bid, part ? part.dataset.part : 'main');
     state.editor.render();
     buildSettings();
     refresh();
@@ -237,9 +268,16 @@
     box.textContent = '';
     D.numbering(state.doc);
     state.doc.blocks.forEach(function (b) {
-      if (b.t !== 'section') return;
-      var e = h('button', 'ol-item lvl' + b.level);
-      e.textContent = (b.__num ? b.__num + '  ' : '') + (D.stripTags(b.html) || '(untitled)');
+      /* the headings, and the list of references and the contents, which
+         have headings of their own on the page */
+      if (b.t !== 'section' && !(b.t === 'bib' && state.doc.bib.length) && b.t !== 'toc') return;
+      var e = h('button', 'ol-item lvl' + (b.level || 1));
+      if (b.t === 'bib') e.appendChild(document.createTextNode('References'));
+      else if (b.t === 'toc') e.appendChild(document.createTextNode('Contents'));
+      else if (b.__num) e.appendChild(document.createTextNode(b.__num + '  '));
+      if (b.t !== 'section') { /* named above */ }
+      else if (D.isBlank(b.html)) e.appendChild(document.createTextNode('(untitled)'));
+      else e.appendChild(D.headingInto(h('span'), b.html));
       e.onclick = function () {
         var el = $('[data-bid="' + b.id + '"]');
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -247,6 +285,7 @@
       box.appendChild(e);
     });
     if (!box.children.length) box.appendChild(h('div', 'ol-empty', 'No sections yet.'));
+    M.layout(box);   /* formulas in headings (again when the tab is shown) */
   }
 
   /* -------------------------------------------------------------- page guides */
@@ -261,28 +300,86 @@
     if (!pageH) return;
     var usable = pageH - padT - padB;
     if (usable < 100) return;
+    /* A page break ends its page: it takes up the rest of that page, so what
+       follows starts at the top of the next one, as in the PDF; the pages
+       after it are counted from there. Worked out top to bottom: a break's
+       place depends only on the breaks above it, which are already fitted.
+       Positions are taken against the sheet as it is at that moment — the
+       view may scroll while the breaks change height. */
+    var y = function (e) { return e.getBoundingClientRect().top - paper.getBoundingClientRect().top; };
+    var page = 1, pageTop = padT, marks = [];
+    function guide(at, forced) { marks.push([at, forced, ++page]); }
+    /* drawn as two sheets: the rest of this page, its bottom margin, a
+       strip of desk, and the next page's top margin */
+    var GAP = 26;
+    [].forEach.call(paper.querySelectorAll('.pt-pagebreak'), function (b) {
+      var at = y(b);
+      while (pageTop + usable <= at && page < 400) { guide(pageTop + usable); pageTop += usable; }
+      var end = pageTop + usable, start = end + padB + GAP + padT, fill = start - at;
+      b.style.setProperty('--pb-rest', Math.max(0, end - at) + 'px');
+      b.style.setProperty('--pb-gap-at', Math.max(0, end - at + padB) + 'px');
+      b.style.setProperty('--pb-gap', GAP + 'px');
+      /* whatever spacing sits between the break and the next block is
+         taken out, so the next block starts at the top of the new page */
+      var blk = b.closest('.blk'), after = blk && blk.nextElementSibling;
+      if (after) {
+        b.style.height = Math.max(0, fill) + 'px';
+        fill -= y(after) - start;
+      }
+      b.style.height = Math.max(0, fill) + 'px';
+      guide(end + padB + GAP / 2, true);
+      pageTop = start;
+    });
+    /* the pages the writing runs on to, and the sheet as long as all of
+       them, so the last page is a whole page too */
+    var end = 0;
+    [].forEach.call(paper.children, function (c) {
+      var r = c.getBoundingClientRect();
+      if (r.height) end = Math.max(end, r.bottom - paper.getBoundingClientRect().top);
+    });
+    while (pageTop + usable < end - 2 && page < 400) { guide(pageTop + usable); pageTop += usable; }
+    paper.style.minHeight = page > 1 ? (pageTop + usable + padB) + 'px' : '';
+
     /* the layer is a sibling of the sheet, so park it exactly over it */
     layer.style.left = paper.offsetLeft + 'px';
     layer.style.top = paper.offsetTop + 'px';
     layer.style.width = paper.offsetWidth + 'px';
     layer.style.height = paper.offsetHeight + 'px';
-    var total = paper.scrollHeight;
-    for (var n = 1; padT + usable * n < total - 24 && n < 80; n++) {
-      var g = h('div', 'guide');
-      g.style.top = (padT + usable * n) + 'px';
-      g.appendChild(h('span', '', 'page ' + (n + 1)));
+    marks.forEach(function (mk) {
+      var g = h('div', 'guide' + (mk[1] ? ' forced' : ''));
+      g.style.top = mk[0] + 'px';
+      g.appendChild(h('span', '', 'page ' + mk[2]));
       layer.appendChild(g);
-    }
+    });
+  }
+  /* the sheet's height changes without an edit too: a chart is drawn, an
+     image or a font loads. The breaks are fitted again when it does. */
+  var guideTimer = 0;
+  function watchGuides() {
+    var paper = $('#paper');
+    if (!paper || !window.ResizeObserver) return;
+    var last = 0;
+    new ResizeObserver(function () {
+      var hgt = paper.offsetHeight;
+      if (Math.abs(hgt - last) < 1) return;
+      last = hgt;
+      clearTimeout(guideTimer);
+      guideTimer = setTimeout(pageGuides, 60);
+    }).observe(paper);
   }
 
   /* ------------------------------------------------------------- symbol panel */
   function buildPalette() {
     var tabs = $('#ptabs'), body = $('#pbody');
     tabs.textContent = ''; body.textContent = '';
-    var groups = [{ name: 'Blocks', blocks: true }].concat(PT.symbols.groups);
+    var groups = [{ name: 'Insert', blocks: true }].concat(PT.symbols.groups);
 
     groups.forEach(function (g, gi) {
       var t = h('button', 'ptab', g.name);
+      /* what is in it, for a name that says little ("Sets & logic") */
+      if (!g.blocks) t.title = g.items.filter(function (it) { return !it.build && it.d && it.d.length < 3; }).slice(0, 10).map(function (it) { return it.d; }).join(' ');
+      /* switching tabs leaves the caret in the formula or text it was in */
+      t.onmousedown = function (e) { e.preventDefault(); };
       t.onclick = function () {
         $$('.ptab').forEach(function (x) { x.classList.remove('on'); });
         $$('.pgrid').forEach(function (x) { x.classList.remove('on'); });
@@ -327,9 +424,9 @@
 
   function activeMathField() {
     var ae = document.activeElement;
-    if (ae && ae.classList && ae.classList.contains('mfield') && ae.__mf) return ae.__mf;
+    if (ae && ae.classList && (ae.classList.contains('mfield') || ae.classList.contains('mf-proxy')) && ae.__mf) return ae.__mf;
     var f = state.editor.activeField;
-    if (f && document.body.contains(f.host) && $('.mathpop')) return f;
+    if (f && document.body.contains(f.host) && f.host.closest('.imath.editing')) return f;
     return null;
   }
 
@@ -353,11 +450,41 @@
     var el = document.activeElement;
     var host = el && el.closest ? el.closest('[data-bid]') : null;
     if (!host) host = state.lastRich && state.lastRich.closest ? state.lastRich.closest('[data-bid]') : null;
-    var at = state.doc.blocks.length;
-    if (host) state.doc.blocks.forEach(function (b, i) { if (b.id === host.dataset.bid) at = i + 1; });
+    /* with no caret anywhere: at the end of the writing, above References */
+    var at = state.editor.endOfText();
+    /* below the block the caret is in — but above the reference list when
+       the caret is in it, so it stays last */
+    if (host) state.doc.blocks.forEach(function (b, i) { if (b.id === host.dataset.bid) at = b.t === 'bib' ? i : i + 1; });
     return at;
   }
-  function insertBlockHere(kind) { state.editor.insertBlock(kind, currentBlockIndex()); }
+  function insertBlockHere(kind) {
+    /* a footnote goes into the text, at the caret */
+    if (kind === 'footnote') { state.editor.footnoteInto(richHost() || state.lastRich); return; }
+    if (kind === 'abstract') { state.editor.openAbstract(); return; }
+    var blocks = state.doc.blocks;
+    /* the reference list goes at the end, where it is printed — and there
+       is only one */
+    if (kind === 'bib') {
+      var have = blocks.filter(function (b) { return b.t === 'bib'; })[0];
+      if (have) {
+        var el = $('[data-bid="' + have.id + '"]');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      state.editor.insertBlock('bib', blocks.length);
+      return;
+    }
+    var at = currentBlockIndex(), here = blocks[at - 1];
+    /* an equation or list made from inside a theorem or proof is a part of it */
+    var inEnv = !!here && (here.t === 'theorem' || !!here.inEnv) && /^(eq|itemize|enumerate)$/.test(kind);
+    /* made from an empty line: it takes that line's place */
+    if (here && here.t === 'para' && D.isBlank(here.html) && kind !== 'para' && richHost()) {
+      inEnv = inEnv || !!here.inEnv;
+      blocks.splice(at - 1, 1);
+      at -= 1;
+    }
+    state.editor.insertBlock(kind, at, inEnv);
+  }
 
   /* --------------------------------------------------------- format toolbar */
   function buildSelTools() {
@@ -396,7 +523,7 @@
           exec('createLink', u);
         });
     });
-    mk('↪', 'Cross-reference or citation', function (e) { refMenu(e.currentTarget); });
+    mk('↪', 'Cross-reference or citation', function (e) { refPicker('ref', e.currentTarget); });
   }
   function exec(cmd, val) {
     document.execCommand(cmd, false, val || null);
@@ -437,56 +564,233 @@
     state.editor.editInlineMath(span, host, function () { fireInput(span); });
   }
 
-  function refMenu(anchor) {
-    D.closeAllPop();
-    var labels = D.numbering(state.doc);
-    var m = h('div', 'popmenu small');
-    var any = false;
-    m.appendChild(h('div', 'popg', 'Reference'));
+  /* ------------------------------------------------- references and citations
+     Everything a reference can point at — every numbered equation (line),
+     table, figure, section and theorem, labelled or not — and the works in
+     the reference list. Choosing one that has no label gives it one, made
+     from its words; a table or figure brings its word along ("Table 1"). */
+  function refTargets() {
+    D.numbering(state.doc);
+    var out = [];
+    var cap = function (s) { return s.charAt(0).toUpperCase() + s.slice(1); };
     state.doc.blocks.forEach(function (b) {
-      if (!b.label) return;
-      any = true;
-      var kind = b.t === 'eq' ? 'eqref' : 'ref';
-      var it = h('button', 'popitem');
-      it.appendChild(h('span', 'poptx', b.label + '  →  ' + (kind === 'eqref' ? '(' + labels[b.label] + ')' : labels[b.label])));
-      it.onmousedown = function (e) { e.preventDefault(); };
-      it.onclick = function () { D.closeAllPop(); putXref(kind, b.label, labels); };
-      m.appendChild(it);
+      if (b.t === 'eq') {
+        if (b.numbered === false) return;
+        b.lines.forEach(function (r, li) {
+          var num = b.__nums && b.__nums[li];
+          if (num) out.push({ b: b, line: li, kind: 'eqref', group: 'Equations', name: '(' + num + ')', text: M.plainOf(r), tree: r, num: num });
+        });
+      } else if (b.t === 'table' || b.t === 'figure' || b.t === 'chart') {
+        var w = b.t === 'table' ? 'Table' : 'Figure';
+        out.push({ b: b, kind: 'ref', word: w, group: 'Tables and figures', name: w + ' ' + b.__num, text: L.plainText(b.caption || ''), num: b.__num });
+      } else if (b.t === 'section' && b.__num) {
+        out.push({ b: b, kind: 'ref', word: 'Section', group: 'Sections', name: 'Section ' + b.__num, text: L.plainText(b.html), num: b.__num });
+      } else if (b.t === 'theorem' && b.__num) {
+        var tw = cap(b.kind);
+        out.push({ b: b, kind: 'ref', word: tw, group: 'Theorems', name: tw + ' ' + b.__num, text: L.plainText(b.title || b.html), num: b.__num });
+      }
     });
-    if (state.doc.bib.length) {
-      m.appendChild(h('div', 'popg', 'Citations'));
-      state.doc.bib.forEach(function (e) {
-        var it2 = h('button', 'popitem');
-        it2.appendChild(h('span', 'poptx', e.key + (e.title ? ' — ' + e.title.slice(0, 28) : '')));
-        it2.onmousedown = function (ev) { ev.preventDefault(); };
-        it2.onclick = function () { D.closeAllPop(); putXref('cite', e.key, labels); };
-        m.appendChild(it2);
-      });
-      any = true;
-    }
-    if (!any) m.appendChild(h('div', 'popnone', 'Nothing to point at yet — give a heading, equation or figure a label with the ⋮ button.'));
-    document.body.appendChild(m);
-    var r = anchor.getBoundingClientRect();
-    m.style.left = Math.max(8, Math.min(window.innerWidth - m.offsetWidth - 10, r.left + window.scrollX - 40)) + 'px';
-    m.style.top = (r.bottom + window.scrollY + 6) + 'px';
-    setTimeout(function () {
-      document.addEventListener('mousedown', function off(ev) {
-        if (m.contains(ev.target)) return;
-        D.closeAllPop();
-        document.removeEventListener('mousedown', off, true);
-      }, true);
-    }, 0);
+    /* by kind, and in reading order within each */
+    var RANK = { Equations: 0, 'Tables and figures': 1, Sections: 2, Theorems: 3 };
+    return out.map(function (t, i) { t.i = i; return t; })
+      .sort(function (a, b) { return (RANK[a.group] - RANK[b.group]) || (a.i - b.i); });
   }
-  function putXref(kind, label, labels) {
+  function allLabels() {
+    var set = {};
+    state.doc.blocks.forEach(function (b) {
+      if (b.label) set[b.label] = 1;
+      (b.labels || []).forEach(function (l) { if (l) set[l] = 1; });
+    });
+    state.doc.bib.forEach(function (e) { if (e.key) set[e.key] = 1; });
+    return set;
+  }
+  /* the label a target already has, or a new one, kept */
+  function labelFor(t) {
+    var b = t.b;
+    if (b.t === 'eq' && b.lines.length > 1) {
+      if (b.labels && b.labels[t.line]) return b.labels[t.line];
+      if (t.line === 0 && b.label) return b.label;
+    } else if (b.label) return b.label;
+    var prefix = { eq: 'eq:', table: 'tab:', figure: 'fig:', chart: 'fig:', section: 'sec:', theorem: 'thm:' }[b.t] || '';
+    var words = String(t.text || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(function (w) { return w.length > 2; }).slice(0, 2).join('-');
+    var base = prefix + (words || String(t.num).replace(/\D/g, '-')), lab = base, n = 2, have = allLabels();
+    while (have[lab]) lab = base + '-' + (n++);
+    if (b.t === 'eq' && b.lines.length > 1) {
+      if (!b.labels || b.labels.length !== b.lines.length) b.labels = b.lines.map(function (x, i) { return (b.labels && b.labels[i]) || ''; });
+      b.labels[t.line] = lab;
+    } else b.label = lab;
+    state.editor.change(true);
+    return lab;
+  }
+
+  /* The picker, under the caret (or `anchor`): `want` 'cite' lists the
+     reference list first, anything else the document's own items first. */
+  function refPicker(want, anchor) {
+    D.closeAllPop();
+    var s = window.getSelection();
+    var range = s.rangeCount ? s.getRangeAt(0).cloneRange() : null;
+    var host = range ? range.commonAncestorContainer : null;
+    if (host && host.nodeType === 3) host = host.parentElement;
+    host = host && host.closest ? host.closest('[contenteditable="true"]') : null;
+    if (!host || !host.__rich || !$('#paper').contains(host)) {
+      host = state.lastRich && document.body.contains(state.lastRich) ? state.lastRich : null;
+      range = null;
+    }
+    if (!host) { toast('Click in the text where the reference should go first.'); return; }
+
+    var targets = refTargets();
+    var cites = state.doc.bib.map(function (e, i) {
+      return { cite: e, kind: 'cite', group: 'Works cited', name: '[' + (i + 1) + ']',
+        text: [L.plainText(e.author), L.plainText(e.title)].filter(Boolean).join(' — ') || e.key };
+    });
+    /* a work not in the list yet: added to it (and the list to the end of
+       the document, if there is none), cited, and its entry opened to fill in */
+    var fresh = { fresh: true, kind: 'cite', group: 'Works cited', name: '+ New work…', text: 'add it to the reference list and cite it' };
+    var all = want === 'cite' ? cites.concat([fresh], targets) : targets.concat(cites, [fresh]);
+
+    var m = h('div', 'popmenu pt-refpop');
+    var search = h('input', 'popsearch');
+    search.placeholder = want === 'cite' ? 'Cite… (author, title)' : 'Refer to… (equation, table, section…)';
+    m.appendChild(search);
+    var listw = h('div', 'popitems');
+    m.appendChild(listw);
+    /* what matches best first: the name ("Figure 1"), then the words
+       ("Main results"), then the kind of thing */
+    function score(t, words) {
+      var name = (t.name + ' ' + (t.word || '')).toLowerCase(), text = String(t.text || '').toLowerCase(), group = t.group.toLowerCase();
+      var s = 0;
+      for (var k = 0; k < words.length; k++) {
+        var w = words[k];
+        if (name.indexOf(w) >= 0) s += 4;
+        else if (text.indexOf(w) >= 0) s += 2;
+        else if (group.indexOf(w) >= 0) s += 1;
+        else return 0;
+      }
+      return s;
+    }
+    function fill(q) {
+      listw.textContent = '';
+      var words = String(q || '').toLowerCase().split(/\s+/).filter(Boolean);
+      var shown = all.map(function (t, i) { return { t: t, i: i, s: words.length ? score(t, words) : 1 }; })
+        .filter(function (x) { return x.s > 0 || x.t.fresh; })
+        .sort(function (a, b) { return (b.s - a.s) || (a.i - b.i); })
+        .map(function (x) { return x.t; });
+      /* searching: one list, best first; browsing: grouped */
+      var last = null;
+      shown.forEach(function (t, i) {
+        if (!words.length && t.group !== last) { listw.appendChild(h('div', 'popg', t.group)); last = t.group; }
+        var row = h('button', 'popitem' + (i === 0 ? ' sel' : '') + (t.fresh ? ' pt-refnew' : ''));
+        var tx = h('span', 'poptx');
+        tx.appendChild(h('span', 'popname', t.name));
+        /* an equation shown as itself, not as its letters */
+        if (t.tree) { var fd = h('span', 'popdesc'); M.renderStatic(fd, t.tree); tx.appendChild(fd); }
+        else if (t.text) tx.appendChild(h('span', 'popdesc', t.text.length > 70 ? t.text.slice(0, 68) + '…' : t.text));
+        row.appendChild(tx);
+        row.onmousedown = function (e) { e.preventDefault(); };
+        /* the row under the mouse is the one Enter takes: one lit row */
+        row.onmousemove = function () {
+          if (row.classList.contains('sel')) return;
+          [].forEach.call(listw.querySelectorAll('.popitem.sel'), function (x) { x.classList.remove('sel'); });
+          row.classList.add('sel');
+        };
+        row.onclick = function () { choose(t); };
+        listw.appendChild(row);
+      });
+      if (!cites.length && !targets.length && want !== 'cite') {
+        listw.insertBefore(h('div', 'popnone', 'Nothing numbered to refer to yet: equations, tables, figures, sections and theorems appear here.'), listw.firstChild);
+      }
+    }
+    function close(back) {
+      D.closeAllPop();
+      document.removeEventListener('mousedown', off, true);
+      if (back) {
+        host.focus();
+        if (range) { var ss = window.getSelection(); ss.removeAllRanges(); ss.addRange(range); }
+      }
+    }
+    function choose(t) {
+      if (t.fresh) {
+        var bib = state.doc.bib, n = bib.length + 1, have = allLabels(), key = 'ref' + n;
+        while (have[key]) key = 'ref' + (++n);
+        bib.push({ key: key, author: '', title: '', journal: '', year: '' });
+        if (!state.doc.blocks.some(function (b) { return b.t === 'bib'; })) state.doc.blocks.push(D.blockFactory('bib'));
+        close(true);
+        putXref('cite', key, '', host);
+        state.editor.change(true);
+        state.editor.render();
+        /* on to the new entry, to write it */
+        var rows = $$('.pt-bibi'), last = rows[rows.length - 1], f = last && last.querySelector('.f-author');
+        if (f) { f.scrollIntoView({ block: 'center' }); D.placeCaret(f, true); }
+        toast('Cited as [' + bib.length + '] — now write the entry: author, title, journal or publisher, year.');
+        return;
+      }
+      var label = t.cite ? t.cite.key : labelFor(t);
+      close(true);
+      putXref(t.kind, label, t.word || '', host);
+    }
+    search.addEventListener('input', function () { fill(search.value); M.layout(listw); });
+    search.addEventListener('keydown', function (e) {
+      var rows = [].slice.call(listw.querySelectorAll('.popitem')), cur = listw.querySelector('.popitem.sel'), i = rows.indexOf(cur);
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (!rows.length) return;
+        var j = Math.max(0, Math.min(rows.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)));
+        if (cur) cur.classList.remove('sel');
+        rows[j].classList.add('sel'); rows[j].scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') { e.preventDefault(); if (cur) cur.click(); }
+      else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(true); }
+    });
+    function off(ev) { if (!m.contains(ev.target)) close(false); }
+    fill('');
+    document.body.appendChild(m);
+    M.layout(m);   /* the formulas, measured now that they are on the page */
+    /* under the caret, or the button that opened it */
+    var at = anchor;
+    if (!at && range) {
+      var rr = range.getBoundingClientRect();
+      if (rr.top || rr.left) at = { getBoundingClientRect: function () { return rr; } };
+    }
+    D.posPop(m, at || host);
+    search.focus();
+    setTimeout(function () { document.addEventListener('mousedown', off, true); }, 0);
+  }
+  /* The chip, where the caret is. A table, figure, section or theorem gets
+     its word in front ("Table 1") unless the text says it already; a space
+     the replaced selection ended in stays. */
+  function putXref(kind, label, word, host) {
+    var s = window.getSelection();
+    if (!s.rangeCount) return;
+    var r = s.getRangeAt(0);
+    var keepSpace = !r.collapsed && /\s$/.test(r.toString());
+    r.deleteContents();
+    if (word && host && host.contains(r.startContainer)) {
+      var pre = document.createRange();
+      pre.selectNodeContents(host);
+      pre.setEnd(r.startContainer, r.startOffset);
+      var before = pre.toString().replace(/[​ ]/g, ' ');
+      if (!new RegExp(word + '\\s*$', 'i').test(before)) {
+        var w = document.createTextNode((/(^|\s)$/.test(before) ? '' : ' ') + word + ' ');
+        r.insertNode(w);
+        r.setStartAfter(w); r.collapse(true);
+        s.removeAllRanges(); s.addRange(r);
+      }
+    }
     var span = document.createElement('span');
     span.className = 'xref';
     span.contentEditable = 'false';
     span.dataset.kind = kind;
     span.dataset.label = label;
-    var v = labels[label];
-    span.textContent = kind === 'eqref' ? '(' + v + ')' : (kind === 'cite' ? '[' + v + ']' : v);
-    if (state.lastRich) state.lastRich.focus();
     D.insertNodeAtCaret(span);
+    if (keepSpace) {
+      var sp = document.createTextNode(' ');
+      span.parentNode.insertBefore(sp, span.nextSibling);
+      var c = document.createRange();
+      c.setStartAfter(sp); c.collapse(true);
+      s.removeAllRanges(); s.addRange(c);
+    }
+    state.editor.labels = D.numbering(state.doc);
+    state.editor.refreshXrefs();
     fireInput(span);
   }
 
@@ -538,10 +842,12 @@
     field('Columns', sel(S.columns, [[1, 'One column'], [2, 'Two columns']], function (v) { S.columns = parseInt(v, 10); apply(); }));
     field('Margin', sel(S.margin, ['2cm', '2.5cm', '3cm', '3.5cm', '1in', '1.25in'], function (v) { S.margin = v; apply(); }));
     field('Line spacing', sel(S.lineSpacing, [[1, 'Single'], [1.25, 'One and a quarter'], [1.5, 'One and a half'], [2, 'Double']], function (v) { S.lineSpacing = parseFloat(v); apply(); }));
-    field('Language', sel(S.lang, ['english', 'ngerman', 'french', 'spanish', 'italian', 'turkish', 'portuguese'], function (v) { S.lang = v; apply(); }));
+    field('Language', sel(S.lang, [['english', 'English'], ['ngerman', 'German'], ['french', 'French'], ['spanish', 'Spanish'],
+      ['italian', 'Italian'], ['turkish', 'Turkish'], ['portuguese', 'Portuguese']], function (v) { S.lang = v; apply(); }));
 
     group('Front matter');
     field('Number sections', chk(S.numbered, function (v) { S.numbered = v; apply(); }));
+    field('Theorem numbers by section: 2.1, 2.2', chk(S.thmWithin, function (v) { S.thmWithin = v; apply(); }));
     field('Show abstract', chk(S.showAbstract, function (v) { S.showAbstract = v; apply(); }));
     field('Separate title page', chk(S.titlepage, function (v) { S.titlepage = v; apply(); }));
 
@@ -568,14 +874,20 @@
     group('View');
     var zw = h('div', 'sfz');
     var z = h('input');
-    z.type = 'range'; z.min = '60'; z.max = '160'; z.value = String(Math.round(state.zoom * 100));
+    z.type = 'range'; z.min = '40'; z.max = '160'; z.value = String(Math.round(state.zoom * 100));
     var zl = h('span', 'sfv', Math.round(state.zoom * 100) + '%');
     z.oninput = function () {
       state.zoom = parseInt(z.value, 10) / 100;
+      state.zoomManual = true;   /* yours now: the window no longer refits it */
       applyPaperVars();
       zl.textContent = z.value + '%';
       state.editor.render();
       pageGuides();
+    };
+    /* the page fitting itself to the window moves the slider too */
+    state.showZoom = function () {
+      z.value = String(Math.round(state.zoom * 100));
+      zl.textContent = z.value + '%';
     };
     zw.appendChild(z); zw.appendChild(zl);
     field('Zoom', zw);
@@ -603,7 +915,82 @@
        point-to-pixel conversion so 11pt on screen is 11pt on paper */
     paper.style.setProperty('--fs', (parseFloat(S.fontsize) * (96 / 72) * state.zoom) + 'px');
     paper.style.setProperty('--ls', String(S.lineSpacing || 1));
+    paper.style.setProperty('--z', String(state.zoom));   /* for chrome on the sheet that scales with it */
     paper.style.setProperty('--print-pad', S.margin);
+    /* the sheet speaks the document's language: the hyphenation on screen
+       follows it, and so does the spelling check in the desktop app, which
+       would otherwise check in the computer's language */
+    paper.lang = LANGS[S.lang] || 'en';
+    if (window.papertexNative && window.papertexNative.setSpellLanguage && spellLang !== paper.lang) {
+      spellLang = paper.lang;
+      window.papertexNative.setSpellLanguage(spellLang);
+    }
+  }
+  var LANGS = { english: 'en', ngerman: 'de', french: 'fr', spanish: 'es', italian: 'it', turkish: 'tr', portuguese: 'pt' };
+  var spellLang = null;
+
+  /* The page fits the window it is in. At 100% it is a real A4 (794 px);
+     where the desk is narrower than that, the page is set smaller rather
+     than cut off. Below 80% the side panels make way first — the LaTeX
+     panel, then the palette — so the page is not shrunk to a stamp; their
+     toolbar buttons bring them back. That choice is made when the editor
+     opens and again whenever the window crosses into another width; in
+     between, panels shown or hidden by hand stay so. A zoom set with the
+     slider is kept. `why`: 'start', 'resize' or 'toggle'. */
+  var FIT_MIN = 0.8, fitCut = null, scrollbarW = null;
+  /* the desk around the page, and the stage's scroll bar (none where the
+     system draws them over the content) */
+  function deskFor(vw) {
+    if (scrollbarW === null) {
+      var t = h('div');
+      t.style.cssText = 'position:absolute;top:-200px;width:100px;height:100px;overflow:scroll';
+      document.body.appendChild(t);
+      scrollbarW = t.offsetWidth - t.clientWidth;
+      t.remove();
+    }
+    return (vw <= 760 ? 28 : 60) + scrollbarW;
+  }
+  function layoutWidth() {
+    /* the layout width, not innerWidth: a phone browser zooms out to fit a
+       page that is still full-size at this point, and innerWidth then
+       reports the zoomed-out width */
+    return Math.min(window.innerWidth, document.documentElement.clientWidth || window.innerWidth);
+  }
+  function fitLayout(why) {
+    var body = document.body, vw = layoutWidth();
+    var palW = $('.pal') ? $('.pal').offsetWidth : 0, sideW = $('.side') ? $('.side').offsetWidth : 0;
+    /* at 900 px and below the panels are drawers over the page: they take
+       nothing from it */
+    var drawers = vw <= 900;
+    var zoomFor = function (pal, side) {
+      return (vw - (pal && !drawers ? palW : 0) - (side && !drawers ? sideW : 0) - deskFor(vw)) / 794;
+    };
+    if (why !== 'toggle') {
+      /* which panels this width keeps: both, the palette alone, or neither */
+      var cut = vw < 900 ? 2 : zoomFor(true, true) >= FIT_MIN ? 0 : zoomFor(true, false) >= FIT_MIN ? 1 : 2;
+      if (cut !== fitCut) {
+        fitCut = cut;
+        body.classList.toggle('nopanel', cut >= 1);
+        body.classList.toggle('nopal', cut >= 2);
+      }
+    }
+    if (state.zoomManual || !state.editor) return;
+    /* an open chart editor or a formula being written would be torn down
+       by redrawing the page under it: refit once it is done */
+    if ($('.studio') || $('.imath.editing')) return;
+    var fit = zoomFor(!body.classList.contains('nopal'), !body.classList.contains('nopanel'));
+    /* On a wide screen (1440p, 4K) a real-size A4 is a strip down the
+       middle: past a quarter more room than the page needs, it grows with
+       the room — gently, to at most 150% — so a laptop keeps 100%. */
+    var z = fit <= 1.25 ? Math.min(1, fit) : Math.min(1.5, 1 + (fit - 1.25) * 0.6);
+    z = Math.floor(Math.max(0.38, z) * 100) / 100;
+    if (Math.abs(z - state.zoom) < 0.005) return;
+    state.zoom = z;
+    if (why === 'start') return;   /* the first drawing is still to come */
+    applyPaperVars();
+    state.editor.render();
+    pageGuides();
+    if (state.showZoom) state.showZoom();
   }
   function parseMargin(m) {
     var v = parseFloat(m);
@@ -725,7 +1112,8 @@
 
     var paper = $('#paper').cloneNode(true);
     ['.gutter', '.pt-tailadd', '.pt-addauth', '.pt-xauth', '.pt-figctl', '.pt-tabctl', '.pt-chedit', '.pt-cherr',
-      '.pt-codebar', '.pt-rawl', '.pt-bibx', '.pt-bibkey', '.mcaret', '.pt-drop']
+      '.pt-codebar', '.pt-rawl', '.pt-bibx', '.pt-bibup', '.pt-bibdn', '.pt-bibadd', '.pt-bibkey', '.mcaret', '.pt-drop',
+      '.mf-kb', '.mselbox']
       .forEach(function (sel) {
         [].forEach.call(paper.querySelectorAll(sel), function (e) { e.remove(); });
       });
@@ -737,9 +1125,10 @@
     });
     /* print at the document's real size, not the on-screen zoom */
     paper.style.removeProperty('--pw');
+    paper.style.removeProperty('min-height');      /* the editor's whole-page length; print pages itself */
     paper.style.setProperty('--fs', parseFloat(state.doc.settings.fontsize) * (96 / 72) + 'px');
 
-    var title = D.stripTags(state.doc.meta.title) || 'Document';
+    var title = PT.latex.plainText(state.doc.meta.title) || 'Document';
     /* the margin comes from the document, so from whoever wrote the file:
        only a plain length goes into the stylesheet */
     var margin = /^\d+(\.\d+)?(cm|mm|in|pt)$/.test(state.doc.settings.margin) ? state.doc.settings.margin : '2.5cm';
@@ -748,7 +1137,8 @@
       '<style>\n' +
       '  body { background:#fff; margin:0; overflow:visible; }\n' +
       '  .paper { margin:0 auto; box-shadow:none; width:auto; max-width:none;\n' +
-      '           padding:' + margin + ' !important; }\n' +
+      '           padding:' + margin + ' !important;\n' +
+      '           -webkit-box-decoration-break:clone; box-decoration-break:clone; }\n' +
       '  /* a zero page margin leaves the browser no room to draw its\n' +
       '     URL-and-date header, so the sheet prints clean */\n' +
       '  @page { size:' + (PAGESIZE[state.doc.settings.paper] || 'A4') + '; margin:0; }\n' +
@@ -775,9 +1165,15 @@
     for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
     return new Blob([arr], { type: m ? m[1] : 'application/octet-stream' });
   }
+  /* the file name: the title in plain letters — “Çalışma raporu” becomes
+     calisma-raporu, not alma-raporu */
+  var LATIN = { 'ı': 'i', 'İ': 'I', 'ß': 'ss', 'æ': 'ae', 'Æ': 'AE', 'ø': 'o', 'Ø': 'O', 'ł': 'l', 'Ł': 'L',
+    'đ': 'd', 'Đ': 'D', 'œ': 'oe', 'Œ': 'OE', 'þ': 'th', 'ð': 'd' };
   function docName() {
-    return (D.stripTags(state.doc.meta.title) || 'document')
-      .replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').toLowerCase() || 'document';
+    var t = (PT.latex.plainText(state.doc.meta.title) || 'document')
+      .replace(/[ıİßæÆøØłŁđĐœŒþð]/g, function (c) { return LATIN[c]; });
+    if (t.normalize) t = t.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    return t.replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-').toLowerCase() || 'document';
   }
   function exportTex() {
     var figs = state.doc.blocks.filter(function (b) { return b.t === 'figure' && b.src; });
@@ -826,32 +1222,60 @@
     stat.textContent = '';
     var waitEl = body.firstChild;
     var t0 = performance.now();
+    /* The engine says which stage it is at, not how far into it: say that
+       in words, with the seconds ticking, so a first compile (TeX Live
+       coming down, tens of megabytes) does not look stuck. */
+    var STAGES = {
+      loading: 'Fetching TeX Live — the first time takes a while; later compiles reuse it',
+      format: 'Preparing LaTeX (once per visit)',
+      compiling: 'Typesetting'
+    };
+    var said = 'Starting the LaTeX engine';
+    var showWait = function () {
+      if (!waitEl.isConnected) { clearInterval(tick); return; }
+      var s = Math.round((performance.now() - t0) / 1000);
+      waitEl.textContent = said + '…' + (s >= 2 ? '  ' + s + ' s' : '');
+    };
+    var tick = setInterval(showWait, 1000);
 
-    PT.compile.run(L.build(state.doc), state.doc, function (stage, detail) {
-      if (waitEl.isConnected) waitEl.textContent = detail || stage || 'Working…';
+    var tex = L.build(state.doc);
+    PT.compile.run(tex, state.doc, function (stage, detail) {
+      said = STAGES[stage] || String(detail || stage || 'Working').replace(/\.+$/, '');
+      showWait();
     }).then(function (r) {
+      clearInterval(tick);
       var secs = ((performance.now() - t0) / 1000).toFixed(1);
       body.innerHTML = '';
       if (r.error) {
-        var err = h('div', 'pdf-err');
-        err.appendChild(h('div', 'pdf-errh', 'LaTeX could not typeset this document'));
-        err.appendChild(h('pre', 'pdf-errm', r.error));
-        err.appendChild(h('div', 'pdf-errn',
-          'The .tex itself is still valid — Export .tex and compile it anywhere. ' +
-          'A missing .sty usually means the package is outside the engine’s bundled set.'));
-        body.appendChild(err);
+        body.appendChild(compileErrorView(r, tex));
         stat.textContent = 'failed after ' + secs + ' s';
         return;
       }
       var blob = new Blob([r.pdf], { type: 'application/pdf' });
       lastPdf = { blob: blob, url: URL.createObjectURL(blob) };
-      var frame = h('iframe', 'pdf-frame');
-      frame.src = lastPdf.url;
-      frame.title = 'Compiled PDF';
-      body.appendChild(frame);
+      var touchOnly = window.matchMedia && matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches;
+      if (touchOnly) {
+        /* Phone and tablet browsers show a PDF in a frame as its first page,
+           or not at all: open it in a tab of its own, where their viewer works. */
+        var ready = h('div', 'pdf-err');
+        ready.appendChild(h('div', 'pdf-errh', 'The PDF is ready'));
+        var open = h('a', 'dlg-btn primary', 'Open the PDF');
+        open.href = lastPdf.url;
+        open.target = '_blank';
+        open.rel = 'noopener';
+        ready.appendChild(open);
+        ready.appendChild(h('div', 'pdf-errn', 'It opens in your browser’s own PDF viewer. Save keeps a copy.'));
+        body.appendChild(ready);
+      } else {
+        var frame = h('iframe', 'pdf-frame');
+        frame.src = lastPdf.url;
+        frame.title = 'Compiled PDF';
+        body.appendChild(frame);
+      }
       stat.textContent = (r.pdf.length / 1024).toFixed(0) + ' kB · typeset in ' + secs + ' s';
       $('#pdfsave').disabled = false;
     }, function (e) {
+      clearInterval(tick);
       body.innerHTML = '';
       var msg = String(e && e.message || e);
       var err = h('div', 'pdf-err');
@@ -883,6 +1307,100 @@
   }
 
   var lastPdf = null;
+  /* What went wrong, in words, and where: the block whose LaTeX holds the
+     line TeX stopped at (or the character it could not print), with a
+     button that goes to it. Only a missing package or file is the
+     engine's doing; anything else would fail in any LaTeX too. */
+  function compileErrorView(r, tex) {
+    var err = h('div', 'pdf-err');
+    var msg = String(r.error || ''), log = String(r.log || '');
+    var at = null, head = 'LaTeX could not typeset this document', note = '';
+    var uni = /U\+([0-9A-Fa-f]{4,6})/.exec(msg);
+    var file = /File [`']([^']+)' not found/.exec(msg);
+    if (uni) {
+      var c = String.fromCodePoint(parseInt(uni[1], 16));
+      head = 'LaTeX has no way to print “' + c + '” in text';
+      at = blockWith(c);
+      /* symbols PaperTeX knows are written as commands already: this one
+         has none to write */
+      note = 'PaperTeX knows no LaTeX command for it. Delete it, or say it in words or as a formula.';
+    } else if (file) {
+      head = 'The engine here does not have ' + file[1];
+      note = 'That package is outside the set bundled with PaperTeX. Export .tex and compile it with a full TeX installation, or leave the package out.';
+    } else {
+      at = blockAtLine(log, tex);
+      note = at ? 'Check that part, or remove it, and compile again.' : 'Copy LaTeX shows the whole source, if you want to look for it.';
+    }
+    err.appendChild(h('div', 'pdf-errh', head));
+    if (at) err.appendChild(h('div', 'pdf-errw', 'It is in ' + describeBlock(at) + '.'));
+    err.appendChild(h('pre', 'pdf-errm', msg));
+    err.appendChild(h('div', 'pdf-errn', note));
+    if (at) {
+      var go = h('button', 'dlg-btn primary', 'Show it');
+      go.onclick = function () {
+        closePdf();
+        var el = at.id ? $('[data-bid="' + at.id + '"]') : $('.pt-head');
+        if (!el) return;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('pt-flash');
+        setTimeout(function () { el.classList.remove('pt-flash'); }, 1600);
+        var f = el.querySelector('[data-part], .mfield, [contenteditable="true"]');
+        if (f && f.classList.contains('mfield')) f.focus(); else if (f) D.placeCaret(f, true);
+      };
+      err.appendChild(go);
+    }
+    return err;
+  }
+  /* the block (or the title block) whose words hold the character c */
+  function blockWith(c) {
+    var meta = state.doc.meta;
+    if ([meta.title, meta.date, meta.abstract].concat((meta.authors || []).map(function (a) { return a.name + ' ' + a.affil; }))
+      .some(function (s) { return String(s || '').indexOf(c) >= 0; })) return { head: true };
+    var hit = null;
+    state.doc.blocks.some(function (b) { if (JSON.stringify(b).indexOf(c) >= 0) { hit = b; return true; } return false; });
+    if (!hit && JSON.stringify(state.doc.bib).indexOf(c) >= 0) hit = state.doc.blocks.filter(function (b) { return b.t === 'bib'; })[0] || null;
+    return hit;
+  }
+  /* the block whose LaTeX holds the line TeX's log names ("l.16 …") */
+  function blockAtLine(log, tex) {
+    var m = /(?:^|\n)l\.(\d+)/.exec(log);
+    if (!m) return null;
+    var lines = tex.split('\n'), n = parseInt(m[1], 10), line = '';
+    for (var k = n - 1; k >= 0 && !line; k--) line = (lines[k] || '').trim();
+    if (!line) return null;
+    if (tex.indexOf('\\begin{document}') > tex.indexOf(line) && /\\(title|author|date)\{/.test(line)) return { head: true };
+    var best = null, size = Infinity;
+    state.doc.blocks.forEach(function (b) {
+      var t = L.texOf(b, state.doc);
+      if (t && t.split('\n').some(function (x) { return x.trim() === line; }) && t.length < size) { best = b; size = t.length; }
+    });
+    return best;
+  }
+  function describeBlock(b) {
+    if (b.head) return 'the title, author or date';
+    var words = function (html, n) {
+      var t = L.plainText(html || '');
+      var w = t.split(/\s+/).slice(0, n || 7).join(' ');
+      return w ? '“' + w + (t.length > w.length ? '…' : '') + '”' : '';
+    };
+    var sec = null;
+    for (var i = 0; i < state.doc.blocks.length && state.doc.blocks[i] !== b; i++) if (state.doc.blocks[i].t === 'section') sec = state.doc.blocks[i];
+    var where = sec ? ' in “' + L.plainText(sec.html) + '”' : '';
+    switch (b.t) {
+      case 'section': return 'the heading ' + words(b.html);
+      case 'para': return 'the paragraph ' + words(b.html) + where;
+      case 'eq': return (b.numbered !== false && b.__nums && b.__nums[0] ? 'equation (' + b.__nums[0] + ')' : 'an unnumbered equation') + where;
+      case 'list': return 'the list starting ' + words(b.items[0] && b.items[0].html);
+      case 'table': return 'Table ' + (b.__num || '') + where;
+      case 'figure': case 'chart': return 'Figure ' + (b.__num || '') + where;
+      case 'theorem': return 'the ' + b.kind + where;
+      case 'bib': return 'the reference list';
+      case 'raw': return 'a LaTeX code block' + where;
+      case 'code': return 'a code block' + where;
+      default: return 'a ' + b.t + ' block' + where;
+    }
+  }
+
   function closePdf() {
     $('#pdfview').classList.remove('on');
     $('#pdfbody').innerHTML = '';
@@ -1001,31 +1519,43 @@
     }
     var click = function (sel) { return function () { $(sel).click(); }; };
 
-    /* Browsers keep Ctrl+N, Ctrl+O and the like for themselves, so those
-       defaults are only given in the desktop app. */
+    /* A browser keeps Ctrl+N (new window) and Ctrl+R (reload) for itself,
+       so those defaults are only given in the desktop app; Ctrl+O and
+       Ctrl+P a page may take over, so they work on the web too. A key that
+       is not bound is shown nowhere — not in a tooltip, not in the help. */
     add('Document', 'edit.undo', 'Undo', ['Ctrl+Z'], doUndo, { menu: 'undo', fieldsNative: true, glyph: '↶' });
     add('Document', 'edit.redo', 'Redo', ['Ctrl+Y', 'Ctrl+Shift+Z'], doRedo, { menu: 'redo', fieldsNative: true, glyph: '↷' });
     add('Document', 'doc.export', 'Export .tex', ['Ctrl+S'], exportTex, { menu: 'export', glyph: '⤓' });
     add('Document', 'doc.save', 'Save project', ['Ctrl+Shift+S'], click('#btnSave'), { menu: 'save', glyph: '💾' });
-    add('Document', 'doc.open', 'Open project', desk ? ['Ctrl+O'] : [], openProject, { menu: 'open', glyph: '📂' });
+    add('Document', 'doc.open', 'Open project', ['Ctrl+O'], openProject, { menu: 'open', glyph: '📂' });
     add('Document', 'doc.new', 'New document', desk ? ['Ctrl+N'] : [], click('#btnNew'), { menu: 'new', glyph: '＋' });
     add('Document', 'doc.compile', 'Compile PDF', desk ? ['Ctrl+R'] : [], compilePDF, { menu: 'compile', glyph: '▶' });
-    add('Document', 'doc.print', 'Print / PDF', desk ? ['Ctrl+P'] : [], printDoc, { menu: 'print', glyph: '⎙' });
+    add('Document', 'doc.print', 'Print the page as it looks', ['Ctrl+P'], printDoc, { menu: 'print', glyph: '⎙' });
     add('Document', 'doc.copy', 'Copy LaTeX', [], copyTex, { glyph: '⧉' });
     add('Document', 'view.palette', 'Show or hide the symbol palette', [], click('#btnPal'), { glyph: '▤' });
     add('Document', 'view.panel', 'Show or hide the LaTeX panel', [], click('#btnPanel'), { glyph: '▥' });
-    add('Document', 'view.help', 'Tips and shortcuts', [], function () { $('#help').classList.add('on'); }, { menu: 'help', glyph: '?' });
+    add('Document', 'view.help', 'Tips and shortcuts', [], function () { openHelp(); }, { menu: 'help', glyph: '?' });
     add('Document', 'view.keys', 'Customize keyboard shortcuts', [], function () { K.open(); }, { menu: 'keys', glyph: '⌨' });
     add('Document', 'view.palette.cmd', 'Command palette', ['Ctrl+K'], function () { PT.palette.open(); },
       { glyph: '⌕', detail: 'also: \\ in text' });
 
     (PT.templates || []).forEach(function (t) {
-      add('New document', 'new.' + t.id, 'New: ' + t.name, [], function () { newFromTemplate(t); },
+      add('New document', 'new.' + t.id, 'New: ' + t.name, [], function () {
+        /* from a keyboard command, a document replaced by another is asked
+           about first (the New menu says so on its face) */
+        dialog({ title: 'Start a new ' + (t.id === 'blank' ? 'blank document' : t.name.toLowerCase()) + '?',
+          body: 'The document open now is kept: it stays under Open.', okLabel: 'Start it' })
+          .then(function (yes) { if (yes) newFromTemplate(t); });
+      },
         { glyph: t.icon, detail: t.desc });
     });
 
-    add('Text', 'text.bold', 'Bold', ['Ctrl+B'], textCmd('bold'), { glyphHTML: '<b>B</b>' });
-    add('Text', 'text.italic', 'Italic', ['Ctrl+I'], textCmd('italic'), { glyphHTML: '<i>I</i>' });
+    add('Text', 'text.bold', 'Bold', ['Ctrl+B'], textCmd('bold'), { glyphHTML: '<b>B</b>', tex: '\\textbf' });
+    add('Text', 'text.italic', 'Italic', ['Ctrl+I'], textCmd('italic'), { glyphHTML: '<i>I</i>', tex: '\\emph' });
+    add('Text', 'text.ref', 'Reference to an equation, table, figure or section', [], function () { refPicker('ref'); return true; },
+      { glyph: '↪', tex: '\\ref', detail: 'cross-reference, \\eqref · keeps its number up to date' });
+    add('Text', 'text.cite', 'Cite a work from the reference list', [], function () { refPicker('cite'); return true; },
+      { glyph: '[1]', tex: '\\cite', detail: 'citation' });
     add('Text', 'text.underline', 'Underline', ['Ctrl+U'], textCmd('underline'), { glyphHTML: '<u>U</u>' });
     add('Text', 'text.math', 'Inline formula', ['Ctrl+M'], function () {
       var host = richHost();
@@ -1037,8 +1567,22 @@
     D.MENU.forEach(function (mg) {
       mg.items.forEach(function (it) {
         add('Insert block', 'block.' + it[0], it[1], it[0] === 'eq' ? ['Ctrl+Enter'] : [],
-          function () { insertBlockHere(it[0]); }, { glyph: it[2], detail: it[3] });
+          function () { insertBlockHere(it[0]); },
+          { glyph: it[2], detail: it[3], words: it[4], tex: it[0] === 'footnote' ? '\\footnote' : undefined });
       });
+    });
+
+    /* rows and columns of the matrix or cases display the caret is in */
+    [['addrow', 'Matrix or cases: add a row below'], ['addcol', 'Matrix or cases: add a column to the right'],
+      ['delrow', 'Matrix or cases: remove this row'], ['delcol', 'Matrix or cases: remove this column']].forEach(function (o) {
+      add('Maths — Matrix', 'math.mat.' + o[0], o[1], [], function () {
+        var f = activeMathField();
+        if (!f || !f.matrixAt()) { toast('Put the caret in a matrix or cases display first.'); return true; }
+        if (!f.matrixOp(o[0])) {
+          toast(o[0] === 'addcol' ? 'A cases display has two columns, and a matrix at most ten.' : 'The last row or column stays — delete the whole display instead.');
+        }
+        return true;
+      }, { glyph: '⊞', words: 'matrix cases row column pmatrix' });
     });
 
     PT.symbols.groups.forEach(function (g) {
@@ -1175,6 +1719,51 @@
     }, 0);
   }
 
+  /* ⋯ on a phone: the toolbar buttons there is no room for, as a menu.
+     Each entry presses the real button, so it does exactly what that does. */
+  var MORE = [
+    ['btnPalette', '⌕', 'Commands', 'Search every command, block and symbol'],
+    ['btnHelp', '?', 'Shortcuts and tips', ''],
+    ['btnPrint', '⎙', 'Print', 'The page as it looks here — a quick copy'],
+    ['btnCopy', '⧉', 'Copy LaTeX', ''],
+    ['btnTex', '⤓', 'Export .tex', ''],
+    ['btnPal', '▤', 'Symbol palette', 'Show or hide'],
+    ['btnPanel', '▥', 'LaTeX panel', 'Show or hide']
+  ];
+  function moreMenu(anchor) {
+    D.closeAllPop();
+    var m = h('div', 'popmenu moremenu');
+    m.setAttribute('role', 'menu');
+    MORE.forEach(function (it) {
+      var src = $('#' + it[0]);
+      if (!src) return;
+      var b = h('button', 'popitem');
+      b.setAttribute('role', 'menuitem');
+      b.appendChild(h('span', 'popico', it[1]));
+      var tx = h('span', 'poptx');
+      tx.appendChild(h('span', 'popname', it[2]));
+      if (it[3]) tx.appendChild(h('span', 'popdesc', it[3]));
+      b.appendChild(tx);
+      b.onclick = function () { D.closeAllPop(); anchor.setAttribute('aria-expanded', 'false'); src.click(); };
+      m.appendChild(b);
+    });
+    document.body.appendChild(m);
+    anchor.setAttribute('aria-expanded', 'true');
+    var r = anchor.getBoundingClientRect();
+    m.style.left = Math.max(8, Math.min(window.innerWidth - m.offsetWidth - 8, r.right - m.offsetWidth) + window.scrollX) + 'px';
+    m.style.top = (r.bottom + window.scrollY + 6) + 'px';
+    var first = m.querySelector('.popitem');
+    if (first) first.focus();
+    setTimeout(function () {
+      document.addEventListener('mousedown', function off(ev) {
+        if (m.contains(ev.target)) return;
+        D.closeAllPop();
+        anchor.setAttribute('aria-expanded', 'false');
+        document.removeEventListener('mousedown', off, true);
+      }, true);
+    }, 0);
+  }
+
   /* Open: the documents kept here, newest first, and files from disk. */
   function docsMenu(anchor, openFile) {
     D.closeAllPop();
@@ -1253,6 +1842,25 @@
     if (t) newFromTemplate(t);
   }
 
+  /* The tips sheet is a dialog: it takes the focus while it is up (so Esc,
+     Enter and screen readers find it) and gives it back when it goes. */
+  var helpFrom = null;
+  function openHelp() {
+    var hp = $('#help');
+    if (hp.classList.contains('on')) return;
+    helpFrom = document.activeElement;
+    hp.classList.add('on');
+    setTimeout(function () { $('#helpClose').focus({ preventScroll: true }); }, 30);
+  }
+  function closeHelp() {
+    var hp = $('#help');
+    if (!hp.classList.contains('on')) return;
+    hp.classList.remove('on');
+    if (helpFrom && helpFrom !== document.body && document.body.contains(helpFrom) && helpFrom.focus) helpFrom.focus({ preventScroll: true });
+    else if (hp.contains(document.activeElement)) document.activeElement.blur();
+    helpFrom = null;
+  }
+
   function boot() {
     var link = linkTarget();
     S.open().then(function () { return Promise.all([S.current(), S.list()]); }).then(function (r) {
@@ -1288,20 +1896,14 @@
       onImage: function (b) {
         toast('Image added as ' + b.filename + ' — Export .tex sends the file with it.');
       },
-      onFieldFocus: function (f) { state.editor.activeField = f; }
+      onFieldFocus: function (f) { state.editor.activeField = f; },
+      onSettings: function () { buildSettings(); },
+      toast: function (t) { toast(t); }
     });
 
     M.setAutoWords(state.doc.settings.autoMath !== false);
-    /* A phone or a narrow window: the palette and the LaTeX panel would
-       leave no room for the page, so start with them tucked away (the
-       toolbar buttons bring them back) and the page fitted to the width. */
-    /* the layout width, not innerWidth: a phone browser zooms out to fit a
-       page that is still full-size at this point, and innerWidth then
-       reports the zoomed-out width */
-    var vw = Math.min(window.innerWidth, document.documentElement.clientWidth || window.innerWidth);
-    if (vw < 900) document.body.classList.add('nopal', 'nopanel');
-    /* the page is 794 px at 100%; the desk around it is 28 px a side, 12 on a phone */
-    if (vw < 840) state.zoom = Math.max(0.38, Math.min(1, (vw - (vw <= 760 ? 28 : 60)) / 794));
+    /* the panels this window has room for, and the page fitted to the rest */
+    fitLayout('start');
     applyPaperVars();
     state.editor.render();
     if (document.fonts && document.fonts.ready) {
@@ -1313,9 +1915,31 @@
     refresh();
     updateUndoBtns();
 
+    /* A text selection running across formulas: the browser paints it over
+       a formula as a scatter of boxes, one per run of glyphs. Each formula
+       wholly inside the selection is marked instead (.imath.sel), and the
+       stylesheet draws it as one band. */
+    var selFrame = 0;
+    document.addEventListener('selectionchange', function () {
+      if (selFrame) return;
+      selFrame = requestAnimationFrame(function () {
+        selFrame = 0;
+        var s = window.getSelection(), on = [];
+        if (s.rangeCount && !s.isCollapsed) {
+          [].forEach.call(document.querySelectorAll('#paper .imath, .studio .imath'), function (sp) {
+            if (s.containsNode(sp, false)) on.push(sp);
+          });
+        }
+        [].forEach.call(document.querySelectorAll('.imath.sel'), function (sp) {
+          if (on.indexOf(sp) < 0) sp.classList.remove('sel');
+        });
+        on.forEach(function (sp) { sp.classList.add('sel'); });
+      });
+    });
+
     document.addEventListener('focusin', function (e) {
       var t = e.target;
-      if (t && t.classList && t.classList.contains('mfield')) {
+      if (t && t.classList && (t.classList.contains('mfield') || t.classList.contains('mf-proxy'))) {
         if (t.__mf) state.editor.activeField = t.__mf;
         return;
       }
@@ -1336,21 +1960,22 @@
     $('#btnPrint').onclick = printDoc;
     $('#btnUndo').onclick = doUndo;
     $('#btnRedo').onclick = doRedo;
-    $('#btnHelp').onclick = function () { $('#help').classList.add('on'); };
-    $('#helpClose').onclick = function () { $('#help').classList.remove('on'); };
-    $('#help').addEventListener('click', function (e) { if (e.target === $('#help')) $('#help').classList.remove('on'); });
-    $('#helpKeys').onclick = function () { $('#help').classList.remove('on'); K.open(); };
+    $('#btnHelp').onclick = openHelp;
+    $('#helpClose').onclick = closeHelp;
+    $('#help').addEventListener('click', function (e) { if (e.target === $('#help')) closeHelp(); });
+    $('#helpKeys').onclick = function () { closeHelp(); K.open(); };
 
     /* New and Open never replace the document on the page: every document
        stays in the store, reachable from Open. */
     $('#btnNew').onclick = function () { newMenu($('#btnNew')); };
     $('#btnPalette').onclick = function () { PT.palette.open(); };
+    $('#btnMore').onclick = function () { moreMenu($('#btnMore')); };
     $('#btnSave').onclick = saveProject;
     /* a project file becomes a document of its own */
     function openText(text) {
       var d;
       try { d = normalizeDoc(JSON.parse(text)); } catch (e) { toast('That file is not a PaperTeX document.'); return; }
-      addDocument(d, 'Opened “' + D.stripTags(d.meta.title) + '”.');
+      addDocument(d, 'Opened “' + (PT.latex.plainText(d.meta.title) || 'Untitled document') + '”.');
     }
     function openFile() {
       if (NATIVE) {
@@ -1373,26 +1998,39 @@
     $('#btnOpen').onclick = openProject;
 
     $$('.rtab').forEach(function (t) {
+      /* looking at another tab leaves the caret where it was writing */
+      t.onmousedown = function (e) { e.preventDefault(); };
       t.onclick = function () {
         $$('.rtab').forEach(function (x) { x.classList.remove('on'); });
         $$('.rpane').forEach(function (x) { x.classList.remove('on'); });
         t.classList.add('on');
         $('#' + t.dataset.pane).classList.add('on');
+        M.layout($('#' + t.dataset.pane));
       };
     });
+    /* a drawer opened on a narrow screen closes the other one */
+    var oneDrawer = function (keep) {
+      if (layoutWidth() <= 900) document.body.classList.add(keep === 'pal' ? 'nopanel' : 'nopal');
+    };
     $('#btnPanel').onclick = function () {
       document.body.classList.toggle('nopanel');
+      if (!document.body.classList.contains('nopanel')) oneDrawer('panel');
+      fitLayout('toggle');
       setTimeout(pageGuides, 260);
     };
     $('#btnPal').onclick = function () {
       document.body.classList.toggle('nopal');
+      if (!document.body.classList.contains('nopal')) oneDrawer('pal');
+      fitLayout('toggle');
       setTimeout(pageGuides, 260);
     };
     $('#btnCopy2').onclick = copyTex;
     $('#btnTex2').onclick = exportTex;
 
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') D.closeAllPop();
+      if (e.key !== 'Escape') return;
+      if ($('#help').classList.contains('on')) { e.preventDefault(); closeHelp(); return; }
+      D.closeAllPop();
     });
 
     setupKeys(openProject);
@@ -1407,13 +2045,19 @@
         print: printDoc,
         undo: doUndo,
         redo: doRedo,
-        help: function () { $('#help').classList.add('on'); },
+        help: openHelp,
         keys: function () { K.open(); }
       });
       document.body.classList.add('desktop');
     }
 
     window.addEventListener('resize', pageGuides);
+    /* a resized or turned window: the page refits once it settles */
+    var fitT = null;
+    var refit = function () { clearTimeout(fitT); fitT = setTimeout(function () { fitLayout('resize'); }, 120); };
+    window.addEventListener('resize', refit);
+    window.addEventListener('orientationchange', refit);
+    watchGuides();
     /* Leaving: write what is waiting, and if the work cannot be stored at
        all, let the browser ask before the tab goes. */
     window.addEventListener('pagehide', flushSave);
@@ -1429,8 +2073,22 @@
 
     var seen = true;
     try { seen = !!localStorage.getItem('papertex.seen'); localStorage.setItem('papertex.seen', '1'); } catch (e) { seen = true; }
-    if (!seen) setTimeout(function () { $('#help').classList.add('on'); }, 500);
-    else if (window.innerWidth < 760 || (window.matchMedia && matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches)) {
+    /* a phone gets one line, not a page of keyboard shortcuts it cannot use */
+    var phone = window.innerWidth < 760 || (window.matchMedia && matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches);
+    if (!seen && !phone) {
+      /* the tips, unless writing has already begun: then they would land
+         over the first words, and keys typed meant for the page would go to
+         them — a line about where to find them instead */
+      var begun = false, mark = function () { begun = true; };
+      document.addEventListener('keydown', mark, true);
+      document.addEventListener('mousedown', mark, true);
+      setTimeout(function () {
+        document.removeEventListener('keydown', mark, true);
+        document.removeEventListener('mousedown', mark, true);
+        if (begun) toast('Tips and shortcuts are under “? Shortcuts” at the top whenever you want them.');
+        else openHelp();
+      }, 500);
+    } else if (phone) {
       toast('PaperTeX is made for a computer with a keyboard — on a phone you can read and make small edits.');
     }
   }

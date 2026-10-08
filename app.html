@@ -47,10 +47,12 @@
   <span class="spacer"></span>
   <button class="tb ghost" id="btnPalette" title="Search every command, block and symbol">⌕ Commands</button>
   <button class="tb ghost" id="btnHelp" title="Keyboard shortcuts and tips">? Shortcuts</button>
-  <button class="tb ghost" id="btnPrint" title="Print the page as it looks here">Print / PDF</button>
+  <button class="tb ghost" id="btnPrint" title="Print the page as it looks here — a quick copy. Compile PDF makes the real typeset PDF.">Print</button>
   <button class="tb ghost" id="btnCopy" title="Copy the generated LaTeX">Copy LaTeX</button>
   <button class="tb ghost" id="btnTex" title="Download the .tex file (Ctrl+S)">Export .tex</button>
-  <button class="tb primary" id="btnCompile" title="Typeset the document with real LaTeX, here in your browser">Compile PDF</button>
+  <!-- on a phone the buttons above fold into this menu (css/app.css shows it) -->
+  <button class="tb ghost tb-more" id="btnMore" title="More: commands, print, copy, export, panels" aria-haspopup="menu" aria-expanded="false">⋯</button>
+  <button class="tb primary" id="btnCompile" title="Typeset the document with LaTeX into the finished PDF, here in your browser">Compile PDF</button>
 </header>
 <!-- saving problems, backup reminders: shown by app.js, never silently -->
 <div class="savebar" id="savebar" role="alert"></div>
@@ -107,9 +109,9 @@
   </div>
 </div>
 
-<div class="help" id="help">
+<div class="help" id="help" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
   <div class="helpbox">
-    <h2>You edit the page. PaperTeX writes the LaTeX.</h2>
+    <h2 id="helpTitle">You edit the page. PaperTeX writes the LaTeX.</h2>
     <div class="sub">There is no source to type — headings, equations, figures and tables are all
       edited directly on the sheet, and the <b>.tex</b> file on the right updates as you go.</div>
 
@@ -144,15 +146,20 @@
       <kbd>sin</kbd><span>Becomes an upright function name, as <code>\sin</code> should be</span>
       <kbd>-&gt;</kbd><span>Becomes → &nbsp;·&nbsp; <kbd>&lt;=</kbd> ≤ &nbsp;·&nbsp; <kbd>&gt;=</kbd> ≥ &nbsp;·&nbsp; <kbd>!=</kbd> ≠ &nbsp;·&nbsp; <kbd>+-</kbd> ±</span>
       <kbd>Backspace</kbd><span>Straight after one of those puts the plain letters back</span>
-      <kbd>/</kbd><span>Fraction — whatever you just typed becomes the numerator</span>
+      <kbd>/</kbd><span>Fraction — whatever you just typed becomes the numerator. For a plain slash, as in k/m,
+        type <kbd>/</kbd> twice (or Backspace straight after it)</span>
       <kbd>^</kbd> <span>Superscript &nbsp;·&nbsp; <kbd>_</kbd> subscript &nbsp;·&nbsp; type both for a stacked pair.
         <kbd>ü</kbd> also gives a superscript, for keyboards where <kbd>^</kbd> is a dead key</span>
       <kbd>x1</kbd><span>A digit straight after a letter becomes an index: <code>x1</code> → x₁, <code>a12</code> → a₁₂, <code>alpha3</code> → α₃.
         Only digits go on into it — <code>x1+x2</code> and <code>x1, x2</code> come out as you mean them, and
         <code>x1^2</code> gives x₁². Backspace straight after puts the plain digit back</span>
       <kbd>(</kbd><span>Brackets that grow with their contents — <kbd>|</kbd> gives absolute value</span>
-      <kbd>\</kbd><span>The long way round, if you prefer: <code>\varepsilon</code>, <code>\bigcup</code>, anything</span>
-      <kbd>Esc</kbd><span>Leaves the formula and returns to the text</span>
+      <kbd>→</kbd><span>Out of an index, exponent, numerator or root, on along the line (<kbd>Space</kbd> too).
+        The part you are typing in is shaded</span>
+      <kbd>Enter</kbd><span>In the last cell of a matrix or cases display, adds a row; the ⋮ menu adds columns</span>
+      <kbd>Ctrl+B</kbd><span>Bold letters, for vectors — or type <code>bold</code></span>
+      <kbd>\</kbd><span>The long way round, if you prefer: <code>\varepsilon</code>, <code>\ddot{x}</code>, <code>\frac{a}{b}</code>, anything</span>
+      <kbd>Esc</kbd><span>Leaves the formula: back to the text, or on to a new line below an equation</span>
     </div>
 
     <h3>Good to know</h3>
@@ -160,7 +167,11 @@
       <kbd>Select</kbd><span>Highlighting text pops up bold, italic, code, cross-reference and “make this a formula”</span>
       <kbd>Ctrl</kbd><span>+ <kbd>V</kbd> an image anywhere on the page drops in a figure — dragging one in works too</span>
       <kbd>Paste</kbd><span>Pasting LaTeX into a formula converts it into editable maths</span>
-      <kbd>Labels</kbd><span>Give a heading or equation a label (⋮ → Label), then reference it from the ↪ button</span>
+      <kbd>References</kbd><span>To refer to an equation, table, figure or section, or to cite a work:
+        <kbd data-key="view.palette.cmd">Ctrl+K</kbd> → “reference” or “cite”, or the ↪ button on selected text.
+        Numbers keep up as things move</span>
+      <kbd>Footnote</kbd><span><kbd data-key="view.palette.cmd">Ctrl+K</kbd> → “footnote” puts one at the caret; click its number to change it</span>
+      <kbd>Proofs</kbd><span><kbd data-key="block.eq">Ctrl+Enter</kbd> in a theorem or proof puts the equation inside it, before the □</span>
       <kbd data-key="doc.export">Ctrl+S</kbd><span>Downloads the .tex — images come with it, keep them in the same folder</span>
       <kbd>Your keys</kbd><span>Every command, block and symbol can have a shortcut of your own, and so can any
         LaTeX snippet — <button class="helplink" id="helpKeys">customize keyboard shortcuts</button></span>

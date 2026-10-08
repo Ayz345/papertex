@@ -29,7 +29,8 @@
   function captureContext() {
     var ae = document.activeElement, ctx = { kind: 'none', el: null, range: null };
     if (!ae) return ctx;
-    var mf = ae.closest && ae.closest('.mfield');
+    var mf = ae.classList && ae.classList.contains('mf-proxy') && ae.__mf ? ae.__mf.host   /* typing on a touch keyboard */
+      : ae.closest && ae.closest('.mfield');
     if (mf && mf.__mf) { ctx.kind = 'math'; ctx.el = mf; return ctx; }
     if (ae.isContentEditable) {
       var host = ae.closest('[contenteditable="true"]');
@@ -68,7 +69,12 @@
     if (!q) return 1;
     var label = String(a.label || '').toLowerCase(), tex = String(a.tex || '').toLowerCase();
     var id = String(a.id || '').toLowerCase().replace(/^[a-z]+\./, '');
-    var hay = label + ' ' + tex + ' ' + id + ' ' + String(a.group || '').toLowerCase() + ' ' + String(a.detail || '').toLowerCase();
+    var hay = label + ' ' + tex + ' ' + id + ' ' + String(a.group || '').toLowerCase() + ' ' + String(a.detail || '').toLowerCase() +
+      ' ' + String(a.words || '').toLowerCase();
+    /* starting a new document is found by its own name only ("article",
+       "new"), never by the words describing the template — "refer" must not
+       offer to replace the document with the sample article */
+    if (a.group === 'New document') hay = label;
     var words = q.toLowerCase().split(/\s+/).filter(Boolean);
     if (!words.every(function (w) { return hay.indexOf(w) >= 0; })) return 0;
     var w = words[0], s = 10;
@@ -76,6 +82,9 @@
     else if (label.indexOf(w) === 0 || tex.indexOf('\\' + w) === 0 || id.indexOf(w) === 0) s = 80;
     else if (new RegExp('(^|[\\s\\-—(])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(label)) s = 60;
     else if (label.indexOf(w) >= 0) s = 40;
+    /* the whole word beats the start of a longer one: "reference" is a
+       reference before it is "References" */
+    if (s > 10 && label.split(/[^a-z0-9]+/).indexOf(w) >= 0) s += 5;
     return s;
   }
 
@@ -123,7 +132,11 @@
       }).slice(0, q ? 60 : 120);
       listEl.textContent = '';
       sel = Math.min(sel, Math.max(0, items.length - 1));
-      if (!items.length) listEl.appendChild(h('div', 'cp-none', 'Nothing matches “' + q + '”.'));
+      if (!items.length) {
+        listEl.appendChild(h('div', 'cp-none', /^[A-Za-z]+\{/.test(q) && opts.fromBackslash
+          ? 'Finish with } to write \\' + q.replace(/\}?$/, '}') + ' into the text.'
+          : 'Nothing matches “' + q + '”.'));
+      }
       var lastGroup = null;
       items.forEach(function (it, i) {
         var a = it.a;
@@ -161,9 +174,12 @@
       if (!it) return;
       close();
       remember(it.a.id);
+      /* the caret back where it was (focus is immediate, and the field
+         redraws on it), then the command at once — a timer here would let
+         the next keys run into the text before a box the command opens is
+         there (and a tab in the background runs timers late) */
       restoreContext(ctx);
-      /* let the field take focus (it redraws on focus) before acting in it */
-      setTimeout(function () { try { it.a.run(); } catch (e) { console.error(e); } }, 0);
+      try { it.a.run(); } catch (e) { console.error(e); }
     }
 
     input.addEventListener('keydown', function (e) {
@@ -180,7 +196,18 @@
       }
       e.stopPropagation();   /* typing here is not a shortcut */
     });
-    input.addEventListener('input', function () { sel = 0; render(); });
+    input.addEventListener('input', function () {
+      /* LaTeX typed on after "\": \cite{key}, \emph{words} … go into the
+         text as typed, where they turn into what they write (doc.js
+         texCommand) */
+      if (opts.fromBackslash && ctx.kind === 'text' && /^[A-Za-z]+\{[^{}]*\}$/.test(input.value)) {
+        var typed = '\\' + input.value;
+        close(); restoreContext(ctx);
+        document.execCommand('insertText', false, typed);
+        return;
+      }
+      sel = 0; render();
+    });
     back.addEventListener('mousedown', function (e) {
       if (e.target === back) { e.preventDefault(); close(); restoreContext(ctx); }
     });

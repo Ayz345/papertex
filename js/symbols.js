@@ -10,7 +10,7 @@
   function bb(L) { return { tex: '\\mathbb{' + L + '}', d: L, cls: 'upr', f: 'bb' }; }
   function cal(L) { return { tex: '\\mathcal{' + L + '}', d: L, cls: 'upr', f: 'cal' }; }
 
-  grp('Structures', '∑', [
+  grp('Fractions & roots', '∑', [
     b('frac', '<span class="pv-frac"><i>a</i><i>b</i></span>', 'Fraction  /'),
     b('sup', '<span class="pv">x<sup>2</sup></span>', 'Superscript  ^'),
     b('sub', '<span class="pv">x<sub>i</sub></span>', 'Subscript  _'),
@@ -27,14 +27,14 @@
     b('prod', '<span class="pv">∏</span>', 'Product'),
     b('int', '<span class="pv">∫</span>', 'Integral'),
     b('iint', '<span class="pv">∬</span>', 'Double integral'),
-    b('oint', '<span class="pv">∮</span>', 'Contour integral'),
+    b('oint', '<span class="pv">∮</span>', 'Integral around a closed loop'),
     b('lim', '<span class="pv">lim</span>', 'Limit'),
     b('bigcup', '<span class="pv">⋃</span>', 'Big union'),
     b('bigcap', '<span class="pv">⋂</span>', 'Big intersection'),
     b('matrix2', '<span class="pv">(▦)</span>', '2×2 matrix'),
     b('matrix3', '<span class="pv">(▦)</span>', '3×3 matrix'),
     b('cases', '<span class="pv">{▤</span>', 'Cases'),
-    b('binom', '<span class="pv">(<sup>n</sup><sub>k</sub>)</span>', 'Binomial'),
+    b('binom', '<span class="pv">(<sup>n</sup><sub>k</sub>)</span>', 'Binomial: n choose k'),
     b('text', '<span class="pv-t">Abc</span>', 'Text inside math'),
     b('deriv', '<span class="pv-frac"><i>d</i><i>dx</i></span>', 'Derivative d/dx'),
     b('pderiv', '<span class="pv-frac"><i>∂</i><i>∂x</i></span>', 'Partial ∂/∂x')
@@ -69,7 +69,7 @@
     s('\\prime', '′', 'upr'), s('\\hbar', 'ℏ', 'var'), s('\\ell', 'ℓ', 'var')
   ]);
 
-  grp('Relations', '≈', [
+  grp('Compare', '≈', [
     s('=', '=', 'rel'), s('\\neq', '≠', 'rel'), s('\\equiv', '≡', 'rel'),
     s('\\approx', '≈', 'rel'), s('\\sim', '∼', 'rel'), s('\\simeq', '≃', 'rel'),
     s('\\cong', '≅', 'rel'), s('\\propto', '∝', 'rel'),
@@ -114,7 +114,7 @@
     s('\\gcd', 'gcd', 'fn'), s('\\Pr', 'Pr', 'fn'), s('\\bmod', 'mod', 'fn')
   ]);
 
-  grp('Accents', 'x̂', [
+  grp('Hats & bold', 'x̂', [
     b('hat', '<span class="pv">x̂</span>', 'Hat'),
     b('bar', '<span class="pv">x̄</span>', 'Bar / mean'),
     b('vec', '<span class="pv">x⃗</span>', 'Vector'),
@@ -156,7 +156,8 @@
     text: 'text', binom: 'binom', cases: 'cases', matrix: 'matrix2', pmatrix: 'matrix2',
     bmatrix: 'matrix2', hat: 'hat', bar: 'bar', vec: 'vec', tilde: 'tilde', dot: 'dot',
     ddot: 'ddot', widehat: 'widehat', overline: 'overline', underline: 'underline',
-    boldsymbol: 'boldsym', left: 'paren', abs: 'abs', norm: 'norm'
+    boldsymbol: 'boldsym', left: 'paren', abs: 'abs', norm: 'norm',
+    mathbf: 'mathbf', bm: 'boldsym', mathrm: 'text', textrm: 'text', tfrac: 'frac'
   };
 
   window.PT = window.PT || {};

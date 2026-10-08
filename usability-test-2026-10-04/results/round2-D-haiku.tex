@@ -1,0 +1,82 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb}
+\usepackage{amsthm}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{hyperref}
+\hypersetup{pdftitle={Energy Decay in a Damped Harmonic Oscillator}, pdfauthor={Lena Ortiz}}
+
+\newtheorem{theorem}{Theorem}
+
+\title{Energy Decay in a Damped Harmonic Oscillator}
+\author{Lena Ortiz}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{equation}
+  m\ddot{\{x\}}+c\dot{\{x\}}+kx=0,
+\end{equation}
+where m \textgreater{} 0 is the mass, c ≥ 0 the damping coefficient and k \textgreater{} 0 the spring constant. Dividing by m and writing omega\_0 = sqrt(k/m) and gamma = c/(2m) gives the standard form
+\begin{equation}
+  \ddot{\{x\}}+2\gamma\dot{\{x\}}+\omega_{0}^{2}x=0.
+\end{equation}
+2 Solution\\
+
+Substituting x = exp(lambda t) into equation (2) gives the characteristic equation lambda\textasciicircum{}2 + 2 gamma lambda + omega\_0\textasciicircum{}2 = 0, whose roots are
+\begin{equation}
+  \lambda=-\gamma\pm\sqrt{\gamma^{2}-}\omega_{0}^{2}.
+\end{equation}
+The behaviour depends on the sign of the discriminant:
+\\
+
+\{underdamped gamma \textless{} 0
+critically damped gamma = 0
+overdamped gamma \textgreater{} 0\}
+\\
+
+In the underdamped case let omega\_d = sqrt\{omega\_0\textasciicircum{}2 - gamma\textasciicircum{}2\}. With x(0) = x\_0 and dot x (0) = 0 the solution is
+\begin{equation}
+  x(t)=x_{0}\exp\{-\gamma\}t(\cos\{\omega_{d}t\})+\frac{\gamma}{\omega_{d}}\sin\{\omega_{d}t\}
+\end{equation}
+Equivalently, with y = (x, dot x) the second-order equation becomes the first-order system
+\begin{equation}
+  \dot{\{y\}}=\begin{pmatrix}
+0;1;-\omega_{0}^{2};-2\gamma &  \\
+y & 
+\end{pmatrix}
+\end{equation}
+
+\begin{theorem}
+  The energy E(t) = frac\{1\}\{2\} m dot\{x\}\textasciicircum{}2 + frac\{1\}\{2\} k x\textasciicircum{}2 never increases. More precisely, dE/dt = -c dot\{x\}\textasciicircum{}2 \textless{}= 0.
+\end{theorem}
+
+\begin{proof}
+  Differentiate E and use (1):\\
+\\
+dE/dt = m dot\{x\} ddot\{x\} + k x dot\{x\}\\
+ = dot\{x\}(m ddot\{x\} + k x)\\
+ = -c dot\{x\}\textasciicircum{}2.
+\end{proof}
+
+3 Numerical check\\
+
+We integrated (2) with omega\_0 = 2, gamma = 0.2 and x\_0 = 1 on t in [0, 10], using the explicit Euler method and the classical fourth-order Runge-Kutta method (RK4) [2]. For each step size h:
+\\
+
+1. integrated from t = 0 to t = 10 with 10/h steps;
+2. compared every step with the exact solution (4);
+3. recorded the largest absolute difference.
+\\
+
+References
+\\
+
+[1] H. Goldstein, C. Poole and J. Safko, Classical Mechanics, 3rd ed., Addison-Wesley, 2002.
+\\
+
+[2] E. Hairer, S. P. Norsett and G. Wanner, Solving Ordinary Differential Equations I, 2nd ed., Springer, 1993.
+
+\end{document}

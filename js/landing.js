@@ -1,7 +1,8 @@
 /* PaperTeX — the home page's behaviour and motion (index.html).
 
    Needs, in order: js/vendor/gsap.min.js, js/vendor/ScrollTrigger.min.js,
-   js/store.js, js/templates.js, js/home.js. Every part degrades: without
+   js/store.js, js/templates.js, js/home.js, js/symbols.js, js/math.js
+   (the editor's math engine, for "Try it"). Every part degrades: without
    GSAP the page is static but complete; with prefers-reduced-motion the
    demos show their finished state and nothing moves on its own.
 
@@ -11,7 +12,7 @@
      nav                    stuck state, scroll progress, current section
      buttons                ripple on press, magnetic primary buttons
      hero                   the Gaussian integral typing itself
-     try                    live formula box, examples typed in, copy
+     try                    the editor's MathField, a toolbar, examples typed key by key
      plot                   a function typed and drawn as you scroll
      gallery                pie, histogram, polar, bars, 3D, log axis, area
      data                   table → chart, chart type, fitted model
@@ -338,7 +339,8 @@
     var title = $('.hero__title');
     var words = splitWords(title);
     gsap.set(title, { autoAlpha: 1 });
-    var tl = gsap.timeline({ defaults: { ease: 'power4.out' }, onComplete: done });
+    var tl = gsap.timeline({ defaults: { ease: 'power4.out' } });
+    tl.call(done, null, 0.45);                       // the typing starts while the page is still landing
     tl.fromTo(words, { yPercent: 120, rotate: 4 }, { yPercent: 0, rotate: 0, duration: 1.05, stagger: 0.06 }, 0.1)
       .fromTo('[data-hero]', { autoAlpha: 0, y: 24 }, { autoAlpha: 1, y: 0, duration: 0.8, stagger: 0.1 }, 0.35)
       .fromTo('[data-hero-sheet]', { autoAlpha: 0, y: 80, rotateX: 14, transformOrigin: '50% 100%' },
@@ -537,26 +539,21 @@
       .set(caret, { autoAlpha: 0 }, 8.2)
       .addLabel('done', 8.25)
       .fromTo(eq, { scale: 1 }, { scale: 1.04, duration: 0.25, yoyo: true, repeat: 1, ease: 'power1.inOut', immediateRender: false }, 8.2)
-      .to([intG, body, rest], { autoAlpha: 0, y: -6, duration: 0.35, stagger: 0.05 }, 11.4)
-      .set([intG, body, rest], { y: 0 }, 11.9)
-      .to({}, { duration: 0.1 }, 11.9);
+      .to([intG, body, rest], { autoAlpha: 0, y: -6, duration: 0.35, stagger: 0.05 }, 12.4)
+      .set([intG, body, rest], { y: 0 }, 12.9)
+      .to({}, { duration: 0.1 }, 12.9);
+    tl.timeScale(1.75);                              // brisk typing; the finished equation still holds ~2.4 s
 
-    // Plays only once started (after the entrance), never while scrolled away;
-    // holding the pointer over it stops it, carets and pulses included.
-    var started = false, held = false, offscreen = false;
+    // Plays once started (as the entrance lands), never while scrolled away.
+    var started = false, offscreen = false;
     var demoEl = $('#heroDemo');
-    function sync() {
-      tl.paused(!started || held || offscreen);
-      demoEl.classList.toggle('is-paused', held);
-    }
+    function sync() { tl.paused(!started || offscreen); }
 
     if (!MOTION) {                                   // reduced motion: the finished equation, standing still
       tl.seek('done', false);
       tl.pause();
       return tl;
     }
-    demoEl.addEventListener('mouseenter', function () { held = true; sync(); });
-    demoEl.addEventListener('mouseleave', function () { held = false; sync(); });
     ST.create({
       trigger: demoEl, start: 'top bottom', end: 'bottom top',
       onToggle: function (self) { offscreen = !self.isActive; sync(); }
@@ -587,73 +584,184 @@
   }
 
   /* =====================================================================
-     try it — type, or pick an example and watch it typed in
+     try it — the editor's own equation box (js/math.js MathField). Type
+     int and fill its bounds, / for a fraction, Tab to move on; the
+     examples are typed into it key by key, the way you would.
      ===================================================================== */
+  var EXAMPLES = {
+    int01: ['int', '0', 'Tab', '1', 'Tab', 'x^2', ' ', 'dx=1/3'],
+    gauss: ['int', '-inf', 'Tab', 'inf', 'Tab', 'e^-x^2', '  ', 'dx=sqrtpi'],
+    basel: ['sum', 'k=1', 'Tab', 'inf', 'Tab', '1/k^2', '  ', '=pi^2', ' ', '/6'],
+    lim: ['lim', 'n->inf', '  ', '(1+1/n', '  ', ')^n', ' ', '=e'],
+    matrix: ['A=matrix', 'a', 'Tab', 'b', 'Tab', 'c', 'Tab', 'd'],
+    pyth: ['c=', 'sqrt', 'a^2', ' ', '+b^2']
+  };
   function setupTry() {
-    var input = $('#tryInput'), out = $('#tryOut'), texEl = $('#tryTex');
-    var copyBtn = $('#tryCopy'), clearBtn = $('#tryClear');
-    if (!input) return;
-    var prev = null, auto = null;
-
-    function update(animate) {
-      var res = convert(input.value);
-      if (!res.toks.length) {
-        out.textContent = '';
-        var ph = h('span', 'placeholder', 'Start typing — try ');
-        ph.appendChild(h('code', null, 'sum a_n <= 1'));
-        out.appendChild(ph);
-        prev = [];
-      } else {
-        prev = renderMath(out, res.toks, prev, 32, animate);
-      }
-      if (texEl.textContent !== (res.tex || ' ')) {
-        texEl.textContent = res.tex || ' ';
-        texEl.classList.remove('flash');
-        void texEl.offsetWidth;
-        texEl.classList.add('flash');
-      }
-    }
-    function stopAuto() {
-      if (auto) { auto.kill(); auto = null; }
-      $$('.chip.is-on').forEach(function (c) { c.classList.remove('is-on'); });
+    var M = PT.math, field = $('#tryField');
+    if (!field) return;
+    var sheet = $('#trySheet'), texEl = $('#tryTex'), typed = $('#tryTyped');
+    var copyBtn = $('#tryCopy'), clearBtn = $('#tryClear'), bar = $('#tryBar');
+    if (!M || !M.MathField) {                         // the math engine didn't load: say so plainly
+      field.textContent = 'The formula box needs JavaScript.';
+      return;
     }
 
-    input.addEventListener('input', function () { stopAuto(); update(true); });
+    var lastTex = null, auto = null, replaying = false;
+    var mf = new M.MathField(field, {
+      onChange: update,
+      onRender: function (f) { empty(f); follow(); },
+      /* Tab past the last slot, or Esc, leaves the box for the Copy button:
+         the keyboard is never trapped in the formula */
+      onLeave: function (f, dir) { if (dir === 'next') copyBtn.focus(); },
+      onEscape: function () { copyBtn.focus(); }
+    });
+    function empty(f) {                              // also called from the constructor, before mf is set
+      f = f || mf;
+      if (f) sheet.classList.toggle('is-empty', !f.root.k.length && !f.focused);
+    }
+    /* a formula wider than the box scrolls with the caret, so what you type
+       is always in view */
+    function follow() {
+      var c = field.querySelector('.mcaret');
+      if (!c) return;
+      var fr = field.getBoundingClientRect(), cr = c.getBoundingClientRect();
+      if (cr.right > fr.right - 16) field.scrollLeft += cr.right - fr.right + 32;
+      else if (cr.left < fr.left + 16) field.scrollLeft -= fr.left - cr.left + 32;
+    }
+    function focusedNow() { return mf.hasFocus ? mf.hasFocus() : document.activeElement === field; }
+    function update() {
+      var tex = mf.tex();
+      empty();
+      if (tex === lastTex) return;
+      lastTex = tex;
+      /* one line, so a matrix does not make the bar jump taller; the end,
+         where the typing is, stays in view */
+      texEl.textContent = (tex || ' ').replace(/\s*\n\s*/g, ' ');
+      texEl.scrollLeft = texEl.scrollWidth;
+      if (MOTION) { texEl.classList.remove('flash'); void texEl.offsetWidth; texEl.classList.add('flash'); }
+    }
+
+    /* the keys, as they are pressed — yours, or an example's */
+    var KEYNAME = { ' ': 'Space', Tab: 'Tab', Enter: '↵', Backspace: '⌫', Delete: 'Del', ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓', Escape: 'Esc' };
+    var run = null;
+    function showKey(k) {
+      if (typed.querySelector('.try__typed-l')) typed.textContent = '';
+      if (k.length === 1 && k !== ' ') {
+        if (!run) { run = h('span', 'try__run'); typed.appendChild(run); }
+        run.textContent += k;
+        if (run.textContent.length > 24) run.textContent = '…' + run.textContent.slice(-23);   // never wider than the sheet
+      } else if (KEYNAME[k]) {
+        run = null;
+        typed.appendChild(h('kbd', null, KEYNAME[k]));
+      } else return;
+      while (typed.childNodes.length > 14) typed.removeChild(typed.firstChild);
+    }
+    function clearKeys(label) {
+      typed.textContent = ''; run = null;
+      if (label) typed.appendChild(h('span', 'try__typed-l', label));
+    }
+    field.addEventListener('keydown', function (e) {
+      if (e.isTrusted) stop();
+      if (!e.ctrlKey && !e.metaKey) showKey(e.key);
+    });
+    field.addEventListener('mousedown', function () { stop(); });
+    sheet.addEventListener('mousedown', function (e) {   // anywhere on the sheet: into the formula
+      if (e.target.closest('.try__mf, button, input')) return;
+      e.preventDefault();
+      stop();
+      field.focus({ preventScroll: true });
+    });
+
+    /* the toolbar: the same structures as the editor's palette */
+    bar.addEventListener('mousedown', function (e) { if (e.target.closest('button')) e.preventDefault(); });   // keep the caret where it is
+    bar.addEventListener('click', function (e) {
+      var b = e.target.closest('button');
+      if (!b || b === clearBtn) return;
+      stop();
+      if (document.activeElement !== field) field.focus({ preventScroll: true });
+      var name = b.getAttribute('data-build'), sy = b.getAttribute('data-sym');
+      if (name) mf.insertBuild(name);
+      else if (sy && PT.symbols && PT.symbols.byCmd[sy]) {
+        var it = PT.symbols.byCmd[sy];
+        mf.insertNode(M.sym(it.tex, it.d, it.cls, it.f));
+      }
+      if (MOTION) gsap.fromTo(field.querySelector('.mroot'), { scale: 0.97 }, { scale: 1, duration: 0.35, ease: 'back.out(3)', clearProps: 'transform' });
+    });
     clearBtn.addEventListener('click', function () {
-      stopAuto();
-      var old = Array.prototype.slice.call(out.children);
-      input.value = '';                              // emptied now, so typing during the fade is kept
-      if (MOTION && old.length) {
-        gsap.to(old, { autoAlpha: 0, y: -12, scale: 0.6, duration: 0.25, stagger: 0.015, ease: 'power2.in', onComplete: function () { if (!input.value) update(false); } });
-      } else update(false);
-      input.focus();
+      stop();
+      var root = field.querySelector('.mroot');
+      function wipe() { mf.setRoot(M.row()); update(); clearKeys(); field.focus({ preventScroll: true }); }
+      if (MOTION && root && mf.root.k.length) gsap.to(root, { opacity: 0, y: -10, scale: 0.92, duration: 0.22, ease: 'power2.in', onComplete: wipe });
+      else wipe();
     });
 
-    $$('.chip[data-ex]').forEach(function (chip) {
-      chip.addEventListener('click', function () {
-        var text = chip.getAttribute('data-ex');
-        stopAuto();
-        chip.classList.add('is-on');
-        if (!MOTION) { input.value = text; update(false); chip.classList.remove('is-on'); return; }
-        var from = input.value, del = { n: from.length }, add = { n: 0 };
-        auto = gsap.timeline({ onComplete: function () { chip.classList.remove('is-on'); auto = null; } });
-        auto.to(del, {
-          n: 0, duration: Math.min(0.45, from.length * 0.018), ease: 'none',
-          onUpdate: function () { var v = from.slice(0, Math.round(del.n)); if (v !== input.value) { input.value = v; update(false); } }
-        }).to(add, {
-          n: text.length, duration: text.length * 0.05, ease: 'none',
-          onUpdate: function () { var v = text.slice(0, Math.round(add.n)); if (v !== input.value) { input.value = v; update(true); } }
-        });
+    /* examples: typed key by key into the real field */
+    /* between an example's words the strip of typed keys starts a new run,
+       so "int" and its "0" do not read as one word "int0" */
+    var BRK = '\n';
+    function press(k) {
+      if (k === BRK) { run = null; return; }
+      field.dispatchEvent(new KeyboardEvent('keydown', { key: k, bubbles: true, cancelable: true }));
+    }
+    function keysOf(name) {
+      var out = [];
+      EXAMPLES[name].forEach(function (tok) {
+        if (out.length) out.push(BRK);
+        if (tok === 'Tab') out.push('Tab'); else for (var i = 0; i < tok.length; i++) out.push(tok[i]);
       });
+      return out;
+    }
+    function chips(name) {
+      $$('.chip[data-ex]').forEach(function (c) { c.classList.toggle('is-on', c.getAttribute('data-ex') === name); });
+    }
+    function stop() {
+      if (auto) { auto.kill(); auto = null; }
+      if (replaying) { replaying = false; if (!focusedNow()) { mf.focused = false; mf.render(); } }
+      chips(null);
+    }
+    function play(name, takeFocus) {
+      stop();
+      var keys = keysOf(name);
+      mf.setRoot(M.row());
+      clearKeys();
+      chips(name);
+      if (takeFocus) field.focus({ preventScroll: true });
+      else { mf.focused = true; }                   // show the caret without taking the page's focus
+      replaying = true;
+      if (!MOTION) {
+        keys.forEach(press);
+        finish();
+        return;
+      }
+      auto = gsap.timeline({ onComplete: finish });
+      var at = 0.15;
+      keys.forEach(function (k) {
+        auto.call(press, [k], at);
+        if (k !== BRK) at += (k === 'Tab' || k === ' ') ? 0.3 : 0.075;
+      });
+      auto.to({}, { duration: 0.2 }, at);
+    }
+    function finish() {
+      auto = null;
+      replaying = false;
+      chips(null);
+      if (!focusedNow()) { mf.focused = false; mf.render(); }
+      update();
+    }
+    $$('.chip[data-ex]').forEach(function (chip) {
+      chip.addEventListener('click', function () { play(chip.getAttribute('data-ex'), true); });
     });
 
+    /* phones and tablets: math.js gives every formula, this one included, a
+       hidden text box for the on-screen keyboard */
+
+    /* copy the LaTeX */
     copyBtn.addEventListener('click', function () {
       var label = copyBtn.querySelector('span'), status = $('#tryStatus');
       function done(ok) {
         label.textContent = ok ? 'Copied ✓' : 'Select & copy';
         copyBtn.classList.toggle('is-done', ok);
         if (status) status.textContent = ok ? 'LaTeX copied to the clipboard' : 'Copy failed; the LaTeX is selected, press Ctrl+C';
-        // the label bounces, not the button, so the button's own hover and press keep working
         if (MOTION) gsap.fromTo(label, { scale: 0.85 }, { scale: 1, duration: 0.5, ease: 'back.out(3)', clearProps: 'transform' });
         clearTimeout(copyBtn._t);
         copyBtn._t = setTimeout(function () {
@@ -675,7 +783,16 @@
       sel.addRange(range);
     }
 
-    update(false);
+    /* the first time it comes into view, an integral with bounds types itself in */
+    update();
+    if (MOTION) {
+      ST.create({ trigger: sheet, start: 'top 75%', once: true, onEnter: function () {
+        if (!mf.root.k.length && document.activeElement !== field) play('int01', false);
+      } });
+    } else {
+      play('int01', false);
+    }
+    clearKeys('Click the formula and type — or press an example');
   }
 
   /* =====================================================================
@@ -721,7 +838,7 @@
        curve; a new row draws in. `pgf` is what pgfplots is given. */
     function ex(f) { return Math.exp(f); }
     var SCENES = [
-      { name: 'Damped wave', caption: 'A damped wave, y = sin 2x · e^(−x/4), inside its envelope.', steps: [
+      { name: 'Damped wave', caption: 'A damped wave, <i>y</i> = sin 2<i>x</i> · <i>e</i><sup>−<i>x</i>/4</sup>, inside its envelope.', steps: [
         { row: 1, text: 'sin(2x)', fn: function (x) { return Math.sin(2 * x); }, pgf: 'sin(deg(2*x))' },
         { row: 1, text: 'sin(2x) * e^(-x/4)', fn: function (x) { return Math.sin(2 * x) * ex(-x / 4); }, pgf: 'sin(deg(2*x))*exp(-x/4)' },
         { row: 2, text: '+-e^(-x/4)', mirror: true, fn: function (x) { return ex(-x / 4); }, pgf: 'exp(-x/4)' }
@@ -734,7 +851,7 @@
         { row: 1, text: '1/(1 + e^(-(x-6)))', fn: function (x) { return 1 / (1 + ex(-(x - 6))); }, pgf: '1/(1+exp(-(x-6)))' },
         { row: 2, text: 'x/12', fn: function (x) { return x / 12; }, pgf: 'x/12' }
       ] },
-      { name: 'Wave packet', caption: 'A wave packet: sin 4x under a Gaussian envelope.', steps: [
+      { name: 'Wave packet', caption: 'A wave packet: sin 4<i>x</i> under a Gaussian envelope.', steps: [
         { row: 1, text: 'sin(4x)', fn: function (x) { return Math.sin(4 * x); }, pgf: 'sin(deg(4*x))' },
         { row: 1, text: 'sin(4x) * e^(-(x-6)^2/4)', fn: function (x) { return Math.sin(4 * x) * ex(-(x - 6) * (x - 6) / 4); }, pgf: 'sin(deg(4*x))*exp(-(x-6)^2/4)' },
         { row: 2, text: '+-e^(-(x-6)^2/4)', mirror: true, fn: function (x) { return ex(-(x - 6) * (x - 6) / 4); }, pgf: 'exp(-(x-6)^2/4)' }
@@ -821,7 +938,7 @@
       Object.assign(S, fresh());
       last = {};
       current = i;
-      cap.textContent = SCENES[i].caption;
+      cap.innerHTML = SCENES[i].caption;            // our own fixed strings: maths set with <i> and <sup>
       renderTex(false);
     }
 
@@ -857,18 +974,17 @@
         t.call(function () { S['tex' + r] = st.pgf; renderTex(true); }).to({}, { duration: 0.45 });
       });
       t.addLabel('shown').to({}, { duration: 2.6 })
+        .call(function () { if (held) { waiting = true; sync(); } })
         .to(fadeEls, { opacity: 0, duration: 0.45, ease: 'power1.in' });
       return t;
     }
 
-    // plays while on screen; holding the pointer over it stops it, to read or look closer
-    var tl = null, current = -1, visible = false, held = false;
-    function sync() {
-      if (tl) tl.paused(!visible || held);
-      stage.classList.toggle('is-paused', held);
-    }
+    // plays while on screen; pointing at a finished example keeps it up until the pointer leaves
+    var tl = null, current = -1, visible = false, held = false, waiting = false;
+    function sync() { if (tl) tl.paused(!visible || waiting); }
     function play(i) {
       if (tl) tl.kill();
+      waiting = false;
       if (!MOTION) { tl = null; showFinal(i); return; }
       tl = build(i);
       tl.play(0);
@@ -876,8 +992,8 @@
     }
 
     if (!MOTION) { showFinal(0); return; }           // reduced motion or no GSAP: the first example, finished
-    stage.addEventListener('mouseenter', function () { held = true; sync(); });
-    stage.addEventListener('mouseleave', function () { held = false; sync(); });
+    stage.addEventListener('mouseenter', function () { held = true; });
+    stage.addEventListener('mouseleave', function () { held = false; if (waiting) { waiting = false; sync(); } });
 
     Object.assign(S, fresh());
     render(false);
@@ -1122,10 +1238,13 @@
         tex($('#polarTex'), [['\\begin', '{polaraxis}[ymin=0, ymax=1]'], ['  \\addplot', '[thick, domain=0:6.2832, samples=360]'], ['', '    ({deg(x)}, {cos(deg(' + k + '*x))});'], ['\\end', '{polaraxis}']], flash);
       }
       var mark = pick(card, 'k', function (v) { run(+v); });
-      var tl = null, visible = false, held = false;
-      function sync() { if (tl) tl.paused(!visible || held); }
+      // Drawing never stops under the pointer (a click must always draw);
+      // pointing at the finished rose only keeps it up until the pointer leaves.
+      var tl = null, visible = false, held = false, waiting = false;
+      function sync() { if (tl) tl.paused(!visible || waiting); }
       function run(k) {
         if (tl) tl.kill();
+        waiting = false;
         Q.k = k; mark(k);
         polarTex(k, tl !== null);
         if (!MOTION) { Q.p = 1; Q.a = 1; draw(); return; }
@@ -1133,10 +1252,11 @@
         tl = gsap.timeline({ onUpdate: draw, onComplete: function () { run(KS[(KS.indexOf(k) + 1) % KS.length]); } })
           .to(Q, { p: 1, duration: 2.6, ease: 'power1.inOut' })
           .to({}, { duration: 2.2 })
+          .call(function () { if (held) { waiting = true; sync(); } })
           .to(Q, { a: 0, duration: 0.4, ease: 'power1.in' });
         sync();
       }
-      hold(card, function (v) { held = v; sync(); });
+      hold(card, function (v) { held = v; if (!v && waiting) { waiting = false; sync(); } });
       if (!MOTION) { run(3); return; }
       polarTex(3, false);
       watch(card, function (v) { visible = v; if (v && !tl) run(3); sync(); });
@@ -1380,12 +1500,26 @@
       }
       ticks.appendChild(s('path', { d: 'M' + (X0 - 4) + ' ' + Y(0.5) + 'h4' }));
       var yl = s('text', { x: X0 - 7, y: Y(0.5) + 4, 'text-anchor': 'end' }); yl.textContent = '.5'; ticks.appendChild(yl);
+      /* ∫ from 0 to b of f dx = …, set as maths: the limits as real scripts,
+         the variables italic, the sign and the digits upright */
+      var valNum = (function () {
+        val.textContent = '';
+        function ts(text, attrs) { var t = s('tspan', attrs || {}); t.textContent = text; val.appendChild(t); return t; }
+        ts('∫');
+        ts('0', { dy: 4, 'font-size': 8.5 });
+        ts('b', { dy: -11, dx: -4, 'font-size': 8.5, class: 'it' });
+        ts('f', { dy: 7, dx: 3, class: 'it' });
+        ts(' d');
+        ts('x', { class: 'it' });
+        ts(' = ');
+        return ts('');
+      })();
       var A = { b: MOTION ? 0 : 5 }, lastB = null;
       function draw() {
         var b = Math.max(0, Math.min(10, A.b));
         fillEl.setAttribute('d', b > 0.01 ? 'M' + X(0) + ' ' + BASE + curvePts(0, b, Math.max(2, Math.round(b * 16))) + 'L' + r1(X(b)) + ' ' + BASE + 'Z' : '');
         bound.setAttribute('d', 'M' + r1(X(b)) + ' ' + BASE + 'V' + r1(Y(f(b))));
-        val.textContent = '∫₀ᵇ f dx = ' + I(b).toFixed(2);
+        valNum.textContent = I(b).toFixed(2);
         var bs = b.toFixed(1);
         if (bs !== lastB) {
           lastB = bs; out.textContent = bs;
@@ -1488,7 +1622,7 @@
     function updateFit(animateNum) {
       fit.setAttribute('points', fitPoints(k));
       kOut.textContent = kLabel(k) + ' min';
-      legendK.textContent = '−t/' + kLabel(k);
+      legendK.textContent = kLabel(k);              // the legend's exponent is −t/k; only k changes
       var err = rms(k), best = Math.abs(k - BEST) < 0.01;
       rmsBox.classList.toggle('is-best', best);
       rmsNote.textContent = best ? 'Best fit for this data ✓' : 'Best near ' + kLabel(BEST) + ' min';
@@ -1792,7 +1926,7 @@
   /* =====================================================================
      start
      ===================================================================== */
-  setupTry();
+  try { setupTry(); } catch (e) { if (window.console) console.error(e); }   // the editor's math engine is a separate file: never let it stop the page
   setupFooter();
 
   if (!gsap || !ST) {                         // no GSAP: a static, complete page — every demo in its finished state
