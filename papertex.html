@@ -11,7 +11,7 @@
      are data: URLs; the compiled PDF is a blob:. connect-src names the
      engine host — tools/build-web.js narrows it to this site alone when
      TeX Live is deployed beside the page. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-hfOfR8PDYQKfSyZseVQAn/84OT4AhIEDL63/4K5V2Y0=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-U1pkv8s+ryMVSMfr5rDXLwc7UfPUZaL/QMWG94Y00dQ=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-Ef4OnvuifZJoJDaTiPnDDMwdCbQCFjTCRmzkWKWhbvU=' 'sha256-/my8OrM9PX/f6Bjiwp9Ni5P4zLRQH3Y3MAHhLpUTOKU=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-bYVf8Rqe53jzO/mJAbQfQcjEpA4gWKqPMOkhiKfr1dM=' 'sha256-a3y1woSD5+kkclCBe1CxjAR7tZ1IesUlzCOV9xbhSms=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-89T2eA9o1kgOeg7e+dTCgdkKW2QiiKPsUvX0bfV3STw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-hfOfR8PDYQKfSyZseVQAn/84OT4AhIEDL63/4K5V2Y0=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-U1pkv8s+ryMVSMfr5rDXLwc7UfPUZaL/QMWG94Y00dQ=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-Ef4OnvuifZJoJDaTiPnDDMwdCbQCFjTCRmzkWKWhbvU=' 'sha256-/my8OrM9PX/f6Bjiwp9Ni5P4zLRQH3Y3MAHhLpUTOKU=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-Ngxw6CloW0RWdzm9FS4199NJDCjjQ1iM0ymu6VbIGKQ=' 'sha256-a3y1woSD5+kkclCBe1CxjAR7tZ1IesUlzCOV9xbhSms=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-89T2eA9o1kgOeg7e+dTCgdkKW2QiiKPsUvX0bfV3STw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <!-- Where the compiler's wasm and TeX Live live, if not beside this page
      (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
 <meta name="papertex-engine" content="">
@@ -293,7 +293,7 @@ button { font-family: inherit; }
   .top > .tb-more {
     display: inline-flex; justify-content: center; min-width: 40px; padding-inline: 8px;
     font-size: 18px; line-height: 1; letter-spacing: .04em;
-    position: sticky; right: 91px; z-index: 1;
+    position: sticky; right: 95px; z-index: 1; margin-right: 4px;   /* Make PDF (89px) and a 6px gap */
     box-shadow: -18px 0 14px -4px rgba(228, 226, 222, .96), 0 0 0 1px rgba(30, 28, 24, .13);
   }
   .top > .tb-more[aria-expanded="true"] { background: #fff; box-shadow: -18px 0 14px -4px rgba(228, 226, 222, .96), 0 0 0 1px var(--accent-2); }
@@ -13620,8 +13620,11 @@ blockquote.pt-quote {
          "TeX gave no reason". */
       var log = (r.texLog || '') + '\n' + (r.log || '') + '\n' + logs.join('\n');
       return {
-        error: firstError(log) || r.error ||
-          'The document did not compile, and TeX gave no reason.',
+        /* no log at all: TeX never ran — the engine failed to start (a
+           file it needs was refused or missing), not the document */
+        error: firstError(log) || r.error || (r.texLog ?
+          'The document did not compile, and TeX gave no reason.' :
+          'The LaTeX engine did not start, so your document was not typeset. Reload the page and try again; Download .tex still works.'),
         log: log
       };
     });

@@ -191,8 +191,11 @@
          "TeX gave no reason". */
       var log = (r.texLog || '') + '\n' + (r.log || '') + '\n' + logs.join('\n');
       return {
-        error: firstError(log) || r.error ||
-          'The document did not compile, and TeX gave no reason.',
+        /* no log at all: TeX never ran — the engine failed to start (a
+           file it needs was refused or missing), not the document */
+        error: firstError(log) || r.error || (r.texLog ?
+          'The document did not compile, and TeX gave no reason.' :
+          'The LaTeX engine did not start, so your document was not typeset. Reload the page and try again; Download .tex still works.'),
         log: log
       };
     });

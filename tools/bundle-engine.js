@@ -86,6 +86,20 @@ fs.copyFileSync(
   path.join(out, 'LICENSE-siglum.txt')
 );
 
+/* 3. busytex.js from the site itself is loaded by its own address. The
+      engine always fetched it and ran it from a blob: URL, which the site's
+      Content-Security-Policy header refuses (script-src has no blob:), so
+      compiling failed on any host that sends the header. A copy on another
+      origin still goes through a blob (tools/build-web.js then allows
+      blob: for that build). */
+patch('siglum.worker.js', 'busytex.js by address',
+  '    if (!busytexScriptLoaded) {\n        const response = await fetch(jsUrl);',
+  '    if (!busytexScriptLoaded && new URL(jsUrl, self.location.href).origin === self.location.origin) {\n' +
+  '        importScripts(jsUrl);   /* PaperTeX patch: same origin, no blob: needed */\n' +
+  '        busytexScriptLoaded = true;\n' +
+  '    }\n' +
+  '    if (!busytexScriptLoaded) {\n        const response = await fetch(jsUrl);');
+
 const kb = (f) => (fs.statSync(path.join(out, f)).size / 1024).toFixed(0) + ' kB';
 console.log('engine/siglum.js         ' + kb('siglum.js'));
 console.log('engine/siglum.worker.js  ' + kb('siglum.worker.js'));

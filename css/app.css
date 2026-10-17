@@ -149,7 +149,7 @@ button { font-family: inherit; }
   .top > .tb-more {
     display: inline-flex; justify-content: center; min-width: 40px; padding-inline: 8px;
     font-size: 18px; line-height: 1; letter-spacing: .04em;
-    position: sticky; right: 91px; z-index: 1;
+    position: sticky; right: 95px; z-index: 1; margin-right: 4px;   /* Make PDF (89px) and a 6px gap */
     box-shadow: -18px 0 14px -4px rgba(228, 226, 222, .96), 0 0 0 1px rgba(30, 28, 24, .13);
   }
   .top > .tb-more[aria-expanded="true"] { background: #fff; box-shadow: -18px 0 14px -4px rgba(228, 226, 222, .96), 0 0 0 1px var(--accent-2); }

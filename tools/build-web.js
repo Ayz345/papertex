@@ -192,7 +192,9 @@ if (fs.existsSync(vendor)) {
 /* 5. headers: the same policy as the page, plus what only a header can say */
 const headers = [
   '/*',
-  '  Content-Security-Policy: ' + csp + "; frame-ancestors 'self'",
+  /* TeX Live on another origin: the worker runs busytex.js from a blob:
+     URL (tools/bundle-engine.js, patch 3), which the header must allow */
+  '  Content-Security-Policy: ' + (engineOrigin ? csp.replace("script-src 'self'", "script-src 'self' blob:") : csp) + "; frame-ancestors 'self'",
   '  X-Content-Type-Options: nosniff',
   '  Referrer-Policy: no-referrer',
   '  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()',
