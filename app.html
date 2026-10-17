@@ -135,14 +135,14 @@
 
     <h3>Writing formulas — just type the name</h3>
     <div class="helpgrid">
-      <kbd>int</kbd><span>Becomes ∫, with the caret waiting in the lower limit. Same for
+      <kbd>int</kbd><span>Becomes ∫, with the cursor waiting in the lower limit. Same for
         <code>sum</code>, <code>prod</code>, <code>lim</code>, <code>sqrt</code>, <code>frac</code>, <code>matrix</code>, <code>cases</code>, <code>vec</code>, <code>hat</code></span>
       <kbd>Enter</kbd><span>Done with this part — on to the next one: lower limit → upper limit → the integrand,
         numerator → denominator → after the fraction, out of an exponent. <kbd>Space</kbd> does the same.
         Leave a lower limit empty and it skips straight past the limits. Only on the line itself
         does Enter start a new equation line</span>
       <kbd>↑ ↓</kbd><span>Go to what is drawn above or below: from the line, ↑ enters the exponent, upper limit or
-        numerator beside the caret and ↓ the index, lower limit or denominator; from an exponent,
+        numerator beside the cursor and ↓ the subscript, lower limit or denominator; from an exponent,
         ↓ comes back down to the line</span>
       <kbd>Tab</kbd><span>Steps through every box in turn, empty ones included. <kbd>Shift</kbd>+<kbd>Tab</kbd> goes back</span>
       <kbd>^</kbd><span>From inside a lower limit, jumps up to the upper one — <kbd>_</kbd> jumps back down</span>
@@ -151,8 +151,9 @@
       <kbd>sin</kbd><span>Becomes an upright function name, as <code>\sin</code> should be</span>
       <kbd>-&gt;</kbd><span>Becomes → &nbsp;·&nbsp; <kbd>&lt;=</kbd> ≤ &nbsp;·&nbsp; <kbd>&gt;=</kbd> ≥ &nbsp;·&nbsp; <kbd>!=</kbd> ≠ &nbsp;·&nbsp; <kbd>+-</kbd> ±</span>
       <kbd>Backspace</kbd><span>Straight after one of those puts the plain letters back</span>
-      <kbd>/</kbd><span>Fraction — whatever you just typed becomes the numerator. For a plain slash, as in k/m,
-        type <kbd>/</kbd> twice (or Backspace straight after it)</span>
+      <kbd>/</kbd><span>Fraction — the term just before it becomes the numerator: <code>dy/dt</code>, <code>(a+b)/2</code>,
+        and in <code>(T_1-T_0)x/L</code> only the <code>x</code>. The Fraction button and <code>frac</code> give an empty one to fill in.
+        For a plain slash, as in k/m, type <kbd>/</kbd> twice (or Backspace straight after it)</span>
       <kbd>^</kbd> <span>Superscript &nbsp;·&nbsp; <kbd>_</kbd> subscript &nbsp;·&nbsp; type both for a stacked pair.
         <kbd>ü</kbd> also gives a superscript, for keyboards where <kbd>^</kbd> is a dead key</span>
       <kbd>x1</kbd><span>A digit straight after a letter becomes an index: <code>x1</code> → x₁, <code>a12</code> → a₁₂, <code>alpha3</code> → α₃.
@@ -182,7 +183,7 @@
       <kbd>References</kbd><span>To refer to an equation, table, figure or section, or to cite a work:
         <kbd data-key="view.palette.cmd">Ctrl+K</kbd> → “reference” or “cite”, or the ↪ button on selected text.
         Numbers keep up as things move</span>
-      <kbd>Footnote</kbd><span><kbd data-key="view.palette.cmd">Ctrl+K</kbd> → “footnote” puts one at the caret; click its number to change it</span>
+      <kbd>Footnote</kbd><span><kbd data-key="view.palette.cmd">Ctrl+K</kbd> → “footnote” puts one at the cursor; click its number to change it</span>
       <kbd>Proofs</kbd><span><kbd data-key="block.eq">Ctrl+Enter</kbd> in a theorem or proof puts the equation inside it, before the □</span>
       <kbd data-key="doc.export">Ctrl+S</kbd><span>Downloads the .tex — images come with it, keep them in the same folder</span>
       <kbd data-key="doc.open">Ctrl+O</kbd><span>Opens a <b>.tex</b> file — or a whole Overleaf project: its “Download source” .zip, or the

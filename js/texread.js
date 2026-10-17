@@ -1232,10 +1232,8 @@
       }
       return b;
     });
-    /* every work cited has an entry, and the list is somewhere */
     /* every work cited has an entry: from the project's .bib when there is
-       one (
-ocite{*}: all of it), else empty, to fill in */
+       one (\nocite{*}: all of it), else empty, to fill in */
     var bibdb = opts.bib ? parseBib(opts.bib) : {};
     var cited = rd.ctx.citeOrder.slice();
     if (cited.indexOf('*') >= 0) cited = cited.filter(function (k) { return k !== '*'; }).concat(Object.keys(bibdb));
@@ -1247,6 +1245,9 @@ ocite{*}: all of it), else empty, to fill in */
       else { rd.bib.push({ key: key, author: '', title: '', journal: '', year: '' }); if (opts.bib) missing.push(k); }
     });
     if (missing.length) notes.add('bibmissing', 'Not in the .bib file, so left empty to fill in: ' + missing.join(', '));
+    /* the whole .bib, cited or not, stays with the document (not printed):
+       a work cited later comes from it, as it would in Overleaf */
+    var library = Object.keys(bibdb).map(function (k) { return bibEntry(label(k), bibdb[k], rd.ctx); });
     if (rd.bib.length && !blocks.some(function (b) { return b.t === 'bib'; })) blocks.push({ id: rd.id(), t: 'bib' });
     /* a package kept from the file that the writer loads anyway for these
        blocks: once is enough */
@@ -1284,7 +1285,9 @@ ocite{*}: all of it), else empty, to fill in */
         settings.preamble = String(settings.preamble || '').split('\n').filter(function (x) { return x.trim() && auto.indexOf(x.trim()) < 0; }).join('\n');
       } catch (e) { /* keep it as read */ }
     }
-    return { doc: { meta: meta, settings: settings, blocks: blocks, bib: rd.bib }, notes: notes.out(), broken: rd.broken };
+    var out = { meta: meta, settings: settings, blocks: blocks, bib: rd.bib };
+    if (library.length) out.bibLibrary = library;
+    return { doc: out, notes: notes.out(), broken: rd.broken };
   }
 
   /* does this text look like LaTeX, not a project file? */

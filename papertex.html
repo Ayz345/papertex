@@ -11,7 +11,7 @@
      are data: URLs; the compiled PDF is a blob:. connect-src names the
      engine host — tools/build-web.js narrows it to this site alone when
      TeX Live is deployed beside the page. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-hfOfR8PDYQKfSyZseVQAn/84OT4AhIEDL63/4K5V2Y0=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-U1pkv8s+ryMVSMfr5rDXLwc7UfPUZaL/QMWG94Y00dQ=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-N7gwCnXw5yV2AJ6NaMSReh3jvRSL3ZmqyebP5KNwJXo=' 'sha256-r3q+Xrl/isRFioU/V6uvrSbl8ay11cH6yBkGj+KUvZg=' 'sha256-qcFA+TOmcPyDaef9XVy4DTbcy2O98KaLBmU2bJ6UJqg=' 'sha256-m6ZufmdvKdyk6Jk2FHD7vFynWbDROIwnBtSY5MCstIY=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-FhIJdB2P9akUK79/DSM8iXdsf+ylY8k0PqM4qeuNp40=' 'sha256-a3y1woSD5+kkclCBe1CxjAR7tZ1IesUlzCOV9xbhSms=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-KjRn8QD3u9oE0k2F7AXHzo2ryXcXaerqDo2RQhE8DLc='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-BTJyM//T36beMA6SX6sm1ZiI/X46wKqND3Kylbm02vs=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-MJ5zhakDm7hm0lVafVeFb1BEOQ4+tODFM3S4D+QdsgU=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-CoZh+jYl8McHKRJEdhGuWtNb3QxVr4ajm91zizVx52o=' 'sha256-fLBomP1Kfc2kcR4bmXh1PrEx4o2P8cyJh6KrogSrzNU=' 'sha256-CAerlBtaeMvVxCwYJDdqwAtByKIlI3Invl1J5vX/pEY=' 'sha256-m6ZufmdvKdyk6Jk2FHD7vFynWbDROIwnBtSY5MCstIY=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-FhIJdB2P9akUK79/DSM8iXdsf+ylY8k0PqM4qeuNp40=' 'sha256-8pKaQF1tkxeLhGaQRindJVGvU+UQKwiqACC5Q69e8aY=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-hf+KyeLcxaylmWsQk0qRa3kKgHW1Oxdak1yKCRU//bw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <!-- Where the compiler's wasm and TeX Live live, if not beside this page
      (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
 <meta name="papertex-engine" content="">
@@ -1413,6 +1413,18 @@ body.nopanel .side { margin-right: calc(-1 * var(--sidew)); }
 .mx-field { font-family: "PaperTeX", serif; font-size: 34px; color: #1d1b17; outline: none; }
 .mx-field .mmat .mph { min-width: 1em; min-height: 1.1em; }
 @media (max-width: 600px) { .mx-field { font-size: 24px; } .mx-paper { padding: 24px 12px; } }
+/* "Page updated · 1 note": the notes open from it */
+.texstat.hasnotes { cursor: pointer; color: var(--ink-2); text-decoration: underline dotted; text-underline-offset: 2px; }
+.texstat.hasnotes:hover, .texstat.hasnotes:focus-visible { color: var(--accent, #8b5a00); }
+/* the symbol panel's search: every group at once */
+.psearch {
+  margin: 8px 8px 0; padding: 5px 9px; font: inherit; font-size: 12px;
+  border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink-2);
+  outline: none; transition: border-color .15s, box-shadow .15s;
+}
+.psearch:focus { border-color: var(--accent-2); box-shadow: 0 0 0 3px rgba(184, 134, 11, .15); }
+.pbody.searching .pgrid { display: none; }
+.pbody.searching .pgrid.psres { display: grid; }
 </style>
 <style>
 /* css/paper.css */
@@ -1485,6 +1497,11 @@ body.nopanel .side { margin-right: calc(-1 * var(--sidew)); }
   opacity: 0; transition: opacity .15s;
 }
 .paper:hover .pt-addauth, .paper:hover .pt-tailadd, .paper:hover .pt-bibadd { opacity: .75; }
+/* "+ author" is found without hunting for it: faint at rest, firm when the
+   title block is pointed at or being written in */
+.pt-addauth { opacity: .4; color: #7a6a57; border-color: #c4b6a4; }
+.paper:hover .pt-addauth { opacity: .6; }
+.pt-head:hover .pt-addauth, .pt-head:focus-within .pt-addauth, .pt-addauth:focus-visible { opacity: 1; }
 /* the end-of-document button is how a new user finds the block list, so it
    stays in sight, and is drawn as firmly as the table and figure buttons
    that sit just above it when the paper is hovered */
@@ -1561,6 +1578,15 @@ blockquote.pt-quote {
 .pt-thm:focus-within .pt-thmt:empty { margin-right: .35em; }
 .pt-thm:focus-within .pt-thmt:empty::before { content: attr(data-ph); color: #c3b6a6; }
 .pt-thmb { font-style: italic; }
+/* a title reads as amsthm prints it: "Theorem 1 (Maximum principle)." —
+   upright, in brackets, the head's full stop after it; a proof's title
+   takes the place of "Proof": "Proof of Theorem 1." */
+.pt-thm:has(> .pt-thmt:not(:empty)) .pt-thmdot { display: none; }
+.pt-thm:not(.pt-thm-proof) > .pt-thmt:not(:empty) { font-style: normal; margin-left: -.2em; }
+.pt-thm:not(.pt-thm-proof) > .pt-thmt:not(:empty)::before { content: '('; }
+.pt-thm:not(.pt-thm-proof) > .pt-thmt:not(:empty)::after { content: ').'; }
+.pt-thm-proof:has(> .pt-thmt:not(:empty)) > .pt-thmh { display: none; }
+.pt-thm-proof > .pt-thmt:not(:empty)::after { content: '.'; }
 /* Italic runs (a theorem's statement, the "Proof." head, <i>, <em>) come from
    the italic face, whose ascent and descent differ from the upright one's: at
    the paragraph's line height their box stood out of the line and opened it
@@ -2141,6 +2167,9 @@ blockquote.pt-quote {
 }
 .pt-eqw > .mf-hintbar, .pt-eqw .mf-hintbar { left: auto; right: 0; top: calc(100% + 2px); }
 .mf-hintbar > span + span::before { content: '\00B7'; margin: 0 8px; color: #c9b48e; }
+/* the way out (Esc, or Enter on an empty last line) stands out a little */
+.mf-hintbar > .mf-hintmain { color: #7a4f10; font-weight: 600; }
+.mf-hintbar > .mf-hintmain kbd { color: #7a4f10; border-color: #d9b878; background: #fbefd6; }
 .mf-hintbar kbd {
   font: 10px/1.35 Consolas, ui-monospace, monospace; color: #5a4b3a;
   background: #f6efe3; border: 1px solid #e3d5bd; border-bottom-width: 2px; border-radius: 3px;
@@ -2320,14 +2349,14 @@ blockquote.pt-quote {
 
     <h3>Writing formulas — just type the name</h3>
     <div class="helpgrid">
-      <kbd>int</kbd><span>Becomes ∫, with the caret waiting in the lower limit. Same for
+      <kbd>int</kbd><span>Becomes ∫, with the cursor waiting in the lower limit. Same for
         <code>sum</code>, <code>prod</code>, <code>lim</code>, <code>sqrt</code>, <code>frac</code>, <code>matrix</code>, <code>cases</code>, <code>vec</code>, <code>hat</code></span>
       <kbd>Enter</kbd><span>Done with this part — on to the next one: lower limit → upper limit → the integrand,
         numerator → denominator → after the fraction, out of an exponent. <kbd>Space</kbd> does the same.
         Leave a lower limit empty and it skips straight past the limits. Only on the line itself
         does Enter start a new equation line</span>
       <kbd>↑ ↓</kbd><span>Go to what is drawn above or below: from the line, ↑ enters the exponent, upper limit or
-        numerator beside the caret and ↓ the index, lower limit or denominator; from an exponent,
+        numerator beside the cursor and ↓ the subscript, lower limit or denominator; from an exponent,
         ↓ comes back down to the line</span>
       <kbd>Tab</kbd><span>Steps through every box in turn, empty ones included. <kbd>Shift</kbd>+<kbd>Tab</kbd> goes back</span>
       <kbd>^</kbd><span>From inside a lower limit, jumps up to the upper one — <kbd>_</kbd> jumps back down</span>
@@ -2336,8 +2365,9 @@ blockquote.pt-quote {
       <kbd>sin</kbd><span>Becomes an upright function name, as <code>\sin</code> should be</span>
       <kbd>-&gt;</kbd><span>Becomes → &nbsp;·&nbsp; <kbd>&lt;=</kbd> ≤ &nbsp;·&nbsp; <kbd>&gt;=</kbd> ≥ &nbsp;·&nbsp; <kbd>!=</kbd> ≠ &nbsp;·&nbsp; <kbd>+-</kbd> ±</span>
       <kbd>Backspace</kbd><span>Straight after one of those puts the plain letters back</span>
-      <kbd>/</kbd><span>Fraction — whatever you just typed becomes the numerator. For a plain slash, as in k/m,
-        type <kbd>/</kbd> twice (or Backspace straight after it)</span>
+      <kbd>/</kbd><span>Fraction — the term just before it becomes the numerator: <code>dy/dt</code>, <code>(a+b)/2</code>,
+        and in <code>(T_1-T_0)x/L</code> only the <code>x</code>. The Fraction button and <code>frac</code> give an empty one to fill in.
+        For a plain slash, as in k/m, type <kbd>/</kbd> twice (or Backspace straight after it)</span>
       <kbd>^</kbd> <span>Superscript &nbsp;·&nbsp; <kbd>_</kbd> subscript &nbsp;·&nbsp; type both for a stacked pair.
         <kbd>ü</kbd> also gives a superscript, for keyboards where <kbd>^</kbd> is a dead key</span>
       <kbd>x1</kbd><span>A digit straight after a letter becomes an index: <code>x1</code> → x₁, <code>a12</code> → a₁₂, <code>alpha3</code> → α₃.
@@ -2367,7 +2397,7 @@ blockquote.pt-quote {
       <kbd>References</kbd><span>To refer to an equation, table, figure or section, or to cite a work:
         <kbd data-key="view.palette.cmd">Ctrl+K</kbd> → “reference” or “cite”, or the ↪ button on selected text.
         Numbers keep up as things move</span>
-      <kbd>Footnote</kbd><span><kbd data-key="view.palette.cmd">Ctrl+K</kbd> → “footnote” puts one at the caret; click its number to change it</span>
+      <kbd>Footnote</kbd><span><kbd data-key="view.palette.cmd">Ctrl+K</kbd> → “footnote” puts one at the cursor; click its number to change it</span>
       <kbd>Proofs</kbd><span><kbd data-key="block.eq">Ctrl+Enter</kbd> in a theorem or proof puts the equation inside it, before the □</span>
       <kbd data-key="doc.export">Ctrl+S</kbd><span>Downloads the .tex — images come with it, keep them in the same folder</span>
       <kbd data-key="doc.open">Ctrl+O</kbd><span>Opens a <b>.tex</b> file — or a whole Overleaf project: its “Download source” .zip, or the
@@ -2528,6 +2558,30 @@ blockquote.pt-quote {
     s('\\$', '$', 'upr'), s('\\degree', '°', 'upr'), s('\\circledast', '⊛', 'bin'),
     s('\\quad', ' ', 'spc'), s('\\,', ' ', 'spc'), s('\\;', ' ', 'spc')
   ]);
+
+  /* plain words for symbols whose command does not say what they are, for
+     the panel's search and Ctrl+K ("infinity" finds ∞) */
+  var WORDS = {
+    '+': 'plus', '-': 'minus', '\\pm': 'plus minus', '\\mp': 'minus plus', '\\times': 'times multiply cross',
+    '\\div': 'divide', '\\cdot': 'dot multiply times', '\\ast': 'asterisk star', '\\circ': 'compose ring degree',
+    '\\bullet': 'bullet dot', '\\oplus': 'direct sum circled plus', '\\otimes': 'tensor product circled times',
+    '\\wedge': 'and wedge', '\\vee': 'or vee', '\\cap': 'intersection', '\\cup': 'union', '\\setminus': 'set minus difference',
+    '\\nabla': 'nabla gradient del', '\\partial': 'partial derivative', '\\infty': 'infinity infinite',
+    '\\prime': 'prime derivative', '\\hbar': 'h bar planck', '\\ell': 'ell script l',
+    '=': 'equals', '\\neq': 'not equal', '\\equiv': 'equivalent identical', '\\approx': 'approximately about',
+    '\\sim': 'similar tilde distributed', '\\simeq': 'similar equal', '\\cong': 'congruent isomorphic', '\\propto': 'proportional',
+    '<': 'less than', '>': 'greater than', '\\leq': 'less or equal', '\\geq': 'greater or equal',
+    '\\ll': 'much less', '\\gg': 'much greater', '\\subset': 'subset', '\\supset': 'superset',
+    '\\subseteq': 'subset or equal', '\\supseteq': 'superset or equal', '\\in': 'element of in belongs',
+    '\\notin': 'not element of', '\\ni': 'contains', '\\forall': 'for all every', '\\exists': 'there exists',
+    '\\emptyset': 'empty set', '\\neg': 'not negation', '\\to': 'to tends arrow', '\\rightarrow': 'right arrow',
+    '\\leftarrow': 'left arrow', '\\Rightarrow': 'implies', '\\Leftrightarrow': 'if and only if iff',
+    '\\mapsto': 'maps to', '\\cdots': 'dots ellipsis', '\\ldots': 'dots ellipsis', '\\vdots': 'vertical dots', '\\ddots': 'diagonal dots',
+    '\\angle': 'angle', '\\perp': 'perpendicular', '\\parallel': 'parallel', '\\degree': 'degree'
+  };
+  G.forEach(function (g) {
+    g.items.forEach(function (it) { if (it.tex && WORDS[it.tex]) it.words = WORDS[it.tex]; });
+  });
 
   /* command name -> item, for the "\" typed-command autocomplete */
   var byCmd = {};
@@ -4328,7 +4382,7 @@ blockquote.pt-quote {
     if (!items.length) { if (bar) bar.remove(); return; }
     if (!bar) { bar = document.createElement('div'); bar.className = 'mf-hintbar'; box.appendChild(bar); }
     var html = items.map(function (it) {
-      return '<span>' + it[0].map(function (k) { return '<kbd>' + k + '</kbd>'; }).join('') + ' ' + it[1] + '</span>';
+      return '<span' + (it[2] ? ' class="mf-hintmain"' : '') + '>' + it[0].map(function (k) { return '<kbd>' + k + '</kbd>'; }).join('') + ' ' + it[1] + '</span>';
     }).join('');
     if (bar.innerHTML !== html) bar.innerHTML = html;
   };
@@ -4340,7 +4394,7 @@ blockquote.pt-quote {
     if (p) {
       var n = p.node, t = n.t, brace = braced.has(r);
       if (brace) H.push([['}'], 'close the brace']);
-      else if (t === 'scr') H.push([['Space'], n.sup === r ? 'leave the power' : 'leave the index']);
+      else if (t === 'scr') H.push([['Space'], n.sup === r ? 'leave the power' : 'leave the subscript']);
       else if (t === 'frac') H.push([['Space'], p.slot === 0 ? 'on to the denominator' : 'leave the fraction']);
       else if (t === 'sqrt') H.push([['Space'], n.k === r ? 'leave the root' : 'on to the root']);
       else if (t === 'acc') H.push([['Space'], 'leave it']);
@@ -4353,11 +4407,14 @@ blockquote.pt-quote {
       if (!this.opts.noMatrixSheet) H.push([['Double-click'], 'edit it large']);
       if (!inline && !this.opts.noMatrixSheet) H.push([['⋮'], 'rows and columns']);
     } else if (!p) {
-      if (isEmptyRow(this.root)) {
+      /* a display equation: how to get out of it is said first, plainly */
+      if (isEmptyRow(this.root) && !inline && this.opts.enterLeaves && this.opts.enterLeaves()) {
+        H.push([['Enter'], 'leave the equation', 1], [['Backspace'], 'remove this line']);
+      } else if (isEmptyRow(this.root)) {
         H.push([['alpha', 'sqrt', 'sum'], 'type a name'], [['/'], 'fraction'], [['^'], 'power']);
-      } else if (inline) H.push([['Esc'], 'back to the text']);
-      else if (this.leftMat) H.push([['Enter'], 'done']);
-      else H.push([['Enter'], 'new line'], [['Esc'], 'done']);
+      } else if (inline) H.push([['Esc'], 'back to the text', 1]);
+      else if (this.leftMat) H.push([['Enter'], 'done', 1]);
+      else H.push([['Esc'], 'done, write on below', 1], [['Enter'], 'new aligned line']);
     }
     return H;
   };
@@ -4621,7 +4678,10 @@ blockquote.pt-quote {
     /* wrap the selection or the trailing operand where it makes sense */
     var grab = null;
     if (n.t === 'frac' && n.style !== 'binom') {
-      grab = this.takeOperand();
+      /* "/" makes a fraction of what is just before it; the Fraction button,
+         \frac and "frac" give an empty one, the caret in its numerator (a
+         selection becomes the numerator either way) */
+      grab = env === '/' ? this.takeOperand() : this.takeSelection();
       if (grab.length) { n.n.k = grab; this.insertAt(n); this.cur = { row: n.d, i: 0 }; this.changed(); return; }
     } else if (n.t === 'sqrt' || n.t === 'acc' || n.t === 'paren') {
       grab = this.takeSelection();
@@ -4647,16 +4707,39 @@ blockquote.pt-quote {
     this.sel = null;
     return got;
   };
-  /* what "/" should pull into the numerator: the trailing operand */
+  /* What "/" pulls into the numerator: the term just before it, back to an
+     operator — x/, 12/, dy/, x^2y/ — but a bracket group only when it is
+     right before the "/": (a+b)/ takes (a+b), and (T_1-T_0)x/ takes x, not
+     the bracket too. */
   MathField.prototype.takeOperand = function () {
     var selGot = this.takeSelection();
     if (selGot.length) return selGot;
     var r = this.cur.row, i = this.cur.i, j = i;
+    var group = function (n) { return n.t === 'paren' || (n.t === 'ch' && /^[)\]]$/.test(n.c)); };
+    /* where a bracket written as characters, "(" … ")", opens */
+    var opening = function (at) {
+      var depth = 0;
+      for (var q = at; q >= 0; q--) {
+        var x = r.k[q];
+        if (x.t !== 'ch') continue;
+        if (/^[)\]]$/.test(x.c)) depth++;
+        else if (/^[([]$/.test(x.c) && --depth === 0) return q;
+      }
+      return -1;
+    };
     while (j > 0) {
       var n = r.k[j - 1];
       if (n.t === 'ch' && (n.cls === 'bin' || n.cls === 'rel' || n.cls === 'punct')) break;
       if (n.t === 'sym' && (n.cls === 'bin' || n.cls === 'rel' || n.cls === 'spc')) break;
       if (n.t === 'big') break;
+      if (group(n)) {
+        /* the bracket with its scripts, (a+b)^2, counts as right before */
+        var after = r.k.slice(j, i).every(function (x) { return x.t === 'scr'; });
+        if (!after) break;
+        if (n.t === 'ch') { var o = opening(j - 1); if (o < 0) break; j = o; }
+        else j--;
+        break;
+      }
       j--;
     }
     if (j === i) return [];
@@ -5448,7 +5531,7 @@ blockquote.pt-quote {
       if (pf && pf.node.t === 'frac' && pf.node.style === 'frac' && pf.node.d === this.cur.row && isEmptyRow(this.cur.row)) {
         this.unFrac(pf.node); this.changed(); return;
       }
-      this.insertBuild('frac');
+      this.insertBuild('frac', '/');
       var den = this.parentOf(this.cur.row);
       if (den && den.node.t === 'frac') softDen.add(den.node.d);
       /* and Backspace straight after it does the same */
@@ -5708,11 +5791,11 @@ blockquote.pt-quote {
       if (!big.matrixAt()) { var lr = m.r[m.r.length - 1], lc = lr[lr.length - 1]; reparent(big.root); big.cur = { row: lc, i: lc.k.length }; }
       big.matrixOp(name);
     }
-    btn('+ Row', 'Add a row below the caret', function () { op('addrow'); });
-    btn('− Row', 'Remove the caret’s row', function () { op('delrow'); });
+    btn('+ Row', 'Add a row below the cursor', function () { op('addrow'); });
+    btn('− Row', 'Remove the cursor’s row', function () { op('delrow'); });
     if (!cases) {
-      btn('+ Column', 'Add a column right of the caret', function () { op('addcol'); });
-      btn('− Column', 'Remove the caret’s column', function () { op('delcol'); });
+      btn('+ Column', 'Add a column right of the cursor', function () { op('addcol'); });
+      btn('− Column', 'Remove the cursor’s column', function () { op('delcol'); });
       var kinds = el('span', 'mx-kinds');
       BRACKETS.forEach(function (b) {
         var bt = el('button', 'dlg-btn mx-tool mx-kind' + (m.env === b[0] ? ' on' : ''), b[1]);
@@ -8902,7 +8985,7 @@ blockquote.pt-quote {
       }
       if (cls.indexOf('xref') >= 0) {
         var kind = n.dataset.kind || 'ref', lab = PT.sanitize.label(n.dataset.label);
-        out = out.replace(/ $/, '~');   /* "Figure~\ref{…}": never broken across lines */
+        out = out.replace(/[ \t]+$/, '~');   /* "Figure~\ref{…}": never broken across lines (and one space, however many were typed) */
         if (kind === 'cite') { out += '\\cite{' + lab + '}'; use.cite = true; }
         else if (kind === 'eqref') { out += '\\eqref{' + lab + '}'; use.amsmath = true; }
         else if (kind === 'pageref') out += '\\pageref{' + lab + '}';
@@ -9403,7 +9486,7 @@ blockquote.pt-quote {
       case 'pagebreak': return { id: uid(), t: 'pagebreak' };
       case 'toc': return { id: uid(), t: 'toc' };
       case 'bib': return { id: uid(), t: 'bib' };
-      case 'raw': return { id: uid(), t: 'raw', tex: '% raw LaTeX passed straight through\n' };
+      case 'raw': return { id: uid(), t: 'raw', tex: '' };
       default: return { id: uid(), t: 'para', html: '' };
     }
   }
@@ -9543,15 +9626,36 @@ blockquote.pt-quote {
     var n = 0;
     return doc.bib.map(function (e) { return bibEmpty(e) ? null : ++n; });
   }
+  /* The .bib a document came with (doc.bibLibrary: every entry, cited or
+     not, never printed). Citing one of its keys brings its entry into the
+     reference list; a key in neither gets an empty entry to fill in.
+     'have', 'library' or 'empty'. */
+  function libraryWork(doc, key) {
+    var w = (doc.bibLibrary || []).filter(function (e) { return e && e.key === key; })[0];
+    return w ? JSON.parse(JSON.stringify(w)) : null;
+  }
+  function citeWork(doc, key) {
+    var have = doc.bib.filter(function (e) { return e.key === key; })[0], w;
+    if (have) {
+      if (bibEmpty(have) && (w = libraryWork(doc, key))) { Object.assign(have, w); return 'library'; }
+      return 'have';
+    }
+    w = libraryWork(doc, key);
+    doc.bib.push(w || { key: key, author: '', title: '', journal: '', year: '' });
+    if (!doc.blocks.some(function (b) { return b.t === 'bib'; })) doc.blocks.push(blockFactory('bib'));
+    return w ? 'library' : 'empty';
+  }
   /* Take out the citations of the work `key` from all the text in the
-     document; how many there were. */
-  function dropCites(doc, key) {
+     document (or, with `to`, make them cite `to`); how many there were. */
+  function dropCites(doc, key, to) {
     var count = 0;
     var clean = function (html) {
       if (!html || String(html).indexOf('data-label="' + key + '"') < 0) return html;
       var box = PT.sanitize.parse(String(html));
       [].forEach.call(box.querySelectorAll('.xref[data-kind="cite"]'), function (x) {
-        if (x.getAttribute('data-label') === key) { x.remove(); count++; }
+        if (x.getAttribute('data-label') !== key) return;
+        if (to) x.setAttribute('data-label', to); else x.remove();
+        count++;
       });
       return box.innerHTML;
     };
@@ -9707,7 +9811,14 @@ blockquote.pt-quote {
       auth.appendChild(w);
     });
     var addA = h('button', 'pt-addauth', '+ author');
-    addA.onclick = function () { self.doc.meta.authors.push({ name: '', affil: '', email: '' }); self.change(true); self.render(); };
+    addA.title = 'Add another author';
+    addA.onclick = function () {
+      self.doc.meta.authors.push({ name: '', affil: '', email: '' });
+      self.change(true); self.render();
+      /* straight into the new name, to write it (not into the title) */
+      var names = self.paper.querySelectorAll('.pt-aname'), nn = names[names.length - 1];
+      if (nn) placeCaret(nn, true);
+    };
     auth.appendChild(addA);
     head.appendChild(auth);
 
@@ -9847,6 +9958,39 @@ blockquote.pt-quote {
     return e;
   };
 
+  /* Code and LaTeX typed into a <pre>: its text with every line break kept.
+     Enter puts a "\n" in the text itself (the browser would make a <div> or
+     a <br>, which textContent loses); text pasted or dropped in may still
+     bring those, so they are read as line breaks too. A last <br> is only
+     there to show an empty last line. */
+  function preText(el) {
+    var out = '', last = el.lastChild;
+    while (last && last.lastChild && last.nodeName !== 'BR') last = last.lastChild;
+    (function walk(n) {
+      [].forEach.call(n.childNodes, function (c) {
+        if (c.nodeType === 3) out += c.nodeValue;
+        else if (c.nodeName === 'BR') { if (c !== last) out += '\n'; }
+        else {
+          if (/^(DIV|P)$/.test(c.nodeName) && out && !/\n$/.test(out)) out += '\n';
+          walk(c);
+        }
+      });
+    })(el);
+    return out;
+  }
+  function plainLines(pre, onChange) {
+    pre.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Enter' && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+        ev.preventDefault();
+        document.execCommand('insertLineBreak');
+      }
+    });
+    pre.addEventListener('input', function () {
+      if (!pre.textContent && !pre.querySelector('br + br, div')) pre.innerHTML = '';   /* emptied: the placeholder again */
+      onChange(preText(pre));
+    });
+  }
+
   /* One line of rich text — a title, a name, a date: formulas ("$") and
   formatting as in a paragraph, but Enter does not start a new line. */
   Editor.prototype.lineEditable = function (tag, cls, value, onChange) {
@@ -9874,7 +10018,9 @@ blockquote.pt-quote {
       if (!s.rangeCount || !s.focusNode || s.focusNode.nodeType !== 3 || !e.contains(s.focusNode)) return false;
       var tx = s.focusNode.nodeValue, off = s.focusOffset, after = '';
       var at = off - 1;
-      if (data && data.length > 1 && data.indexOf('$') >= 0 && tx.slice(off - data.length, off) === data) {
+      /* (the browser may have made a space in it a no-break one) */
+      var sp = function (t) { return t.replace(/ /g, ' '); };
+      if (data && data.length > 1 && data.indexOf('$') >= 0 && sp(tx.slice(off - data.length, off)) === sp(data)) {
         at = off - data.length + data.indexOf('$');
         after = data.slice(data.indexOf('$') + 1);
       }
@@ -9923,6 +10069,9 @@ blockquote.pt-quote {
       if (inField(ev) || ev.isComposing || ev.inputType !== 'insertText') return;
       /* likewise "/" on an empty line: the block menu, however it was typed */
       if (ev.data === '/' && opts.slashMenu && isBlank(e.innerHTML)) { ev.preventDefault(); opts.slashMenu(); return; }
+      /* "/section" arriving in one go (a fast typist, a typing tool): the
+         menu, searching for "section" */
+      if (ev.data && /^\/[^\s\/]+$/.test(ev.data) && opts.slashMenu && isBlank(e.innerHTML)) { ev.preventDefault(); opts.slashMenu(ev.data.slice(1)); return; }
       if (ev.data !== '\\') return;
       if (!PT.palette || e.closest('.studio')) return;
       ev.preventDefault();
@@ -10025,7 +10174,7 @@ blockquote.pt-quote {
     var r = document.createRange();
     r.setStart(node, at); r.collapse(true);
     s.removeAllRanges(); s.addRange(r);
-    var made = [], self = this, addedBib = [];
+    var made = [], self = this, addedBib = [], fromLib = [];
     if (cmd === 'cite' || cmd === 'ref' || cmd === 'eqref' || cmd === 'autoref' || cmd === 'cref') {
       arg.split(',').map(function (x) { return x.trim(); }).filter(Boolean).forEach(function (key) {
         var x = document.createElement('span');
@@ -10034,18 +10183,18 @@ blockquote.pt-quote {
         x.dataset.kind = cmd === 'cite' ? 'cite' : cmd === 'eqref' ? 'eqref' : 'ref';
         x.dataset.label = PT.sanitize.label(key);
         made.push(x);
-        /* a work not in the reference list yet: an empty entry for it, to
-           fill in — not a silent "[?]" in the PDF */
-        var bkey = x.dataset.label;
-        if (cmd === 'cite' && !self.doc.bib.some(function (w) { return w.key === bkey; })) {
-          self.doc.bib.push({ key: bkey, author: '', title: '', journal: '', year: '' });
-          if (!self.doc.blocks.some(function (b) { return b.t === 'bib'; })) self.doc.blocks.push(blockFactory('bib'));
-          addedBib.push(bkey);
+        /* a work not in the reference list yet: its entry from the .bib the
+           document came with, or an empty one to fill in — not a silent
+           "[?]" in the PDF */
+        if (cmd === 'cite') {
+          var got = citeWork(self.doc, x.dataset.label);
+          if (got === 'empty') addedBib.push(x.dataset.label);
+          else if (got === 'library') fromLib.push(x.dataset.label);
         }
       });
       /* the list on the page shows the new entry at once (a list made just
          now appears with the next redraw) */
-      var oldBib = addedBib.length && this.paper.querySelector('.pt-bib');
+      var oldBib = (addedBib.length || fromLib.length) && this.paper.querySelector('.pt-bib');
       var bibBlock = this.doc.blocks.filter(function (b) { return b.t === 'bib'; })[0];
       if (oldBib && bibBlock) {
         var tmpBox = document.createElement('div');
@@ -10054,6 +10203,8 @@ blockquote.pt-quote {
       }
       if (addedBib.length && this.hooks.toast) {
         this.hooks.toast('“' + addedBib.join('”, “') + '” added to the reference list, empty — fill in the author and title there.');
+      } else if (fromLib.length && this.hooks.toast) {
+        this.hooks.toast('“' + fromLib.join('”, “') + '” added to the reference list from your .bib.');
       }
     } else if (cmd === 'footnote') {
       var f = document.createElement('span');
@@ -10165,7 +10316,8 @@ blockquote.pt-quote {
         /* gone to another window: still being edited when it comes back;
            gone to the command palette: still being edited when it puts the
            caret back here */
-        if ((PT.palette && PT.palette.isOpen()) || M.matrixSheetOpen()) { setTimeout(later, 150); return; }
+        var ae = document.activeElement;
+        if ((PT.palette && PT.palette.isOpen()) || M.matrixSheetOpen() || (ae && ae.id === 'psearch')) { setTimeout(later, 150); return; }
         setTimeout(function () { if (!f.hasFocus()) finish(); }, 0);
       },
       onRender: function (fl) { span.classList.toggle('pt-inmat', fl.host.classList.contains('mf-inmat')); }
@@ -10325,7 +10477,10 @@ blockquote.pt-quote {
     });
     ok.onclick = function () { done(false); };
     del.onclick = function () { done(true); };
-    function outside(e) { if (!m.contains(e.target)) done(false, true); }
+    function outside(e) {
+      if (!m.isConnected) { document.removeEventListener('mousedown', outside, true); return; }
+      if (!m.contains(e.target)) done(false, true);
+    }
     document.body.appendChild(m);
     posPop(m, mk);
     ta.focus();
@@ -10429,7 +10584,7 @@ blockquote.pt-quote {
       case 'para': {
         var p = this.richEditable('p', 'pt-para', b.html, function (v) { b.html = v; self.change(); }, {
           onKey: function (ev) { self.textKeys(ev, b, idx, 'html'); },
-          slashMenu: function () { self.openMenu(p, idx, true); },
+          slashMenu: function (q) { self.openMenu(p, idx, true, q); },
           /* "1. " or "- " typed at the start of a paragraph starts a list,
              as in a word processor; Ctrl+Z gives the characters back */
           listStart: function (data) {
@@ -10463,7 +10618,10 @@ blockquote.pt-quote {
         var head = h('span', 'pt-thmh');
         head.contentEditable = 'false';
         var name = b.kind.charAt(0).toUpperCase() + b.kind.slice(1);
-        head.textContent = name + (b.__num ? ' ' + b.__num : '') + '.';
+        /* "Theorem 1." — with a title "Theorem 1 (Title)." as in the PDF:
+           the full stop moves after the title (paper.css) */
+        head.textContent = name + (b.__num ? ' ' + b.__num : '');
+        head.appendChild(h('span', 'pt-thmdot', '.'));
         t.appendChild(head);
         var ttl = this.lineEditable('span', 'pt-thmt', b.title, function (v) { b.title = v; self.change(); });
         ttl.dataset.ph = '(title)';
@@ -10510,7 +10668,7 @@ blockquote.pt-quote {
         pre.textContent = b.text || '';
         pre.dataset.part = 'main';
         pre.dataset.ph = 'Code…';
-        pre.addEventListener('input', function () { b.text = pre.textContent; self.change(); });
+        plainLines(pre, function (v) { b.text = v; self.change(); });
         pre.addEventListener('keydown', function (ev) {
           if (ev.key === 'Tab') { ev.preventDefault(); document.execCommand('insertText', false, '    '); }
           if (ev.key === 'Backspace' && !pre.textContent) { ev.preventDefault(); self.removeBlock(idx); }
@@ -10529,7 +10687,12 @@ blockquote.pt-quote {
         ta.spellcheck = false;
         ta.textContent = b.tex || '';
         ta.dataset.part = 'main';
-        ta.addEventListener('input', function () { b.tex = ta.textContent; self.change(); });
+        ta.dataset.ph = 'LaTeX of your own, written into the .tex as typed — e.g. \\vspace{1cm}';
+        plainLines(ta, function (v) { b.tex = v; self.change(); });
+        ta.addEventListener('keydown', function (ev) {
+          if (ev.key === 'Tab') { ev.preventDefault(); document.execCommand('insertText', false, '  '); }
+          if (ev.key === 'Backspace' && !ta.textContent) { ev.preventDefault(); self.removeBlock(idx); }
+        });
         rw.appendChild(ta);
         box.appendChild(rw);
         return;
@@ -10646,6 +10809,8 @@ blockquote.pt-quote {
           self.change(true); self.render();
         },
         onEscape: function () { self.exitEq(b, idx); },
+        /* the hint on an empty last line: Enter leaves (see onEnter) */
+        enterLeaves: function () { return li === b.lines.length - 1 && b.lines.length > 1; },
         /* Backspace in a line that was already empty: the line goes, and
            with the last line the equation (never on the Backspace that
            emptied it, as after Ctrl+A) */
@@ -10697,15 +10862,37 @@ blockquote.pt-quote {
   /* Leaving an equation (Esc, Shift+Enter, Enter on an empty last line)
      always lands on an empty line below it — never at the start of the
      paragraph that follows, where typing would run into its first word. */
+  /* A line made just for the caret is taken away again if it is left with
+     nothing written in it: Esc, then a click elsewhere, leaves no stray
+     empty paragraph behind. */
   Editor.prototype.exitEq = function (b, idx) {
-    var next = this.doc.blocks[idx + 1];
+    var self = this, next = this.doc.blocks[idx + 1], made = false;
     if (!next || next.t !== 'para' || !isBlank(next.html)) {
       next = blockFactory('para');
       this.doc.blocks.splice(idx + 1, 0, next);
+      made = true;
     }
     this.focusBlock(next.id, 'main', false);
     this.change(true);
     this.render();
+    var el = made && this.paper.querySelector('[data-bid="' + next.id + '"]');
+    /* the last line of the document stays: there is always one to write on */
+    if (!el || this.doc.blocks[this.doc.blocks.length - 1] === next) return;
+    var check = function () {
+      if (!el.isConnected) { el.removeEventListener('focusout', soon); return; }
+      /* the palette or a menu over it: it is still the line being written */
+      if ((PT.palette && PT.palette.isOpen()) || document.querySelector('.popmenu')) { setTimeout(check, 200); return; }
+      if (el.contains(document.activeElement) || !document.hasFocus()) return;
+      el.removeEventListener('focusout', soon);
+      var at = self.doc.blocks.indexOf(next);
+      if (at < 0 || !isBlank(next.html)) return;
+      self.doc.blocks.splice(at, 1);
+      el.remove();
+      if (self.lastRich && !self.lastRich.isConnected) self.lastRich = null;
+      self.change(true);
+    };
+    var soon = function () { setTimeout(check, 0); };
+    el.addEventListener('focusout', soon);
   };
   Editor.prototype.syncEqPreview = function () { /* numbers only change structurally */ };
 
@@ -10919,7 +11106,10 @@ blockquote.pt-quote {
     got = got.filter(function (b) { return b.t !== 'bib'; });
     if (got.length && got[got.length - 1].t === 'para' && isBlank(got[got.length - 1].html)) got.pop();
     /* the works it cites, its packages and shorthands */
-    r.doc.bib.forEach(function (e) { if (!doc.bib.some(function (w) { return w.key === e.key; })) doc.bib.push(e); });
+    r.doc.bib.forEach(function (e) {
+      if (doc.bib.some(function (w) { return w.key === e.key; })) { citeWork(doc, e.key); return; }
+      doc.bib.push(bibEmpty(e) ? libraryWork(doc, e.key) || e : e);
+    });
     if (bibBlock && r.doc.bib.length) doc.blocks.push(bibBlock);
     var mine = String(doc.settings.preamble || '').split('\n');
     var more = String(r.doc.settings.preamble || '').split('\n').filter(function (L) { return L.trim() && mine.indexOf(L) < 0; });
@@ -11236,8 +11426,39 @@ blockquote.pt-quote {
         if (k < 3) body.appendChild(h('span', 'pt-bibsep', ', '));
       });
       it.appendChild(body);
-      var key = self.editable('span', 'pt-bibkey', e.key, function (v) { e.key = v.replace(/[^A-Za-z0-9:_-]/g, ''); self.change(); }, true);
+      /* a new key is taken when you leave the field (or press Enter): its
+         citations go with it; a key another work has is refused */
+      var key = self.editable('span', 'pt-bibkey', e.key, function () {}, true);
       key.title = 'The name citations use for this work';
+      var takeKey = function () {
+        var v = key.textContent.replace(/[^A-Za-z0-9:_-]/g, ''), old = e.key;
+        if (v === old) { key.textContent = old; return; }
+        if (!v || self.doc.bib.some(function (x) { return x !== e && x.key === v; })) {
+          key.textContent = old;
+          if (v && self.hooks.toast) self.hooks.toast('Another work already has the key “' + v + '” — choose a different one.');
+          return;
+        }
+        e.key = v;
+        key.textContent = v;
+        it.dataset.key = v;
+        var moved = dropCites(self.doc, old, v);
+        [].forEach.call(self.paper.querySelectorAll('.xref[data-kind="cite"]'), function (x) {
+          if (x.getAttribute('data-label') === old) x.setAttribute('data-label', v);
+        });
+        /* an entry not written yet, given the key of a work in the .bib the
+           document came with: that work's entry */
+        var w = bibEmpty(e) && libraryWork(self.doc, v);
+        if (w) { Object.assign(e, w); self.change(true); self.render(); }
+        else self.change(true);
+        var said = moved ? (moved === 1 ? 'Its citation now uses' : 'Its ' + moved + ' citations now use') + ' “' + v + '”.' : '';
+        if (w) said = (said ? said + ' ' : '') + 'Filled in from your .bib.';
+        if (said && self.hooks.toast) self.hooks.toast(said);
+      };
+      key.addEventListener('blur', takeKey);
+      key.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter') { ev.preventDefault(); key.blur(); }
+        else if (ev.key === 'Escape') { ev.preventDefault(); key.textContent = e.key; key.blur(); }
+      });
       it.appendChild(key);
       /* the list is printed in this order: move an entry up or down */
       var up = h('button', 'pt-bibup', '↑'), dn = h('button', 'pt-bibdn', '↓');
@@ -11463,7 +11684,7 @@ blockquote.pt-quote {
   };
 
   /* ------------------------------------------------------------------- menus */
-  Editor.prototype.openMenu = function (anchor, at, replaceEmptyPara) {
+  Editor.prototype.openMenu = function (anchor, at, replaceEmptyPara, query) {
     var self = this;
     closeAllPop();
     var m = h('div', 'popmenu');
@@ -11510,7 +11731,8 @@ blockquote.pt-quote {
       var first = listw.querySelector('.popitem');
       if (first) first.classList.add('sel');
     }
-    fill('');
+    search.value = query || '';
+    fill(search.value);
     search.addEventListener('input', function () { fill(search.value); });
     search.addEventListener('keydown', function (e) {
       var items = [].slice.call(listw.querySelectorAll('.popitem'));
@@ -11700,6 +11922,9 @@ blockquote.pt-quote {
   }
   function armOutside(m) {
     function off(e) {
+      /* a menu closed by choosing in it leaves only this listener: it must
+         not close the next menu on that menu's first click */
+      if (!m.isConnected) { document.removeEventListener('mousedown', off, true); return; }
       if (m.contains(e.target)) return;
       closeAllPop();
       document.removeEventListener('mousedown', off, true);
@@ -11749,7 +11974,7 @@ blockquote.pt-quote {
   }
 
   window.PT.doc = {
-    newDoc: newDoc, Editor: Editor, blockFactory: blockFactory, numbering: numbering, envChain: envChain, menuScore: menuScore, bibEmpty: bibEmpty, bibNumbers: bibNumbers,
+    newDoc: newDoc, Editor: Editor, blockFactory: blockFactory, numbering: numbering, envChain: envChain, menuScore: menuScore, bibEmpty: bibEmpty, bibNumbers: bibNumbers, citeWork: citeWork, libraryWork: libraryWork,
     MENU: MENU, uid: uid, stripTags: stripTags, isBlank: isBlank, headingInto: headingInto, closeAllPop: closeAllPop, tableClass: tableClass,
     insertNodeAtCaret: insertNodeAtCaret, placeCaret: placeCaret, posPop: posPop
   };
@@ -12991,10 +13216,8 @@ blockquote.pt-quote {
       }
       return b;
     });
-    /* every work cited has an entry, and the list is somewhere */
     /* every work cited has an entry: from the project's .bib when there is
-       one (
-ocite{*}: all of it), else empty, to fill in */
+       one (\nocite{*}: all of it), else empty, to fill in */
     var bibdb = opts.bib ? parseBib(opts.bib) : {};
     var cited = rd.ctx.citeOrder.slice();
     if (cited.indexOf('*') >= 0) cited = cited.filter(function (k) { return k !== '*'; }).concat(Object.keys(bibdb));
@@ -13006,6 +13229,9 @@ ocite{*}: all of it), else empty, to fill in */
       else { rd.bib.push({ key: key, author: '', title: '', journal: '', year: '' }); if (opts.bib) missing.push(k); }
     });
     if (missing.length) notes.add('bibmissing', 'Not in the .bib file, so left empty to fill in: ' + missing.join(', '));
+    /* the whole .bib, cited or not, stays with the document (not printed):
+       a work cited later comes from it, as it would in Overleaf */
+    var library = Object.keys(bibdb).map(function (k) { return bibEntry(label(k), bibdb[k], rd.ctx); });
     if (rd.bib.length && !blocks.some(function (b) { return b.t === 'bib'; })) blocks.push({ id: rd.id(), t: 'bib' });
     /* a package kept from the file that the writer loads anyway for these
        blocks: once is enough */
@@ -13043,7 +13269,9 @@ ocite{*}: all of it), else empty, to fill in */
         settings.preamble = String(settings.preamble || '').split('\n').filter(function (x) { return x.trim() && auto.indexOf(x.trim()) < 0; }).join('\n');
       } catch (e) { /* keep it as read */ }
     }
-    return { doc: { meta: meta, settings: settings, blocks: blocks, bib: rd.bib }, notes: notes.out(), broken: rd.broken };
+    var out = { meta: meta, settings: settings, blocks: blocks, bib: rd.bib };
+    if (library.length) out.bibLibrary = library;
+    return { doc: out, notes: notes.out(), broken: rd.broken };
   }
 
   /* does this text look like LaTeX, not a project file? */
@@ -15615,7 +15843,7 @@ ocite{*}: all of it), else empty, to fill in */
       add.onclick = go;
       inp.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); go(); } };
       f.appendChild(prev); f.appendChild(inp); f.appendChild(add);
-      f.appendChild(h('div', 'kb-sniphint', 'An empty {} becomes a box: the caret lands in the first one, so \\frac{}{} or x^{} work as templates.'));
+      f.appendChild(h('div', 'kb-sniphint', 'An empty {} becomes a box: the cursor lands in the first one, so \\frac{}{} or x^{} work as templates.'));
       return f;
     }
 
@@ -16045,7 +16273,14 @@ ocite{*}: all of it), else empty, to fill in */
     }
     d.settings = Object.assign({}, base.settings, d.settings && typeof d.settings === 'object' ? d.settings : {});
     d.bib = Array.isArray(d.bib) ? d.bib.filter(function (e) { return e && typeof e === 'object'; }) : [];
+    if (Array.isArray(d.bibLibrary)) d.bibLibrary = d.bibLibrary.filter(function (e) { return e && typeof e === 'object' && e.key; });
+    else delete d.bibLibrary;
     d.blocks = d.blocks.filter(function (b) { return b && typeof b === 'object' && typeof b.t === 'string'; });
+    /* a LaTeX-code block used to start with this line as its hint: real
+       text, which commented out what was typed after it on that line */
+    d.blocks.forEach(function (b) {
+      if (b.t === 'raw' && typeof b.tex === 'string') b.tex = b.tex.replace(/^% raw LaTeX passed straight through(\n|(?=\S))?/, '');
+    });
     if (!d.blocks.length) d.blocks = base.blocks;
     return d;
   }
@@ -16217,7 +16452,7 @@ ocite{*}: all of it), else empty, to fill in */
       if (pane && !typing) pane.innerHTML = highlight(tex) + '\n';
       if (texIn && !typing && texIn.value !== tex) texIn.value = tex;
       var st = $('#texstat');
-      if (st && !typing) st.textContent = tex.split('\n').length + ' lines · ' + tex.length.toLocaleString() + ' characters';
+      if (st && !typing) { st.textContent = tex.split('\n').length + ' lines · ' + tex.length.toLocaleString() + ' characters'; st.title = ''; texPaneNotes([]); }
       updateOutline();
       pageGuides();
     }, 120);
@@ -16236,7 +16471,7 @@ ocite{*}: all of it), else empty, to fill in */
      change are kept as they were — a chart stays a chart you can edit, a
      figure keeps its image — so only what you changed is read again. When
      you leave the pane it shows the LaTeX the page writes. */
-  var texIn = null, texTimer2 = null, texDirty = false;
+  var texIn = null, texTimer2 = null, texDirty = false, texEdited = false, texTidyTold = false;
   /* every block this document has had since you first edited in the pane:
      a half-typed egin{…} may swallow a chart for a while (even while you
      are elsewhere), and it is still found when the LaTeX is whole again */
@@ -16255,7 +16490,7 @@ ocite{*}: all of it), else empty, to fill in */
       if (texSeenDoc !== state.doc) seeBlocks();
       pre.innerHTML = highlight(texIn.value) + '\n';
       pre.scrollTop = texIn.scrollTop;
-      texDirty = true;
+      texDirty = true; texEdited = true;
       if (st) { st.textContent = 'Editing — the page follows when you pause'; st.title = ''; }
       clearTimeout(texTimer2);
       texTimer2 = setTimeout(applyTex, 600);
@@ -16265,7 +16500,16 @@ ocite{*}: all of it), else empty, to fill in */
       box.classList.remove('editing');
       clearTimeout(texTimer2);
       /* unfinished LaTeX stays as you left it, not applied */
-      if ((texDirty ? applyTex() : true) !== false) refresh();   /* back to the LaTeX the page writes */
+      var edited = texDirty || texEdited;
+      texEdited = false;
+      if ((texDirty ? applyTex() : true) !== false) {
+        refresh();   /* back to the LaTeX the page writes */
+        /* said once: the pane is tidied, nothing was lost */
+        if (edited && !texTidyTold) {
+          texTidyTold = true;
+          toast('Your changes are on the page. The pane now shows the LaTeX as PaperTeX writes it (same content, tidied).');
+        }
+      }
     });
     texIn.addEventListener('keydown', function (e) {
       /* Tab indents (Escape gives the keyboard back to the page) */
@@ -16276,8 +16520,26 @@ ocite{*}: all of it), else empty, to fill in */
   function applyTex() {
     texDirty = false;
     var st = $('#texstat'), r;
-    try { r = PT.texread.read(texIn.value); }
+    /* LaTeX-code blocks the pane still shows, line for line, stay those
+       blocks: read back, "\vspace{1cm}" or "\hfill" would be left out
+       (texread drops hand-made spacing), and the block lost. Each is read
+       as a stand-in environment, matched up again below. */
+    seeBlocks();
+    var src = texIn.value, kept = [];
+    texSeen.forEach(function (b) {
+      var t = b.t === 'raw' ? String(b.tex || '').replace(/\s+$/, '') : '';
+      if (!t.trim()) return;
+      for (var from = 0, at; (at = src.indexOf(t, from)) >= 0; from = at + 1) {
+        var end = at + t.length;
+        if ((at && src[at - 1] !== '\n') || (end < src.length && src[end] !== '\n')) continue;   /* whole lines only */
+        src = src.slice(0, at) + '\\begin{ptkept}{' + kept.length + '}\\end{ptkept}' + src.slice(end);
+        kept.push(b);
+        break;
+      }
+    });
+    try { r = PT.texread.read(src); }
     catch (e) { if (st) st.textContent = 'Not readable yet — keep typing'; texDirty = true; return false; }
+    r.notes = r.notes.filter(function (n) { return n.indexOf('ptkept') < 0; });
     /* half-typed: egin{equation} with no end yet would take the rest of
        the document into the formula — wait for it */
     if (r.broken && r.broken.length) {
@@ -16300,6 +16562,8 @@ ocite{*}: all of it), else empty, to fill in */
     var used = [];
     var take = function (b) { used.push(b); return b; };
     nd.blocks = nd.blocks.map(function (b) {
+      var keptAt = b.t === 'raw' && /^\\begin\{ptkept\}\{(\d+)\}/.exec(String(b.tex || ''));
+      if (keptAt && kept[+keptAt[1]] && used.indexOf(kept[+keptAt[1]]) < 0) { kept[+keptAt[1]].inEnv = b.inEnv; return take(kept[+keptAt[1]]); }
       var same = (pool[norm(L.texOf(b, nd))] || []).filter(function (o) {
         /* LaTeX code may be what a chart wrote: it is that chart again */
         return used.indexOf(o) < 0 && (o.t === b.t || b.t === 'raw');
@@ -16327,12 +16591,35 @@ ocite{*}: all of it), else empty, to fill in */
     if (od.meta.abstract) od.settings.showAbstract = true;
     od.blocks = nd.blocks;
     od.bib = nd.bib;
+    /* a work cited in the pane that the .bib the document came with has */
+    od.bib.forEach(function (e) { if (e.key) D.citeWork(od, e.key); });
     state.editor.render();
     state.editor.change(false);
     if (st) {
       st.textContent = r.notes.length ? 'Page updated · ' + r.notes.length + ' note' + (r.notes.length > 1 ? 's' : '') : 'Page updated';
-      st.title = r.notes.join('\n');
+      st.title = r.notes.length ? 'Show the notes' : '';
+      texPaneNotes(r.notes);
     }
+  }
+  /* "Page updated · 2 notes" opens the notes */
+  var paneNotes = [], showTexNotes = null;
+  function texPaneNotes(notes) {
+    var st = $('#texstat');
+    paneNotes = notes || [];
+    if (!st) return;
+    st.classList.toggle('hasnotes', !!paneNotes.length);
+    if (paneNotes.length) { st.setAttribute('role', 'button'); st.tabIndex = 0; }
+    else { st.removeAttribute('role'); st.removeAttribute('tabindex'); }
+    if (st.__notes) return;
+    st.__notes = true;
+    var open = function () {
+      if (paneNotes.length && showTexNotes) showTexNotes(paneNotes, 'The page follows the LaTeX. A few things in it are not things PaperTeX edits on the page:', 'Notes on the LaTeX');
+    };
+    /* (the pane keeps the keyboard: leaving it would show its lines count
+       in place of the notes before the click lands) */
+    st.addEventListener('mousedown', function (e) { if (paneNotes.length) e.preventDefault(); });
+    st.addEventListener('click', open);
+    st.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
   }
 
   function updateOutline() {
@@ -16446,6 +16733,54 @@ ocite{*}: all of it), else empty, to fill in */
     var tabs = $('#ptabs'), body = $('#pbody');
     tabs.textContent = ''; body.textContent = '';
     var groups = [{ name: 'Insert', blocks: true }].concat(PT.symbols.groups);
+
+    /* search every group at once: "infinity", "union", "alpha", "≤" — the
+       formula being written stays open while you type here */
+    var sbox = $('#psearch'), sgrid = h('div', 'pgrid psres');
+    if (!sbox) {
+      sbox = h('input', 'psearch');
+      sbox.id = 'psearch';
+      sbox.type = 'search';
+      sbox.placeholder = 'Find a symbol…';
+      sbox.setAttribute('aria-label', 'Find a symbol');
+      tabs.parentNode.insertBefore(sbox, tabs);
+    }
+    sbox.value = '';
+    var symTarget = null;
+    sbox.onmousedown = function () { symTarget = activeMathField() || symTarget; };
+    sbox.onfocus = function () { symTarget = symTarget || activeMathField(); };
+    var found = function () {
+      var q = sbox.value.trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean);
+      sgrid.textContent = '';
+      body.classList.toggle('searching', !!q);
+      if (!q) return;
+      var n = 0;
+      PT.symbols.groups.forEach(function (g) {
+        g.items.forEach(function (it) {
+          var hay = [it.tex, it.label, it.build, it.words, it.d && !it.build ? it.d : '', g.name].join(' ').toLowerCase().replace(/\\/g, '');
+          if (!words.every(function (w) { return hay.indexOf(w.replace(/^\\/, '')) >= 0; })) return;
+          n++;
+          var b = h('button', 'pbtn');
+          b.innerHTML = it.build ? it.d : '<span class="psym">' + esc(it.d) + '</span>';
+          b.title = it.build ? it.label : it.tex + (it.words ? ' — ' + it.words : '');
+          b.onmousedown = function (e) { e.preventDefault(); };
+          b.onclick = function () {
+            var f = symTarget;
+            if (f && document.body.contains(f.host)) { f.host.focus(); f.insertSymbol(it); }
+            else insertSymbol(it);
+          };
+          sgrid.appendChild(b);
+        });
+      });
+      if (!n) sgrid.appendChild(h('div', 'pgh', 'Nothing called “' + sbox.value.trim() + '”'));
+    };
+    sbox.oninput = found;
+    sbox.onkeydown = function (e) {
+      if (e.key === 'Escape') { e.preventDefault(); sbox.value = ''; found(); if (symTarget && document.body.contains(symTarget.host)) symTarget.host.focus(); }
+      else if (e.key === 'Enter') { e.preventDefault(); var first = sgrid.querySelector('.pbtn'); if (first) first.click(); }
+    };
+    sbox.onblur = function () { setTimeout(function () { if (document.activeElement !== sbox) symTarget = null; }, 200); };
+    body.appendChild(sgrid);
 
     groups.forEach(function (g, gi) {
       var t = h('button', 'ptab', g.name);
@@ -16717,10 +17052,17 @@ ocite{*}: all of it), else empty, to fill in */
       return { cite: e, kind: 'cite', group: 'Reference list', name: '[' + (i + 1) + ']',
         text: [L.plainText(e.author), L.plainText(e.title)].filter(Boolean).join(' — ') || e.key };
     });
+    /* the rest of the .bib the document came with: cited, it joins the list */
+    var lib = [];
+    (state.doc.bibLibrary || []).forEach(function (e) {
+      if (state.doc.bib.some(function (w) { return w.key === e.key; })) return;
+      lib.push({ cite: e, lib: true, kind: 'cite', group: 'From your .bib', name: e.key, word: L.plainText(e.year),
+        text: [L.plainText(e.author), L.plainText(e.title)].filter(Boolean).join(' — ') || e.key });
+    });
     /* a work not in the list yet: added to it (and the list to the end of
        the document, if there is none), cited, and its entry opened to fill in */
     var fresh = { fresh: true, kind: 'cite', group: 'Reference list', name: '+ New work…', text: 'add it to the reference list and cite it' };
-    var all = want === 'cite' ? cites.concat([fresh], targets) : targets.concat(cites, [fresh]);
+    var all = want === 'cite' ? cites.concat([fresh], lib, targets) : targets.concat(cites, [fresh], lib);
 
     var m = h('div', 'popmenu pt-refpop');
     var search = h('input', 'popsearch');
@@ -16800,6 +17142,22 @@ ocite{*}: all of it), else empty, to fill in */
       }
       var label = t.cite ? t.cite.key : labelFor(t);
       close(true);
+      if (t.lib) {
+        D.citeWork(state.doc, label);
+        putXref('cite', label, '', host);
+        /* the list shows its new entry; the caret stays after the citation */
+        var bibB = state.doc.blocks.filter(function (b) { return b.t === 'bib'; })[0], onPage = $('#paper .pt-bib');
+        if (bibB && onPage) {
+          var tmp = document.createElement('div');
+          state.editor.renderBib(bibB, tmp);
+          if (tmp.firstChild) onPage.replaceWith(tmp.firstChild);
+          state.editor.labels = D.numbering(state.doc);
+          state.editor.refreshXrefs();
+          state.editor.change(true);
+        } else { state.editor.change(true); state.editor.render(); }
+        toast('“' + label + '” added to the reference list from your .bib.');
+        return;
+      }
       putXref(t.kind, label, t.word || '', host);
     }
     search.addEventListener('input', function () { fill(search.value); M.layout(listw); });
@@ -16814,7 +17172,11 @@ ocite{*}: all of it), else empty, to fill in */
       } else if (e.key === 'Enter') { e.preventDefault(); if (cur) cur.click(); }
       else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(true); }
     });
-    function off(ev) { if (!m.contains(ev.target)) close(false); }
+    /* (gone already — closed by another menu: only the listener is left) */
+    function off(ev) {
+      if (!m.isConnected) { document.removeEventListener('mousedown', off, true); return; }
+      if (!m.contains(ev.target)) close(false);
+    }
     fill('');
     document.body.appendChild(m);
     M.layout(m);   /* the formulas, measured now that they are on the page */
@@ -16848,6 +17210,16 @@ ocite{*}: all of it), else empty, to fill in */
     }
     var keepSpace = !r.collapsed && /\s$/.test(r.toString());
     r.deleteContents();
+    /* "(4)" and "[3]" bring their own brackets: one typed just before the
+       caret (and its partner just after) is not doubled */
+    var bra = kind === 'eqref' ? ['(', ')'] : kind === 'cite' ? ['[', ']'] : null, tn = r.startContainer;
+    if (bra && tn.nodeType === 3 && r.startOffset > 0 && tn.nodeValue.charAt(r.startOffset - 1) === bra[0]) {
+      var o = r.startOffset;
+      var cut = tn.nodeValue.charAt(o) === bra[1] ? 1 : 0;
+      tn.nodeValue = tn.nodeValue.slice(0, o - 1) + tn.nodeValue.slice(o + cut);
+      r.setStart(tn, o - 1); r.collapse(true);
+      s.removeAllRanges(); s.addRange(r);
+    }
     if (word && host && host.contains(r.startContainer)) {
       var pre = document.createRange();
       pre.selectNodeContents(host);
@@ -17381,7 +17753,7 @@ ocite{*}: all of it), else empty, to fill in */
         frame.title = 'Compiled PDF';
         body.appendChild(frame);
       }
-      stat.textContent = (r.pdf.length / 1024).toFixed(0) + ' kB · typeset in ' + secs + ' s';
+      stat.textContent = (r.pdf.length / 1024).toFixed(0) + ' kB · made in ' + secs + ' s';
       $('#pdfsave').disabled = false;
     }, function (e) {
       clearInterval(tick);
@@ -17389,7 +17761,7 @@ ocite{*}: all of it), else empty, to fill in */
       var msg = String(e && e.message || e);
       var err = h('div', 'pdf-err');
       if (msg === 'file-origin') {
-        err.appendChild(h('div', 'pdf-errh', 'Opened from disk — compiling needs it served'));
+        err.appendChild(h('div', 'pdf-errh', 'Opened from disk — making the PDF needs it served'));
         err.appendChild(h('div', 'pdf-errn',
           'The compiler runs in a Web Worker, and browsers refuse to start one on a ' +
           'page opened with file://. Everything else on this page works from disk; ' +
@@ -17682,7 +18054,7 @@ ocite{*}: all of it), else empty, to fill in */
 
     D.MENU.forEach(function (mg) {
       mg.items.forEach(function (it) {
-        add('Insert block', 'block.' + it[0], it[1], it[0] === 'eq' ? ['Ctrl+Enter'] : [],
+        add(it[0] === 'footnote' ? 'Text' : 'Insert block', 'block.' + it[0], it[1], it[0] === 'eq' ? ['Ctrl+Enter'] : [],
           function () { insertBlockHere(it[0]); },
           { glyph: it[2], detail: it[3], words: it[4], tex: it[0] === 'footnote' ? '\\footnote' : undefined });
       });
@@ -17693,7 +18065,7 @@ ocite{*}: all of it), else empty, to fill in */
       ['delrow', 'Matrix or cases: remove this row'], ['delcol', 'Matrix or cases: remove this column']].forEach(function (o) {
       add('Maths — Matrix', 'math.mat.' + o[0], o[1], [], function () {
         var f = activeMathField();
-        if (!f || !f.matrixAt()) { toast('Put the caret in a matrix or cases display first.'); return true; }
+        if (!f || !f.matrixAt()) { toast('Click into a matrix or cases display first.'); return true; }
         if (!f.matrixOp(o[0])) {
           toast(o[0] === 'addcol' ? 'A cases display has two columns, and a matrix at most ten.' : 'The last row or column stays — delete the whole display instead.');
         }
@@ -17702,7 +18074,7 @@ ocite{*}: all of it), else empty, to fill in */
     });
     add('Maths — Matrix', 'math.mat.open', 'Matrix or cases: edit it large', [], function () {
       var f = activeMathField();
-      if (!f || !f.openMatrix()) toast('Put the caret in a formula with a matrix or cases display first.');
+      if (!f || !f.openMatrix()) toast('Click into a formula with a matrix or cases display first.');
       return true;
     }, { glyph: '⤢', words: 'matrix cases zoom bigger large edit' });
 
@@ -17711,7 +18083,7 @@ ocite{*}: all of it), else empty, to fill in */
         var id = 'math.' + (it.build || it.tex);
         var label = it.build ? (it.label || it.build).replace(/\s{2,}.*$/, '') : it.tex;
         add('Maths — ' + g.name, id, label, [], function () { insertSymbol(it); },
-          it.build ? { glyphHTML: it.d } : { glyph: it.d, tex: it.tex });
+          it.build ? { glyphHTML: it.d } : { glyph: it.d, tex: it.tex, words: it.words });
       });
     });
 
@@ -17833,6 +18205,7 @@ ocite{*}: all of it), else empty, to fill in */
     if (first) first.focus();
     setTimeout(function () {
       document.addEventListener('mousedown', function off(ev) {
+        if (!m.isConnected) { document.removeEventListener('mousedown', off, true); return; }
         if (m.contains(ev.target)) return;
         D.closeAllPop();
         document.removeEventListener('mousedown', off, true);
@@ -17877,6 +18250,7 @@ ocite{*}: all of it), else empty, to fill in */
     if (first) first.focus();
     setTimeout(function () {
       document.addEventListener('mousedown', function off(ev) {
+        if (!m.isConnected) { document.removeEventListener('mousedown', off, true); return; }
         if (m.contains(ev.target)) return;
         D.closeAllPop();
         anchor.setAttribute('aria-expanded', 'false');
@@ -17927,6 +18301,7 @@ ocite{*}: all of it), else empty, to fill in */
     m.style.top = (r.bottom + window.scrollY + 6) + 'px';
     setTimeout(function () {
       document.addEventListener('mousedown', function off(ev) {
+        if (!m.isConnected) { document.removeEventListener('mousedown', off, true); return; }
         if (m.contains(ev.target)) return;
         D.closeAllPop();
         document.removeEventListener('mousedown', off, true);
@@ -18131,6 +18506,7 @@ ocite{*}: all of it), else empty, to fill in */
       box.appendChild(h('p', 'shint', 'Parts kept as LaTeX code are still in the .tex and in the PDF. Packages and \\newcommand are under Document → Extra preamble.'));
       dialog({ title: title || 'Opened from LaTeX', node: box, noCancel: true });
     }
+    showTexNotes = texNotes;
     function openFile() {
       if (NATIVE) {
         NATIVE.open().then(function (r) { if (r.status === 'ok') openText(r.text, r.path); });

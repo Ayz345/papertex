@@ -81,7 +81,7 @@
       }
       if (cls.indexOf('xref') >= 0) {
         var kind = n.dataset.kind || 'ref', lab = PT.sanitize.label(n.dataset.label);
-        out = out.replace(/ $/, '~');   /* "Figure~\ref{…}": never broken across lines */
+        out = out.replace(/[ \t]+$/, '~');   /* "Figure~\ref{…}": never broken across lines (and one space, however many were typed) */
         if (kind === 'cite') { out += '\\cite{' + lab + '}'; use.cite = true; }
         else if (kind === 'eqref') { out += '\\eqref{' + lab + '}'; use.amsmath = true; }
         else if (kind === 'pageref') out += '\\pageref{' + lab + '}';

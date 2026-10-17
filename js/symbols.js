@@ -139,6 +139,30 @@
     s('\\quad', ' ', 'spc'), s('\\,', ' ', 'spc'), s('\\;', ' ', 'spc')
   ]);
 
+  /* plain words for symbols whose command does not say what they are, for
+     the panel's search and Ctrl+K ("infinity" finds ∞) */
+  var WORDS = {
+    '+': 'plus', '-': 'minus', '\\pm': 'plus minus', '\\mp': 'minus plus', '\\times': 'times multiply cross',
+    '\\div': 'divide', '\\cdot': 'dot multiply times', '\\ast': 'asterisk star', '\\circ': 'compose ring degree',
+    '\\bullet': 'bullet dot', '\\oplus': 'direct sum circled plus', '\\otimes': 'tensor product circled times',
+    '\\wedge': 'and wedge', '\\vee': 'or vee', '\\cap': 'intersection', '\\cup': 'union', '\\setminus': 'set minus difference',
+    '\\nabla': 'nabla gradient del', '\\partial': 'partial derivative', '\\infty': 'infinity infinite',
+    '\\prime': 'prime derivative', '\\hbar': 'h bar planck', '\\ell': 'ell script l',
+    '=': 'equals', '\\neq': 'not equal', '\\equiv': 'equivalent identical', '\\approx': 'approximately about',
+    '\\sim': 'similar tilde distributed', '\\simeq': 'similar equal', '\\cong': 'congruent isomorphic', '\\propto': 'proportional',
+    '<': 'less than', '>': 'greater than', '\\leq': 'less or equal', '\\geq': 'greater or equal',
+    '\\ll': 'much less', '\\gg': 'much greater', '\\subset': 'subset', '\\supset': 'superset',
+    '\\subseteq': 'subset or equal', '\\supseteq': 'superset or equal', '\\in': 'element of in belongs',
+    '\\notin': 'not element of', '\\ni': 'contains', '\\forall': 'for all every', '\\exists': 'there exists',
+    '\\emptyset': 'empty set', '\\neg': 'not negation', '\\to': 'to tends arrow', '\\rightarrow': 'right arrow',
+    '\\leftarrow': 'left arrow', '\\Rightarrow': 'implies', '\\Leftrightarrow': 'if and only if iff',
+    '\\mapsto': 'maps to', '\\cdots': 'dots ellipsis', '\\ldots': 'dots ellipsis', '\\vdots': 'vertical dots', '\\ddots': 'diagonal dots',
+    '\\angle': 'angle', '\\perp': 'perpendicular', '\\parallel': 'parallel', '\\degree': 'degree'
+  };
+  G.forEach(function (g) {
+    g.items.forEach(function (it) { if (it.tex && WORDS[it.tex]) it.words = WORDS[it.tex]; });
+  });
+
   /* command name -> item, for the "\" typed-command autocomplete */
   var byCmd = {};
   G.forEach(function (g) {

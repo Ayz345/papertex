@@ -80,7 +80,14 @@
     }
     d.settings = Object.assign({}, base.settings, d.settings && typeof d.settings === 'object' ? d.settings : {});
     d.bib = Array.isArray(d.bib) ? d.bib.filter(function (e) { return e && typeof e === 'object'; }) : [];
+    if (Array.isArray(d.bibLibrary)) d.bibLibrary = d.bibLibrary.filter(function (e) { return e && typeof e === 'object' && e.key; });
+    else delete d.bibLibrary;
     d.blocks = d.blocks.filter(function (b) { return b && typeof b === 'object' && typeof b.t === 'string'; });
+    /* a LaTeX-code block used to start with this line as its hint: real
+       text, which commented out what was typed after it on that line */
+    d.blocks.forEach(function (b) {
+      if (b.t === 'raw' && typeof b.tex === 'string') b.tex = b.tex.replace(/^% raw LaTeX passed straight through(\n|(?=\S))?/, '');
+    });
     if (!d.blocks.length) d.blocks = base.blocks;
     return d;
   }
@@ -252,7 +259,7 @@
       if (pane && !typing) pane.innerHTML = highlight(tex) + '\n';
       if (texIn && !typing && texIn.value !== tex) texIn.value = tex;
       var st = $('#texstat');
-      if (st && !typing) st.textContent = tex.split('\n').length + ' lines · ' + tex.length.toLocaleString() + ' characters';
+      if (st && !typing) { st.textContent = tex.split('\n').length + ' lines · ' + tex.length.toLocaleString() + ' characters'; st.title = ''; texPaneNotes([]); }
       updateOutline();
       pageGuides();
     }, 120);
@@ -271,7 +278,7 @@
      change are kept as they were — a chart stays a chart you can edit, a
      figure keeps its image — so only what you changed is read again. When
      you leave the pane it shows the LaTeX the page writes. */
-  var texIn = null, texTimer2 = null, texDirty = false;
+  var texIn = null, texTimer2 = null, texDirty = false, texEdited = false, texTidyTold = false;
   /* every block this document has had since you first edited in the pane:
      a half-typed egin{…} may swallow a chart for a while (even while you
      are elsewhere), and it is still found when the LaTeX is whole again */
@@ -290,7 +297,7 @@
       if (texSeenDoc !== state.doc) seeBlocks();
       pre.innerHTML = highlight(texIn.value) + '\n';
       pre.scrollTop = texIn.scrollTop;
-      texDirty = true;
+      texDirty = true; texEdited = true;
       if (st) { st.textContent = 'Editing — the page follows when you pause'; st.title = ''; }
       clearTimeout(texTimer2);
       texTimer2 = setTimeout(applyTex, 600);
@@ -300,7 +307,16 @@
       box.classList.remove('editing');
       clearTimeout(texTimer2);
       /* unfinished LaTeX stays as you left it, not applied */
-      if ((texDirty ? applyTex() : true) !== false) refresh();   /* back to the LaTeX the page writes */
+      var edited = texDirty || texEdited;
+      texEdited = false;
+      if ((texDirty ? applyTex() : true) !== false) {
+        refresh();   /* back to the LaTeX the page writes */
+        /* said once: the pane is tidied, nothing was lost */
+        if (edited && !texTidyTold) {
+          texTidyTold = true;
+          toast('Your changes are on the page. The pane now shows the LaTeX as PaperTeX writes it (same content, tidied).');
+        }
+      }
     });
     texIn.addEventListener('keydown', function (e) {
       /* Tab indents (Escape gives the keyboard back to the page) */
@@ -311,8 +327,26 @@
   function applyTex() {
     texDirty = false;
     var st = $('#texstat'), r;
-    try { r = PT.texread.read(texIn.value); }
+    /* LaTeX-code blocks the pane still shows, line for line, stay those
+       blocks: read back, "\vspace{1cm}" or "\hfill" would be left out
+       (texread drops hand-made spacing), and the block lost. Each is read
+       as a stand-in environment, matched up again below. */
+    seeBlocks();
+    var src = texIn.value, kept = [];
+    texSeen.forEach(function (b) {
+      var t = b.t === 'raw' ? String(b.tex || '').replace(/\s+$/, '') : '';
+      if (!t.trim()) return;
+      for (var from = 0, at; (at = src.indexOf(t, from)) >= 0; from = at + 1) {
+        var end = at + t.length;
+        if ((at && src[at - 1] !== '\n') || (end < src.length && src[end] !== '\n')) continue;   /* whole lines only */
+        src = src.slice(0, at) + '\\begin{ptkept}{' + kept.length + '}\\end{ptkept}' + src.slice(end);
+        kept.push(b);
+        break;
+      }
+    });
+    try { r = PT.texread.read(src); }
     catch (e) { if (st) st.textContent = 'Not readable yet — keep typing'; texDirty = true; return false; }
+    r.notes = r.notes.filter(function (n) { return n.indexOf('ptkept') < 0; });
     /* half-typed: egin{equation} with no end yet would take the rest of
        the document into the formula — wait for it */
     if (r.broken && r.broken.length) {
@@ -335,6 +369,8 @@
     var used = [];
     var take = function (b) { used.push(b); return b; };
     nd.blocks = nd.blocks.map(function (b) {
+      var keptAt = b.t === 'raw' && /^\\begin\{ptkept\}\{(\d+)\}/.exec(String(b.tex || ''));
+      if (keptAt && kept[+keptAt[1]] && used.indexOf(kept[+keptAt[1]]) < 0) { kept[+keptAt[1]].inEnv = b.inEnv; return take(kept[+keptAt[1]]); }
       var same = (pool[norm(L.texOf(b, nd))] || []).filter(function (o) {
         /* LaTeX code may be what a chart wrote: it is that chart again */
         return used.indexOf(o) < 0 && (o.t === b.t || b.t === 'raw');
@@ -362,12 +398,35 @@
     if (od.meta.abstract) od.settings.showAbstract = true;
     od.blocks = nd.blocks;
     od.bib = nd.bib;
+    /* a work cited in the pane that the .bib the document came with has */
+    od.bib.forEach(function (e) { if (e.key) D.citeWork(od, e.key); });
     state.editor.render();
     state.editor.change(false);
     if (st) {
       st.textContent = r.notes.length ? 'Page updated · ' + r.notes.length + ' note' + (r.notes.length > 1 ? 's' : '') : 'Page updated';
-      st.title = r.notes.join('\n');
+      st.title = r.notes.length ? 'Show the notes' : '';
+      texPaneNotes(r.notes);
     }
+  }
+  /* "Page updated · 2 notes" opens the notes */
+  var paneNotes = [], showTexNotes = null;
+  function texPaneNotes(notes) {
+    var st = $('#texstat');
+    paneNotes = notes || [];
+    if (!st) return;
+    st.classList.toggle('hasnotes', !!paneNotes.length);
+    if (paneNotes.length) { st.setAttribute('role', 'button'); st.tabIndex = 0; }
+    else { st.removeAttribute('role'); st.removeAttribute('tabindex'); }
+    if (st.__notes) return;
+    st.__notes = true;
+    var open = function () {
+      if (paneNotes.length && showTexNotes) showTexNotes(paneNotes, 'The page follows the LaTeX. A few things in it are not things PaperTeX edits on the page:', 'Notes on the LaTeX');
+    };
+    /* (the pane keeps the keyboard: leaving it would show its lines count
+       in place of the notes before the click lands) */
+    st.addEventListener('mousedown', function (e) { if (paneNotes.length) e.preventDefault(); });
+    st.addEventListener('click', open);
+    st.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
   }
 
   function updateOutline() {
@@ -481,6 +540,54 @@
     var tabs = $('#ptabs'), body = $('#pbody');
     tabs.textContent = ''; body.textContent = '';
     var groups = [{ name: 'Insert', blocks: true }].concat(PT.symbols.groups);
+
+    /* search every group at once: "infinity", "union", "alpha", "≤" — the
+       formula being written stays open while you type here */
+    var sbox = $('#psearch'), sgrid = h('div', 'pgrid psres');
+    if (!sbox) {
+      sbox = h('input', 'psearch');
+      sbox.id = 'psearch';
+      sbox.type = 'search';
+      sbox.placeholder = 'Find a symbol…';
+      sbox.setAttribute('aria-label', 'Find a symbol');
+      tabs.parentNode.insertBefore(sbox, tabs);
+    }
+    sbox.value = '';
+    var symTarget = null;
+    sbox.onmousedown = function () { symTarget = activeMathField() || symTarget; };
+    sbox.onfocus = function () { symTarget = symTarget || activeMathField(); };
+    var found = function () {
+      var q = sbox.value.trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean);
+      sgrid.textContent = '';
+      body.classList.toggle('searching', !!q);
+      if (!q) return;
+      var n = 0;
+      PT.symbols.groups.forEach(function (g) {
+        g.items.forEach(function (it) {
+          var hay = [it.tex, it.label, it.build, it.words, it.d && !it.build ? it.d : '', g.name].join(' ').toLowerCase().replace(/\\/g, '');
+          if (!words.every(function (w) { return hay.indexOf(w.replace(/^\\/, '')) >= 0; })) return;
+          n++;
+          var b = h('button', 'pbtn');
+          b.innerHTML = it.build ? it.d : '<span class="psym">' + esc(it.d) + '</span>';
+          b.title = it.build ? it.label : it.tex + (it.words ? ' — ' + it.words : '');
+          b.onmousedown = function (e) { e.preventDefault(); };
+          b.onclick = function () {
+            var f = symTarget;
+            if (f && document.body.contains(f.host)) { f.host.focus(); f.insertSymbol(it); }
+            else insertSymbol(it);
+          };
+          sgrid.appendChild(b);
+        });
+      });
+      if (!n) sgrid.appendChild(h('div', 'pgh', 'Nothing called “' + sbox.value.trim() + '”'));
+    };
+    sbox.oninput = found;
+    sbox.onkeydown = function (e) {
+      if (e.key === 'Escape') { e.preventDefault(); sbox.value = ''; found(); if (symTarget && document.body.contains(symTarget.host)) symTarget.host.focus(); }
+      else if (e.key === 'Enter') { e.preventDefault(); var first = sgrid.querySelector('.pbtn'); if (first) first.click(); }
+    };
+    sbox.onblur = function () { setTimeout(function () { if (document.activeElement !== sbox) symTarget = null; }, 200); };
+    body.appendChild(sgrid);
 
     groups.forEach(function (g, gi) {
       var t = h('button', 'ptab', g.name);
@@ -752,10 +859,17 @@
       return { cite: e, kind: 'cite', group: 'Reference list', name: '[' + (i + 1) + ']',
         text: [L.plainText(e.author), L.plainText(e.title)].filter(Boolean).join(' — ') || e.key };
     });
+    /* the rest of the .bib the document came with: cited, it joins the list */
+    var lib = [];
+    (state.doc.bibLibrary || []).forEach(function (e) {
+      if (state.doc.bib.some(function (w) { return w.key === e.key; })) return;
+      lib.push({ cite: e, lib: true, kind: 'cite', group: 'From your .bib', name: e.key, word: L.plainText(e.year),
+        text: [L.plainText(e.author), L.plainText(e.title)].filter(Boolean).join(' — ') || e.key });
+    });
     /* a work not in the list yet: added to it (and the list to the end of
        the document, if there is none), cited, and its entry opened to fill in */
     var fresh = { fresh: true, kind: 'cite', group: 'Reference list', name: '+ New work…', text: 'add it to the reference list and cite it' };
-    var all = want === 'cite' ? cites.concat([fresh], targets) : targets.concat(cites, [fresh]);
+    var all = want === 'cite' ? cites.concat([fresh], lib, targets) : targets.concat(cites, [fresh], lib);
 
     var m = h('div', 'popmenu pt-refpop');
     var search = h('input', 'popsearch');
@@ -835,6 +949,22 @@
       }
       var label = t.cite ? t.cite.key : labelFor(t);
       close(true);
+      if (t.lib) {
+        D.citeWork(state.doc, label);
+        putXref('cite', label, '', host);
+        /* the list shows its new entry; the caret stays after the citation */
+        var bibB = state.doc.blocks.filter(function (b) { return b.t === 'bib'; })[0], onPage = $('#paper .pt-bib');
+        if (bibB && onPage) {
+          var tmp = document.createElement('div');
+          state.editor.renderBib(bibB, tmp);
+          if (tmp.firstChild) onPage.replaceWith(tmp.firstChild);
+          state.editor.labels = D.numbering(state.doc);
+          state.editor.refreshXrefs();
+          state.editor.change(true);
+        } else { state.editor.change(true); state.editor.render(); }
+        toast('“' + label + '” added to the reference list from your .bib.');
+        return;
+      }
       putXref(t.kind, label, t.word || '', host);
     }
     search.addEventListener('input', function () { fill(search.value); M.layout(listw); });
@@ -849,7 +979,11 @@
       } else if (e.key === 'Enter') { e.preventDefault(); if (cur) cur.click(); }
       else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(true); }
     });
-    function off(ev) { if (!m.contains(ev.target)) close(false); }
+    /* (gone already — closed by another menu: only the listener is left) */
+    function off(ev) {
+      if (!m.isConnected) { document.removeEventListener('mousedown', off, true); return; }
+      if (!m.contains(ev.target)) close(false);
+    }
     fill('');
     document.body.appendChild(m);
     M.layout(m);   /* the formulas, measured now that they are on the page */
@@ -883,6 +1017,16 @@
     }
     var keepSpace = !r.collapsed && /\s$/.test(r.toString());
     r.deleteContents();
+    /* "(4)" and "[3]" bring their own brackets: one typed just before the
+       caret (and its partner just after) is not doubled */
+    var bra = kind === 'eqref' ? ['(', ')'] : kind === 'cite' ? ['[', ']'] : null, tn = r.startContainer;
+    if (bra && tn.nodeType === 3 && r.startOffset > 0 && tn.nodeValue.charAt(r.startOffset - 1) === bra[0]) {
+      var o = r.startOffset;
+      var cut = tn.nodeValue.charAt(o) === bra[1] ? 1 : 0;
+      tn.nodeValue = tn.nodeValue.slice(0, o - 1) + tn.nodeValue.slice(o + cut);
+      r.setStart(tn, o - 1); r.collapse(true);
+      s.removeAllRanges(); s.addRange(r);
+    }
     if (word && host && host.contains(r.startContainer)) {
       var pre = document.createRange();
       pre.selectNodeContents(host);
@@ -1416,7 +1560,7 @@
         frame.title = 'Compiled PDF';
         body.appendChild(frame);
       }
-      stat.textContent = (r.pdf.length / 1024).toFixed(0) + ' kB · typeset in ' + secs + ' s';
+      stat.textContent = (r.pdf.length / 1024).toFixed(0) + ' kB · made in ' + secs + ' s';
       $('#pdfsave').disabled = false;
     }, function (e) {
       clearInterval(tick);
@@ -1424,7 +1568,7 @@
       var msg = String(e && e.message || e);
       var err = h('div', 'pdf-err');
       if (msg === 'file-origin') {
-        err.appendChild(h('div', 'pdf-errh', 'Opened from disk — compiling needs it served'));
+        err.appendChild(h('div', 'pdf-errh', 'Opened from disk — making the PDF needs it served'));
         err.appendChild(h('div', 'pdf-errn',
           'The compiler runs in a Web Worker, and browsers refuse to start one on a ' +
           'page opened with file://. Everything else on this page works from disk; ' +
@@ -1717,7 +1861,7 @@
 
     D.MENU.forEach(function (mg) {
       mg.items.forEach(function (it) {
-        add('Insert block', 'block.' + it[0], it[1], it[0] === 'eq' ? ['Ctrl+Enter'] : [],
+        add(it[0] === 'footnote' ? 'Text' : 'Insert block', 'block.' + it[0], it[1], it[0] === 'eq' ? ['Ctrl+Enter'] : [],
           function () { insertBlockHere(it[0]); },
           { glyph: it[2], detail: it[3], words: it[4], tex: it[0] === 'footnote' ? '\\footnote' : undefined });
       });
@@ -1728,7 +1872,7 @@
       ['delrow', 'Matrix or cases: remove this row'], ['delcol', 'Matrix or cases: remove this column']].forEach(function (o) {
       add('Maths — Matrix', 'math.mat.' + o[0], o[1], [], function () {
         var f = activeMathField();
-        if (!f || !f.matrixAt()) { toast('Put the caret in a matrix or cases display first.'); return true; }
+        if (!f || !f.matrixAt()) { toast('Click into a matrix or cases display first.'); return true; }
         if (!f.matrixOp(o[0])) {
           toast(o[0] === 'addcol' ? 'A cases display has two columns, and a matrix at most ten.' : 'The last row or column stays — delete the whole display instead.');
         }
@@ -1737,7 +1881,7 @@
     });
     add('Maths — Matrix', 'math.mat.open', 'Matrix or cases: edit it large', [], function () {
       var f = activeMathField();
-      if (!f || !f.openMatrix()) toast('Put the caret in a formula with a matrix or cases display first.');
+      if (!f || !f.openMatrix()) toast('Click into a formula with a matrix or cases display first.');
       return true;
     }, { glyph: '⤢', words: 'matrix cases zoom bigger large edit' });
 
@@ -1746,7 +1890,7 @@
         var id = 'math.' + (it.build || it.tex);
         var label = it.build ? (it.label || it.build).replace(/\s{2,}.*$/, '') : it.tex;
         add('Maths — ' + g.name, id, label, [], function () { insertSymbol(it); },
-          it.build ? { glyphHTML: it.d } : { glyph: it.d, tex: it.tex });
+          it.build ? { glyphHTML: it.d } : { glyph: it.d, tex: it.tex, words: it.words });
       });
     });
 
@@ -1868,6 +2012,7 @@
     if (first) first.focus();
     setTimeout(function () {
       document.addEventListener('mousedown', function off(ev) {
+        if (!m.isConnected) { document.removeEventListener('mousedown', off, true); return; }
         if (m.contains(ev.target)) return;
         D.closeAllPop();
         document.removeEventListener('mousedown', off, true);
@@ -1912,6 +2057,7 @@
     if (first) first.focus();
     setTimeout(function () {
       document.addEventListener('mousedown', function off(ev) {
+        if (!m.isConnected) { document.removeEventListener('mousedown', off, true); return; }
         if (m.contains(ev.target)) return;
         D.closeAllPop();
         anchor.setAttribute('aria-expanded', 'false');
@@ -1962,6 +2108,7 @@
     m.style.top = (r.bottom + window.scrollY + 6) + 'px';
     setTimeout(function () {
       document.addEventListener('mousedown', function off(ev) {
+        if (!m.isConnected) { document.removeEventListener('mousedown', off, true); return; }
         if (m.contains(ev.target)) return;
         D.closeAllPop();
         document.removeEventListener('mousedown', off, true);
@@ -2166,6 +2313,7 @@
       box.appendChild(h('p', 'shint', 'Parts kept as LaTeX code are still in the .tex and in the PDF. Packages and \\newcommand are under Document → Extra preamble.'));
       dialog({ title: title || 'Opened from LaTeX', node: box, noCancel: true });
     }
+    showTexNotes = texNotes;
     function openFile() {
       if (NATIVE) {
         NATIVE.open().then(function (r) { if (r.status === 'ok') openText(r.text, r.path); });

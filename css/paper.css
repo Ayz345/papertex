@@ -67,6 +67,11 @@
   opacity: 0; transition: opacity .15s;
 }
 .paper:hover .pt-addauth, .paper:hover .pt-tailadd, .paper:hover .pt-bibadd { opacity: .75; }
+/* "+ author" is found without hunting for it: faint at rest, firm when the
+   title block is pointed at or being written in */
+.pt-addauth { opacity: .4; color: #7a6a57; border-color: #c4b6a4; }
+.paper:hover .pt-addauth { opacity: .6; }
+.pt-head:hover .pt-addauth, .pt-head:focus-within .pt-addauth, .pt-addauth:focus-visible { opacity: 1; }
 /* the end-of-document button is how a new user finds the block list, so it
    stays in sight, and is drawn as firmly as the table and figure buttons
    that sit just above it when the paper is hovered */
@@ -143,6 +148,15 @@ blockquote.pt-quote {
 .pt-thm:focus-within .pt-thmt:empty { margin-right: .35em; }
 .pt-thm:focus-within .pt-thmt:empty::before { content: attr(data-ph); color: #c3b6a6; }
 .pt-thmb { font-style: italic; }
+/* a title reads as amsthm prints it: "Theorem 1 (Maximum principle)." —
+   upright, in brackets, the head's full stop after it; a proof's title
+   takes the place of "Proof": "Proof of Theorem 1." */
+.pt-thm:has(> .pt-thmt:not(:empty)) .pt-thmdot { display: none; }
+.pt-thm:not(.pt-thm-proof) > .pt-thmt:not(:empty) { font-style: normal; margin-left: -.2em; }
+.pt-thm:not(.pt-thm-proof) > .pt-thmt:not(:empty)::before { content: '('; }
+.pt-thm:not(.pt-thm-proof) > .pt-thmt:not(:empty)::after { content: ').'; }
+.pt-thm-proof:has(> .pt-thmt:not(:empty)) > .pt-thmh { display: none; }
+.pt-thm-proof > .pt-thmt:not(:empty)::after { content: '.'; }
 /* Italic runs (a theorem's statement, the "Proof." head, <i>, <em>) come from
    the italic face, whose ascent and descent differ from the upright one's: at
    the paragraph's line height their box stood out of the line and opened it
@@ -723,6 +737,9 @@ blockquote.pt-quote {
 }
 .pt-eqw > .mf-hintbar, .pt-eqw .mf-hintbar { left: auto; right: 0; top: calc(100% + 2px); }
 .mf-hintbar > span + span::before { content: '\00B7'; margin: 0 8px; color: #c9b48e; }
+/* the way out (Esc, or Enter on an empty last line) stands out a little */
+.mf-hintbar > .mf-hintmain { color: #7a4f10; font-weight: 600; }
+.mf-hintbar > .mf-hintmain kbd { color: #7a4f10; border-color: #d9b878; background: #fbefd6; }
 .mf-hintbar kbd {
   font: 10px/1.35 Consolas, ui-monospace, monospace; color: #5a4b3a;
   background: #f6efe3; border: 1px solid #e3d5bd; border-bottom-width: 2px; border-radius: 3px;

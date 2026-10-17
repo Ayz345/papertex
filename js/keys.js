@@ -373,7 +373,7 @@
       add.onclick = go;
       inp.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); go(); } };
       f.appendChild(prev); f.appendChild(inp); f.appendChild(add);
-      f.appendChild(h('div', 'kb-sniphint', 'An empty {} becomes a box: the caret lands in the first one, so \\frac{}{} or x^{} work as templates.'));
+      f.appendChild(h('div', 'kb-sniphint', 'An empty {} becomes a box: the cursor lands in the first one, so \\frac{}{} or x^{} work as templates.'));
       return f;
     }
 

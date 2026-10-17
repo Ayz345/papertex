@@ -1269,3 +1269,15 @@ body.nopanel .side { margin-right: calc(-1 * var(--sidew)); }
 .mx-field { font-family: "PaperTeX", serif; font-size: 34px; color: #1d1b17; outline: none; }
 .mx-field .mmat .mph { min-width: 1em; min-height: 1.1em; }
 @media (max-width: 600px) { .mx-field { font-size: 24px; } .mx-paper { padding: 24px 12px; } }
+/* "Page updated · 1 note": the notes open from it */
+.texstat.hasnotes { cursor: pointer; color: var(--ink-2); text-decoration: underline dotted; text-underline-offset: 2px; }
+.texstat.hasnotes:hover, .texstat.hasnotes:focus-visible { color: var(--accent, #8b5a00); }
+/* the symbol panel's search: every group at once */
+.psearch {
+  margin: 8px 8px 0; padding: 5px 9px; font: inherit; font-size: 12px;
+  border: 1px solid var(--line); border-radius: 7px; background: var(--panel); color: var(--ink-2);
+  outline: none; transition: border-color .15s, box-shadow .15s;
+}
+.psearch:focus { border-color: var(--accent-2); box-shadow: 0 0 0 3px rgba(184, 134, 11, .15); }
+.pbody.searching .pgrid { display: none; }
+.pbody.searching .pgrid.psres { display: grid; }

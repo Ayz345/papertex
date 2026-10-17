@@ -1753,7 +1753,7 @@
     if (!items.length) { if (bar) bar.remove(); return; }
     if (!bar) { bar = document.createElement('div'); bar.className = 'mf-hintbar'; box.appendChild(bar); }
     var html = items.map(function (it) {
-      return '<span>' + it[0].map(function (k) { return '<kbd>' + k + '</kbd>'; }).join('') + ' ' + it[1] + '</span>';
+      return '<span' + (it[2] ? ' class="mf-hintmain"' : '') + '>' + it[0].map(function (k) { return '<kbd>' + k + '</kbd>'; }).join('') + ' ' + it[1] + '</span>';
     }).join('');
     if (bar.innerHTML !== html) bar.innerHTML = html;
   };
@@ -1765,7 +1765,7 @@
     if (p) {
       var n = p.node, t = n.t, brace = braced.has(r);
       if (brace) H.push([['}'], 'close the brace']);
-      else if (t === 'scr') H.push([['Space'], n.sup === r ? 'leave the power' : 'leave the index']);
+      else if (t === 'scr') H.push([['Space'], n.sup === r ? 'leave the power' : 'leave the subscript']);
       else if (t === 'frac') H.push([['Space'], p.slot === 0 ? 'on to the denominator' : 'leave the fraction']);
       else if (t === 'sqrt') H.push([['Space'], n.k === r ? 'leave the root' : 'on to the root']);
       else if (t === 'acc') H.push([['Space'], 'leave it']);
@@ -1778,11 +1778,14 @@
       if (!this.opts.noMatrixSheet) H.push([['Double-click'], 'edit it large']);
       if (!inline && !this.opts.noMatrixSheet) H.push([['⋮'], 'rows and columns']);
     } else if (!p) {
-      if (isEmptyRow(this.root)) {
+      /* a display equation: how to get out of it is said first, plainly */
+      if (isEmptyRow(this.root) && !inline && this.opts.enterLeaves && this.opts.enterLeaves()) {
+        H.push([['Enter'], 'leave the equation', 1], [['Backspace'], 'remove this line']);
+      } else if (isEmptyRow(this.root)) {
         H.push([['alpha', 'sqrt', 'sum'], 'type a name'], [['/'], 'fraction'], [['^'], 'power']);
-      } else if (inline) H.push([['Esc'], 'back to the text']);
-      else if (this.leftMat) H.push([['Enter'], 'done']);
-      else H.push([['Enter'], 'new line'], [['Esc'], 'done']);
+      } else if (inline) H.push([['Esc'], 'back to the text', 1]);
+      else if (this.leftMat) H.push([['Enter'], 'done', 1]);
+      else H.push([['Esc'], 'done, write on below', 1], [['Enter'], 'new aligned line']);
     }
     return H;
   };
@@ -2046,7 +2049,10 @@
     /* wrap the selection or the trailing operand where it makes sense */
     var grab = null;
     if (n.t === 'frac' && n.style !== 'binom') {
-      grab = this.takeOperand();
+      /* "/" makes a fraction of what is just before it; the Fraction button,
+         \frac and "frac" give an empty one, the caret in its numerator (a
+         selection becomes the numerator either way) */
+      grab = env === '/' ? this.takeOperand() : this.takeSelection();
       if (grab.length) { n.n.k = grab; this.insertAt(n); this.cur = { row: n.d, i: 0 }; this.changed(); return; }
     } else if (n.t === 'sqrt' || n.t === 'acc' || n.t === 'paren') {
       grab = this.takeSelection();
@@ -2072,16 +2078,39 @@
     this.sel = null;
     return got;
   };
-  /* what "/" should pull into the numerator: the trailing operand */
+  /* What "/" pulls into the numerator: the term just before it, back to an
+     operator — x/, 12/, dy/, x^2y/ — but a bracket group only when it is
+     right before the "/": (a+b)/ takes (a+b), and (T_1-T_0)x/ takes x, not
+     the bracket too. */
   MathField.prototype.takeOperand = function () {
     var selGot = this.takeSelection();
     if (selGot.length) return selGot;
     var r = this.cur.row, i = this.cur.i, j = i;
+    var group = function (n) { return n.t === 'paren' || (n.t === 'ch' && /^[)\]]$/.test(n.c)); };
+    /* where a bracket written as characters, "(" … ")", opens */
+    var opening = function (at) {
+      var depth = 0;
+      for (var q = at; q >= 0; q--) {
+        var x = r.k[q];
+        if (x.t !== 'ch') continue;
+        if (/^[)\]]$/.test(x.c)) depth++;
+        else if (/^[([]$/.test(x.c) && --depth === 0) return q;
+      }
+      return -1;
+    };
     while (j > 0) {
       var n = r.k[j - 1];
       if (n.t === 'ch' && (n.cls === 'bin' || n.cls === 'rel' || n.cls === 'punct')) break;
       if (n.t === 'sym' && (n.cls === 'bin' || n.cls === 'rel' || n.cls === 'spc')) break;
       if (n.t === 'big') break;
+      if (group(n)) {
+        /* the bracket with its scripts, (a+b)^2, counts as right before */
+        var after = r.k.slice(j, i).every(function (x) { return x.t === 'scr'; });
+        if (!after) break;
+        if (n.t === 'ch') { var o = opening(j - 1); if (o < 0) break; j = o; }
+        else j--;
+        break;
+      }
       j--;
     }
     if (j === i) return [];
@@ -2873,7 +2902,7 @@
       if (pf && pf.node.t === 'frac' && pf.node.style === 'frac' && pf.node.d === this.cur.row && isEmptyRow(this.cur.row)) {
         this.unFrac(pf.node); this.changed(); return;
       }
-      this.insertBuild('frac');
+      this.insertBuild('frac', '/');
       var den = this.parentOf(this.cur.row);
       if (den && den.node.t === 'frac') softDen.add(den.node.d);
       /* and Backspace straight after it does the same */
@@ -3133,11 +3162,11 @@
       if (!big.matrixAt()) { var lr = m.r[m.r.length - 1], lc = lr[lr.length - 1]; reparent(big.root); big.cur = { row: lc, i: lc.k.length }; }
       big.matrixOp(name);
     }
-    btn('+ Row', 'Add a row below the caret', function () { op('addrow'); });
-    btn('− Row', 'Remove the caret’s row', function () { op('delrow'); });
+    btn('+ Row', 'Add a row below the cursor', function () { op('addrow'); });
+    btn('− Row', 'Remove the cursor’s row', function () { op('delrow'); });
     if (!cases) {
-      btn('+ Column', 'Add a column right of the caret', function () { op('addcol'); });
-      btn('− Column', 'Remove the caret’s column', function () { op('delcol'); });
+      btn('+ Column', 'Add a column right of the cursor', function () { op('addcol'); });
+      btn('− Column', 'Remove the cursor’s column', function () { op('delcol'); });
       var kinds = el('span', 'mx-kinds');
       BRACKETS.forEach(function (b) {
         var bt = el('button', 'dlg-btn mx-tool mx-kind' + (m.env === b[0] ? ' on' : ''), b[1]);

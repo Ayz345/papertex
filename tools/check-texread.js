@@ -89,6 +89,9 @@ const ein = pd.bib.find((e) => e.key === 'einstein1905'), kn = pd.bib.find((e) =
 check(P, ein && ein.author === 'Albert Einstein' && /Körper/.test(ein.title) && /Annalen der Physik 322\(10\), 891–921/.test(ein.journal) && ein.year === '1905' && /doi:/.test(ein.note), '.bib article (@string, braces, accents, pages)');
 check(P, kn && kn.author === 'Donald E. Knuth' && /TeXbook/.test(kn.title) && kn.journal === 'Addison-Wesley', '.bib book in quotes');
 check(P, pd.bib.length === 3 && !pd.bib.some((e) => e.key === 'unused2020'), 'only cited works');
+const lib = pd.bibLibrary || [], un = lib.find((e) => e.key === 'unused2020');
+check(P, un && un.title && lib.some((e) => e.key === 'einstein1905' && /Körper/.test(e.title)), 'the whole .bib kept as the library (uncited works too)');
+check('fragment', !PT.texread.read('Some \\cite{a} text.').doc.bibLibrary, 'no library without a .bib');
 check(P, pr.notes.some((n) => /missingkey/.test(n)) && !pr.notes.some((n) => /\.bib file cannot be read/.test(n)), 'notes: the key not in the .bib, and no "cannot read .bib"');
 const pf = pd.blocks.find((b) => b.t === 'figure');
 check(P, pf && /^data:image\/png;base64,/.test(pf.src) && pf.filename === 'plot.png' && pf.width === 0.6, 'figure image from figures/plot.png');
