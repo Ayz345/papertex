@@ -72,6 +72,13 @@ check(H, d.blocks.some((b) => b.t === 'raw' && /^% \\input\{appendix\}/.test(b.t
 check(H, d.bib.length === 2 && d.bib[0].title === 'Science and Hypothesis' && d.bib[0].year === '1905' && /Gödel/.test(d.bib[1].note), 'bibliography');
 check(H, r.notes.length >= 6, 'notes');
 
+/* unfinished LaTeX (the pane waits for it) — and finished LaTeX is not */
+const results0 = fs.readFileSync(files[0], 'utf8'), at = results0.indexOf('\\section{');
+check('unfinished', PT.texread.read(results0.slice(0, at) + '\\begin{equation}\n' + results0.slice(at)).broken.length === 1, 'an unclosed equation before a section');
+check('unfinished', PT.texread.read('\\section{A}\n\\begin{align}\na=b').broken.length === 1, 'an align with no end');
+check('unfinished', PT.texread.read('\\begin{equation}\na\n\nb\n\\end{equation}').broken.length === 1, 'a blank line inside maths');
+files.concat([hw]).forEach((f) => check(path.basename(f), !PT.texread.read(fs.readFileSync(f, 'utf8')).broken.length, 'finished LaTeX taken for unfinished'));
+
 if (failures.length) {
   console.error('texread: ' + failures.length + ' problem(s)\n  ' + failures.join('\n  '));
   process.exit(1);

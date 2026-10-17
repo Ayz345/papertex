@@ -85,7 +85,11 @@
         <button class="minib" id="btnTex2">Download .tex</button>
         <span class="texstat" id="texstat"></span>
       </div>
-      <pre id="texout"></pre>
+      <div class="texed" id="texed">
+        <pre id="texout" aria-hidden="true"></pre>
+        <textarea id="texin" spellcheck="false" autocomplete="off" autocapitalize="off" wrap="soft"
+          aria-label="The LaTeX. Edit it, and the page follows when you pause."></textarea>
+      </div>
     </div>
 
     <div class="rpane" id="pane-outline"><div id="outline"></div></div>

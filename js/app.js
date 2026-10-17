@@ -245,10 +245,14 @@
     texTimer = setTimeout(function () {
       var tex = L.build(state.doc);
       state.tex = tex;
+      /* while you type in the pane it is yours: the page follows it, not
+         the other way round (applyTex) */
+      var typing = texIn && document.activeElement === texIn;
       var pane = $('#texout');
-      if (pane) pane.innerHTML = highlight(tex);
+      if (pane && !typing) pane.innerHTML = highlight(tex) + '\n';
+      if (texIn && !typing && texIn.value !== tex) texIn.value = tex;
       var st = $('#texstat');
-      if (st) st.textContent = tex.split('\n').length + ' lines · ' + tex.length.toLocaleString() + ' characters';
+      if (st && !typing) st.textContent = tex.split('\n').length + ' lines · ' + tex.length.toLocaleString() + ' characters';
       updateOutline();
       pageGuides();
     }, 120);
@@ -260,6 +264,110 @@
       .replace(/(\\(?:begin|end))(\{)([a-zA-Z*]+)(\})/g, '<b class="e">$1</b>$2<u class="n">$3</u>$4')
       .replace(/(\\[a-zA-Z@]+\*?)/g, '<b class="k">$1</b>')
       .replace(/([{}[\]])/g, '<span class="b">$1</span>');
+  }
+
+  /* The pane is an editor too: type LaTeX there and, when you pause, the
+     page follows (texread.js reads it back). Blocks whose LaTeX did not
+     change are kept as they were — a chart stays a chart you can edit, a
+     figure keeps its image — so only what you changed is read again. When
+     you leave the pane it shows the LaTeX the page writes. */
+  var texIn = null, texTimer2 = null, texDirty = false;
+  /* every block this document has had since you first edited in the pane:
+     a half-typed egin{…} may swallow a chart for a while (even while you
+     are elsewhere), and it is still found when the LaTeX is whole again */
+  var texSeen = [], texSeenDoc = null;
+  function seeBlocks() {
+    if (texSeenDoc !== state.doc) { texSeen = []; texSeenDoc = state.doc; }
+    state.doc.blocks.forEach(function (b) { if (texSeen.indexOf(b) < 0) texSeen.push(b); });
+    if (texSeen.length > 3000) texSeen = texSeen.slice(-3000);
+  }
+  function setupTexEditor() {
+    texIn = $('#texin');
+    var pre = $('#texout'), box = $('#texed'), st = $('#texstat');
+    if (!texIn || !pre) return;
+    texIn.addEventListener('focus', function () { box.classList.add('editing'); seeBlocks(); });
+    texIn.addEventListener('input', function () {
+      if (texSeenDoc !== state.doc) seeBlocks();
+      pre.innerHTML = highlight(texIn.value) + '\n';
+      pre.scrollTop = texIn.scrollTop;
+      texDirty = true;
+      if (st) { st.textContent = 'Editing — the page follows when you pause'; st.title = ''; }
+      clearTimeout(texTimer2);
+      texTimer2 = setTimeout(applyTex, 600);
+    });
+    texIn.addEventListener('scroll', function () { pre.scrollTop = texIn.scrollTop; });
+    texIn.addEventListener('blur', function () {
+      box.classList.remove('editing');
+      clearTimeout(texTimer2);
+      /* unfinished LaTeX stays as you left it, not applied */
+      if ((texDirty ? applyTex() : true) !== false) refresh();   /* back to the LaTeX the page writes */
+    });
+    texIn.addEventListener('keydown', function (e) {
+      /* Tab indents (Escape gives the keyboard back to the page) */
+      if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && !e.metaKey && !e.shiftKey) { e.preventDefault(); document.execCommand('insertText', false, '  '); }
+      else if (e.key === 'Escape') { e.preventDefault(); texIn.blur(); }
+    });
+  }
+  function applyTex() {
+    texDirty = false;
+    var st = $('#texstat'), r;
+    try { r = PT.texread.read(texIn.value); }
+    catch (e) { if (st) st.textContent = 'Not readable yet — keep typing'; texDirty = true; return false; }
+    /* half-typed: egin{equation} with no end yet would take the rest of
+       the document into the formula — wait for it */
+    if (r.broken && r.broken.length) {
+      if (st) { st.textContent = 'Waiting: ' + r.broken[0]; st.title = 'The page follows once the LaTeX is whole again.'; }
+      texDirty = true;
+      return false;
+    }
+    var od = state.doc, nd = r.doc;
+    seeBlocks();
+    /* the reader leaves an empty line at the end to go on writing; here
+       the page has its own, or none */
+    var blankEnd = function (bl) { var b = bl[bl.length - 1]; return b && b.t === 'para' && D.isBlank(b.html); };
+    if (blankEnd(nd.blocks) && !blankEnd(od.blocks)) nd.blocks.pop();
+    var norm = function (t) { return String(t || '').replace(/(^|[^\\])%.*$/gm, '$1').replace(/\s+/g, ' ').trim(); };
+    /* the old blocks, by the LaTeX they write */
+    var pool = {};
+    texSeen.forEach(function (b) {
+      var k = norm(L.texOf(b, od)); (pool[k] = pool[k] || []).push(b);
+    });
+    var used = [];
+    var take = function (b) { used.push(b); return b; };
+    nd.blocks = nd.blocks.map(function (b) {
+      var same = (pool[norm(L.texOf(b, nd))] || []).filter(function (o) {
+        /* LaTeX code may be what a chart wrote: it is that chart again */
+        return used.indexOf(o) < 0 && (o.t === b.t || b.t === 'raw');
+      })[0];
+      if (same) { same.inEnv = b.inEnv; return take(same); }
+      /* a figure is read without its image: the one it had, by file name */
+      if (b.t === 'figure' && b.filename) {
+        var fig = texSeen.filter(function (o) { return o.t === 'figure' && o.src && o.filename === b.filename && used.indexOf(o) < 0; })[0];
+        if (fig) {
+          ['caption', 'label', 'width', 'placement'].forEach(function (k) { fig[k] = b[k]; });
+          fig.inEnv = b.inEnv;
+          return take(fig);
+        }
+      }
+      return b;
+    });
+    /* what the page writes by itself for these blocks is not "extra" */
+    var auto = L.build({ meta: od.meta, settings: Object.assign({}, od.settings, nd.settings, { preamble: '' }), blocks: nd.blocks, bib: nd.bib })
+      .split('\\begin{document}')[0].split('\n').map(function (x) { return x.trim(); });
+    nd.settings.preamble = String(nd.settings.preamble || '').split('\n').filter(function (x) { return x.trim() && auto.indexOf(x.trim()) < 0; }).join('\n');
+    ['docclass', 'fontsize', 'paper', 'columns', 'margin', 'lineSpacing', 'lang', 'titlepage', 'numbered', 'thmWithin', 'preamble'].forEach(function (k) {
+      if (nd.settings[k] !== undefined) od.settings[k] = nd.settings[k];
+    });
+    ['title', 'authors', 'date', 'abstract', 'keywords'].forEach(function (k) { od.meta[k] = nd.meta[k]; });
+    if (od.meta.abstract) od.settings.showAbstract = true;
+    od.blocks = nd.blocks;
+    od.bib = nd.bib;
+    state.editor.render();
+    state.editor.change(false);
+    if (st) {
+      st.textContent = r.notes.length ? 'Page updated · ' + r.notes.length + ' note' + (r.notes.length > 1 ? 's' : '') : 'Page updated';
+      st.title = r.notes.join('\n');
+    }
   }
 
   function updateOutline() {
@@ -2106,6 +2214,7 @@
       setTimeout(pageGuides, 260);
     };
     $('#btnCopy2').onclick = copyTex;
+    setupTexEditor();
     $('#btnTex2').onclick = exportTex;
 
     document.addEventListener('keydown', function (e) {

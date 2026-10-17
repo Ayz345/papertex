@@ -276,17 +276,31 @@ body.nopanel .side { margin-right: calc(-1 * var(--sidew)); }
 }
 .minib:hover { border-color: #d9a441; color: var(--accent-ink); transform: translateY(-1px); }
 .minib:active { transform: scale(.95); }
-#texout {
-  flex: 1 1 auto; margin: 0; padding: 12px 14px 60px; overflow: auto;
+/* The LaTeX, editable: a textarea laid exactly over the coloured text. You
+   type in the textarea (its own letters are clear, its caret and selection
+   show); the colours underneath follow. Both wrap at the same width — the
+   same font, padding and scrollbar gutter — and scroll together (app.js). */
+.texed { position: relative; flex: 1 1 auto; min-height: 0; background: #fcfcfd; transition: box-shadow .2s ease; }
+.texed.editing { box-shadow: inset 3px 0 0 var(--accent-2); }
+#texout, #texin {
+  position: absolute; inset: 0; margin: 0; padding: 12px 14px 60px; box-sizing: border-box; border: 0;
   /* long paragraphs wrap at the pane's edge (indentation is kept) */
-  font: 12px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; color: #3d434b;
-  background: #fcfcfd; tab-size: 2;
+  font: 12px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; tab-size: 2; letter-spacing: 0;
+  scrollbar-gutter: stable;
 }
-#texout .k { color: var(--accent); font-weight: 500; }
-#texout .e { color: #1f6f5c; font-weight: 600; }
+#texout { overflow: hidden; pointer-events: none; color: #3d434b; background: transparent; }
+#texin {
+  overflow-y: auto; overflow-x: hidden; resize: none; outline: none; background: transparent;
+  color: transparent; caret-color: var(--ink); -webkit-text-fill-color: transparent;
+}
+#texin::selection { background: rgba(184, 134, 11, .28); }
+#texin:hover { cursor: text; }
+@media (max-width: 760px) { #texout, #texin { font-size: 16px; } }   /* no zoom on focus */
+#texout .k { color: var(--accent); }
+#texout .e { color: #1f6f5c; }
 #texout .n { color: #1f6f5c; text-decoration: none; }
 #texout .b { color: #aeb4bd; }
-#texout .c { color: #9aa1ab; font-style: italic; }
+#texout .c { color: #9aa1ab; }
 
 /* outline */
 #outline { padding: 10px; }

@@ -87,13 +87,13 @@
     var open = '\\begin{' + env + '}', close = '\\end{' + env + '}', depth = 1, j = i;
     while (j < s.length) {
       var a = s.indexOf(open, j), b = s.indexOf(close, j);
-      if (b < 0) return { body: s.slice(i), end: s.length };
+      if (b < 0) return { body: s.slice(i), end: s.length, open: true };
       if (a >= 0 && a < b) { depth++; j = a + open.length; continue; }
       depth--;
       if (!depth) return { body: s.slice(i, b), end: b + close.length };
       j = b + close.length;
     }
-    return { body: s.slice(i), end: s.length };
+    return { body: s.slice(i), end: s.length, open: true };
   }
   /* split at a separator that is at the top level: not in braces, not in a
      nested environment, not escaped (\& is a character) */
@@ -451,6 +451,7 @@
 
   function Reader(notes, verb) {
     this.notes = notes;
+    this.broken = [];         /* LaTeX that is plainly not finished (see env) */
     this.verb = verb;
     this.ctx = new Ctx(notes);
     this.thm = {};            /* environment name → theorem kind, from \newtheorem */
@@ -497,7 +498,9 @@
       if (!tex) return;
       flush();
       var last = out[out.length - 1];
-      if (last && last.t === 'raw') last.tex += '\n' + tex;   /* one block for a run of them */
+      /* one block for a run of loose commands; an environment (a drawing,
+         a chart PaperTeX wrote) stays a block of its own */
+      if (last && last.t === 'raw' && !/^\\begin\{/.test(tex) && !/^\\begin\{/.test(last.tex)) last.tex += '\n' + tex;
       else out.push({ id: self.id(), t: 'raw', tex: tex });
     }
 
@@ -540,7 +543,7 @@
         if (!m) { para += '\\begin'; i = cm.end; continue; }
         var env = m[1], start = i, after = cm.end + m[0].length;
         var b = envBody(s, after, env);
-        var r = this.env(env, b.body, s.slice(start, b.end));
+        var r = this.env(env, b.body, s.slice(start, b.end), b.open);
         if (r === 'inline') { para += s.slice(start, b.end); }
         else if (r === 'raw') raw(s.slice(start, b.end));
         else { flush(); r.forEach(function (x) { if (x) out.push(x); }); }
@@ -641,8 +644,14 @@
 
   /* one environment → blocks, or 'raw' (kept as LaTeX), or 'inline' (part
      of the paragraph around it) */
-  Reader.prototype.env = function (env, body, whole) {
+  Reader.prototype.env = function (env, body, whole, open) {
     var self = this, mm = MATH_ENV.exec(env);
+    /* Not finished yet: an environment that never ends, or displayed maths
+       that runs into a blank line, a heading or a float — none of which
+       LaTeX allows in maths. (The LaTeX pane waits for these.) */
+    if (open || (mm && (/\n[ \t]*\n/.test(body.trim()) || /\\(section|subsection|chapter|begin\{(figure|table|itemize|enumerate|equation|align|gather))\b/.test(body)))) {
+      this.broken.push('\\begin{' + env + '} has no \\end{' + env + '} yet');
+    }
     if (mm) {
       var multi = mm[1] !== 'equation' && mm[1] !== 'displaymath';
       return [this.eqBlock(body, !mm[2] && mm[1] !== 'displaymath', multi, mm[1])];
@@ -1096,7 +1105,7 @@
     meta.keywords = m.keywords || '';
     meta.headHtml = true; meta.bibHtml = true;
     settings.showAbstract = !!m.abstract || bd < 0;
-    return { doc: { meta: meta, settings: settings, blocks: blocks, bib: rd.bib }, notes: notes.out() };
+    return { doc: { meta: meta, settings: settings, blocks: blocks, bib: rd.bib }, notes: notes.out(), broken: rd.broken };
   }
 
   /* does this text look like LaTeX, not a project file? */
