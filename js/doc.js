@@ -1315,8 +1315,16 @@
           eqw.classList.toggle('pt-inmat', fl.host.classList.contains('mf-inmat'));
         },
         onFocus: function (fl) { self.activeField = fl; if (self.hooks.onFieldFocus) self.hooks.onFieldFocus(fl, b); },
-        onEnter: function (fl, ev) {
+        onEnter: function (fl, ev, done) {
           if (ev.shiftKey) { self.exitEq(b, idx); return; }
+          /* Enter again straight after Enter left a matrix or cases display
+             (math.js): this line is done — on to the next line, or after
+             the last one out of the equation, never a stray empty line */
+          if (done) {
+            if (li < b.lines.length - 1) { self.focusBlock(b.id, 'line' + (li + 1)); self.render(); }
+            else self.exitEq(b, idx);
+            return;
+          }
           /* Enter on an empty last line means "done": drop that line and go
              on writing below, as in a list */
           if (M.isEmptyRow(lineRow) && li === b.lines.length - 1) {

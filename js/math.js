@@ -1781,6 +1781,7 @@
       if (isEmptyRow(this.root)) {
         H.push([['alpha', 'sqrt', 'sum'], 'type a name'], [['/'], 'fraction'], [['^'], 'power']);
       } else if (inline) H.push([['Esc'], 'back to the text']);
+      else if (this.leftMat) H.push([['Enter'], 'done']);
       else H.push([['Enter'], 'new line'], [['Esc'], 'done']);
     }
     return H;
@@ -1812,6 +1813,7 @@
 
   MathField.prototype.onMouse = function (e) {
     this.wordBreak = null;
+    this.leftMat = null;
     /* Where the press landed, read before the field takes the focus:
        taking it redraws the formula, and the element pressed is gone. */
     var hit = null, atom = e.target.closest ? e.target.closest('.matom') : null;
@@ -2357,6 +2359,10 @@
     var k = e.key;
     /* an input method is composing a word: it arrives when done (deskFocus) */
     if (e.isComposing || k === 'Process') return;
+    /* Enter just took the caret out of a matrix or cases display (see
+       'Enter' below): only the key straight after it may use that */
+    var leftMat = this.leftMat;
+    if (!/^(Shift|Control|Alt|AltGraph|Meta|CapsLock|OS)$/.test(k)) this.leftMat = null;
     /* the size picker for a new matrix has the keys while it is up */
     if (this.picker && this.pickerKey(e) !== 'pass') return;
     var ciNode = this.activeCI();
@@ -2541,7 +2547,19 @@
            Shift+Enter always goes to the field. */
         /* (a matrix's size is asked for when it is made, and changed in its
            large editor: Enter in a cell just goes on to the next one) */
-        if (!e.shiftKey && this.advance()) { e.preventDefault(); this.render(); return; }
+        /* Enter again, straight after Enter left the last cell of a matrix
+           or cases display: that is "done", as Enter on an empty row is —
+           the field is told so (an equation is left, instead of growing a
+           stray aligned line the next keys would go into) */
+        if (!e.shiftKey && leftMat && !this.sel && this.cur.row.k[this.cur.i - 1] === leftMat) {
+          if (this.opts.onEnter) { this.opts.onEnter(this, e, 'done'); e.preventDefault(); }
+          return;
+        }
+        var from = this.parentOf(this.cur.row);
+        if (!e.shiftKey && this.advance()) {
+          if (from && from.node.t === 'mat' && this.cur.row.k[this.cur.i - 1] === from.node) this.leftMat = from.node;
+          e.preventDefault(); this.render(); return;
+        }
         if (this.opts.onEnter) { this.opts.onEnter(this, e); e.preventDefault(); }
         return;
       case 'Tab':

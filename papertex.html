@@ -11,7 +11,7 @@
      are data: URLs; the compiled PDF is a blob:. connect-src names the
      engine host — tools/build-web.js narrows it to this site alone when
      TeX Live is deployed beside the page. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-hfOfR8PDYQKfSyZseVQAn/84OT4AhIEDL63/4K5V2Y0=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-q2CUmW3hO7fSHEfrhz6HjeEaB4nDR6AcW9URr/R8x2c=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-Ef4OnvuifZJoJDaTiPnDDMwdCbQCFjTCRmzkWKWhbvU=' 'sha256-BbEfGPO2VILKxr7l1tQMs4t5ewczjFKmK8jUMluLJ+k=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-bYVf8Rqe53jzO/mJAbQfQcjEpA4gWKqPMOkhiKfr1dM=' 'sha256-a3y1woSD5+kkclCBe1CxjAR7tZ1IesUlzCOV9xbhSms=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-89T2eA9o1kgOeg7e+dTCgdkKW2QiiKPsUvX0bfV3STw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-hfOfR8PDYQKfSyZseVQAn/84OT4AhIEDL63/4K5V2Y0=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-U1pkv8s+ryMVSMfr5rDXLwc7UfPUZaL/QMWG94Y00dQ=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-Ef4OnvuifZJoJDaTiPnDDMwdCbQCFjTCRmzkWKWhbvU=' 'sha256-/my8OrM9PX/f6Bjiwp9Ni5P4zLRQH3Y3MAHhLpUTOKU=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-bYVf8Rqe53jzO/mJAbQfQcjEpA4gWKqPMOkhiKfr1dM=' 'sha256-a3y1woSD5+kkclCBe1CxjAR7tZ1IesUlzCOV9xbhSms=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-89T2eA9o1kgOeg7e+dTCgdkKW2QiiKPsUvX0bfV3STw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <!-- Where the compiler's wasm and TeX Live live, if not beside this page
      (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
 <meta name="papertex-engine" content="">
@@ -4318,6 +4318,7 @@ blockquote.pt-quote {
       if (isEmptyRow(this.root)) {
         H.push([['alpha', 'sqrt', 'sum'], 'type a name'], [['/'], 'fraction'], [['^'], 'power']);
       } else if (inline) H.push([['Esc'], 'back to the text']);
+      else if (this.leftMat) H.push([['Enter'], 'done']);
       else H.push([['Enter'], 'new line'], [['Esc'], 'done']);
     }
     return H;
@@ -4349,6 +4350,7 @@ blockquote.pt-quote {
 
   MathField.prototype.onMouse = function (e) {
     this.wordBreak = null;
+    this.leftMat = null;
     /* Where the press landed, read before the field takes the focus:
        taking it redraws the formula, and the element pressed is gone. */
     var hit = null, atom = e.target.closest ? e.target.closest('.matom') : null;
@@ -4894,6 +4896,10 @@ blockquote.pt-quote {
     var k = e.key;
     /* an input method is composing a word: it arrives when done (deskFocus) */
     if (e.isComposing || k === 'Process') return;
+    /* Enter just took the caret out of a matrix or cases display (see
+       'Enter' below): only the key straight after it may use that */
+    var leftMat = this.leftMat;
+    if (!/^(Shift|Control|Alt|AltGraph|Meta|CapsLock|OS)$/.test(k)) this.leftMat = null;
     /* the size picker for a new matrix has the keys while it is up */
     if (this.picker && this.pickerKey(e) !== 'pass') return;
     var ciNode = this.activeCI();
@@ -5078,7 +5084,19 @@ blockquote.pt-quote {
            Shift+Enter always goes to the field. */
         /* (a matrix's size is asked for when it is made, and changed in its
            large editor: Enter in a cell just goes on to the next one) */
-        if (!e.shiftKey && this.advance()) { e.preventDefault(); this.render(); return; }
+        /* Enter again, straight after Enter left the last cell of a matrix
+           or cases display: that is "done", as Enter on an empty row is —
+           the field is told so (an equation is left, instead of growing a
+           stray aligned line the next keys would go into) */
+        if (!e.shiftKey && leftMat && !this.sel && this.cur.row.k[this.cur.i - 1] === leftMat) {
+          if (this.opts.onEnter) { this.opts.onEnter(this, e, 'done'); e.preventDefault(); }
+          return;
+        }
+        var from = this.parentOf(this.cur.row);
+        if (!e.shiftKey && this.advance()) {
+          if (from && from.node.t === 'mat' && this.cur.row.k[this.cur.i - 1] === from.node) this.leftMat = from.node;
+          e.preventDefault(); this.render(); return;
+        }
         if (this.opts.onEnter) { this.opts.onEnter(this, e); e.preventDefault(); }
         return;
       case 'Tab':
@@ -10540,8 +10558,16 @@ blockquote.pt-quote {
           eqw.classList.toggle('pt-inmat', fl.host.classList.contains('mf-inmat'));
         },
         onFocus: function (fl) { self.activeField = fl; if (self.hooks.onFieldFocus) self.hooks.onFieldFocus(fl, b); },
-        onEnter: function (fl, ev) {
+        onEnter: function (fl, ev, done) {
           if (ev.shiftKey) { self.exitEq(b, idx); return; }
+          /* Enter again straight after Enter left a matrix or cases display
+             (math.js): this line is done — on to the next line, or after
+             the last one out of the equation, never a stray empty line */
+          if (done) {
+            if (li < b.lines.length - 1) { self.focusBlock(b.id, 'line' + (li + 1)); self.render(); }
+            else self.exitEq(b, idx);
+            return;
+          }
           /* Enter on an empty last line means "done": drop that line and go
              on writing below, as in a list */
           if (M.isEmptyRow(lineRow) && li === b.lines.length - 1) {
