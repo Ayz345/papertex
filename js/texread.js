@@ -1069,6 +1069,21 @@
       if (!rd.bib.some(function (e) { return e.key === key; })) rd.bib.push({ key: key, author: '', title: '', journal: '', year: '' });
     });
     if (rd.bib.length && !blocks.some(function (b) { return b.t === 'bib'; })) blocks.push({ id: rd.id(), t: 'bib' });
+    /* a package kept from the file that the writer loads anyway for these
+       blocks: once is enough */
+    var has = function (f) { return blocks.some(f); };
+    var html = blocks.map(function (b) { return (b.html || '') + (b.items || []).map(function (x) { return x.html; }).join(''); }).join('');
+    var writes = {
+      booktabs: has(function (b) { return b.t === 'table' && b.booktabs; }),
+      amsthm: has(function (b) { return b.t === 'theorem'; }),
+      listings: has(function (b) { return b.t === 'code' && b.lang; }),
+      ulem: /<s>/.test(html), soul: /<mark>/.test(html),
+      setspace: settings.lineSpacing && settings.lineSpacing !== 1
+    };
+    settings.preamble = settings.preamble.split('\n').filter(function (L) {
+      var m = /^\\usepackage\{([A-Za-z0-9-]+)\}$/.exec(L.trim());
+      return !(m && writes[m[1]]);
+    }).join('\n');
     /* a line to go on writing at the end */
     if (!blocks.length || blocks[blocks.length - 1].t !== 'para') blocks.push({ id: rd.id(), t: 'para', html: '' });
 

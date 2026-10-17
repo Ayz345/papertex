@@ -11,7 +11,7 @@
      are data: URLs; the compiled PDF is a blob:. connect-src names the
      engine host — tools/build-web.js narrows it to this site alone when
      TeX Live is deployed beside the page. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-hfOfR8PDYQKfSyZseVQAn/84OT4AhIEDL63/4K5V2Y0=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-U1pkv8s+ryMVSMfr5rDXLwc7UfPUZaL/QMWG94Y00dQ=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-cJnXCB+qOyq+hj86Q/SDcaRyzwowZg9zfdjE+JyQUbI=' 'sha256-/my8OrM9PX/f6Bjiwp9Ni5P4zLRQH3Y3MAHhLpUTOKU=' 'sha256-NTkK/yyjx/aggpcyffs8jtgrhsSZNC9s+DlCeWWpYPo=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-Ngxw6CloW0RWdzm9FS4199NJDCjjQ1iM0ymu6VbIGKQ=' 'sha256-a3y1woSD5+kkclCBe1CxjAR7tZ1IesUlzCOV9xbhSms=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-eq0kUv1thRTbcoPpUaWigwWdHhadEXrYy/iGpMuqVcQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-hfOfR8PDYQKfSyZseVQAn/84OT4AhIEDL63/4K5V2Y0=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-U1pkv8s+ryMVSMfr5rDXLwc7UfPUZaL/QMWG94Y00dQ=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-cJnXCB+qOyq+hj86Q/SDcaRyzwowZg9zfdjE+JyQUbI=' 'sha256-/my8OrM9PX/f6Bjiwp9Ni5P4zLRQH3Y3MAHhLpUTOKU=' 'sha256-6VRLLIfqRBfREroWOK9DfZLxjCkcYguY2j//lh+gWJk=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-Ngxw6CloW0RWdzm9FS4199NJDCjjQ1iM0ymu6VbIGKQ=' 'sha256-a3y1woSD5+kkclCBe1CxjAR7tZ1IesUlzCOV9xbhSms=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-eq0kUv1thRTbcoPpUaWigwWdHhadEXrYy/iGpMuqVcQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <!-- Where the compiler's wasm and TeX Live live, if not beside this page
      (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
 <meta name="papertex-engine" content="">
@@ -12715,6 +12715,21 @@ blockquote.pt-quote {
       if (!rd.bib.some(function (e) { return e.key === key; })) rd.bib.push({ key: key, author: '', title: '', journal: '', year: '' });
     });
     if (rd.bib.length && !blocks.some(function (b) { return b.t === 'bib'; })) blocks.push({ id: rd.id(), t: 'bib' });
+    /* a package kept from the file that the writer loads anyway for these
+       blocks: once is enough */
+    var has = function (f) { return blocks.some(f); };
+    var html = blocks.map(function (b) { return (b.html || '') + (b.items || []).map(function (x) { return x.html; }).join(''); }).join('');
+    var writes = {
+      booktabs: has(function (b) { return b.t === 'table' && b.booktabs; }),
+      amsthm: has(function (b) { return b.t === 'theorem'; }),
+      listings: has(function (b) { return b.t === 'code' && b.lang; }),
+      ulem: /<s>/.test(html), soul: /<mark>/.test(html),
+      setspace: settings.lineSpacing && settings.lineSpacing !== 1
+    };
+    settings.preamble = settings.preamble.split('\n').filter(function (L) {
+      var m = /^\\usepackage\{([A-Za-z0-9-]+)\}$/.exec(L.trim());
+      return !(m && writes[m[1]]);
+    }).join('\n');
     /* a line to go on writing at the end */
     if (!blocks.length || blocks[blocks.length - 1].t !== 'para') blocks.push({ id: rd.id(), t: 'para', html: '' });
 
