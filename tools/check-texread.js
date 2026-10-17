@@ -19,6 +19,7 @@ global.document = { addEventListener() {}, createElement() { return { style: {},
 require(path.join(root, 'js/symbols.js'));
 require(path.join(root, 'js/math.js'));
 require(path.join(root, 'js/texread.js'));
+require(path.join(root, 'js/unzip.js'));
 
 const failures = [];
 const check = (file, ok, what) => { if (!ok) failures.push(file + ': ' + what); };
@@ -72,6 +73,26 @@ check(H, d.blocks.some((b) => b.t === 'raw' && /^% \\input\{appendix\}/.test(b.t
 check(H, d.bib.length === 2 && d.bib[0].title === 'Science and Hypothesis' && d.bib[0].year === '1905' && /Gödel/.test(d.bib[1].note), 'bibliography');
 check(H, r.notes.length >= 6, 'notes');
 
+/* a project: main.tex + \input file + .bib + image (an Overleaf download) */
+const projDir = path.join(__dirname, 'texread-fixtures', 'project'), proj = {};
+(function walk(dir) {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) walk(p); else proj[path.relative(projDir, p).replace(/\\/g, '/')] = new Uint8Array(fs.readFileSync(p));
+  }
+})(projDir);
+const P = 'project/', pr = PT.texread.readProject(proj), pd = pr.doc;
+check(P, pr.main === 'main.tex' && pd.meta.title === 'A Small Project', 'main file and title');
+check(P, pd.blocks.some((b) => b.t === 'section' && b.html === 'Introduction' && b.label === 'sec:intro'), '\\input{sections/intro} written in');
+check(P, !pd.blocks.some((b) => b.t === 'raw'), 'nothing left as LaTeX code (the commented-out \\input stays out)');
+const ein = pd.bib.find((e) => e.key === 'einstein1905'), kn = pd.bib.find((e) => e.key === 'knuth84');
+check(P, ein && ein.author === 'Albert Einstein' && /Körper/.test(ein.title) && /Annalen der Physik 322\(10\), 891–921/.test(ein.journal) && ein.year === '1905' && /doi:/.test(ein.note), '.bib article (@string, braces, accents, pages)');
+check(P, kn && kn.author === 'Donald E. Knuth' && /TeXbook/.test(kn.title) && kn.journal === 'Addison-Wesley', '.bib book in quotes');
+check(P, pd.bib.length === 3 && !pd.bib.some((e) => e.key === 'unused2020'), 'only cited works');
+check(P, pr.notes.some((n) => /missingkey/.test(n)) && !pr.notes.some((n) => /\.bib file cannot be read/.test(n)), 'notes: the key not in the .bib, and no "cannot read .bib"');
+const pf = pd.blocks.find((b) => b.t === 'figure');
+check(P, pf && /^data:image\/png;base64,/.test(pf.src) && pf.filename === 'plot.png' && pf.width === 0.6, 'figure image from figures/plot.png');
+
 /* unfinished LaTeX (the pane waits for it) — and finished LaTeX is not */
 const results0 = fs.readFileSync(files[0], 'utf8'), at = results0.indexOf('\\section{');
 check('unfinished', PT.texread.read(results0.slice(0, at) + '\\begin{equation}\n' + results0.slice(at)).broken.length === 1, 'an unclosed equation before a section');
@@ -79,8 +100,16 @@ check('unfinished', PT.texread.read('\\section{A}\n\\begin{align}\na=b').broken.
 check('unfinished', PT.texread.read('\\begin{equation}\na\n\nb\n\\end{equation}').broken.length === 1, 'a blank line inside maths');
 files.concat([hw]).forEach((f) => check(path.basename(f), !PT.texread.read(fs.readFileSync(f, 'utf8')).broken.length, 'finished LaTeX taken for unfinished'));
 
-if (failures.length) {
-  console.error('texread: ' + failures.length + ' problem(s)\n  ' + failures.join('\n  '));
-  process.exit(1);
-}
-console.log('texread: ' + files.length + ' PaperTeX documents and the hand-written paper read as expected.');
+/* the same project as a .zip (made on Windows: its names use "\") */
+const zipped = fs.readFileSync(path.join(__dirname, 'texread-fixtures', 'project.zip'));
+PT.unzip(zipped.buffer.slice(zipped.byteOffset, zipped.byteOffset + zipped.length)).then((z) => {
+  const zr = PT.texread.readProject(z), zf = zr.doc.blocks.find((b) => b.t === 'figure');
+  check('project.zip', Object.keys(z).sort().join(',') === 'figures/plot.png,main.tex,refs.bib,sections/intro.tex', 'entries and their names');
+  check('project.zip', zf && zf.filename === 'plot.png' && /^data:image\/png/.test(zf.src) && zr.doc.bib.length === 3, 'figure image and references');
+}, (e) => check('project.zip', false, 'unzip failed: ' + e.message)).then(() => {
+  if (failures.length) {
+    console.error('texread: ' + failures.length + ' problem(s)\n  ' + failures.join('\n  '));
+    process.exit(1);
+  }
+  console.log('texread: ' + files.length + ' PaperTeX documents, the hand-written paper and a project (folder and .zip) read as expected.');
+});

@@ -451,6 +451,7 @@
 
   function Reader(notes, verb) {
     this.notes = notes;
+    this.opts = {};           /* read()'s options: a project's files, its .bib */
     this.broken = [];         /* LaTeX that is plainly not finished (see env) */
     this.verb = verb;
     this.ctx = new Ctx(notes);
@@ -593,7 +594,7 @@
         a = args(s, cm.end, name === 'printbibliography' ? 0 : 1);
         if (name !== 'addbibresource') {
           push({ id: this.id(), t: 'bib' });
-          this.notes.add('bibfile', 'A .bib file cannot be read here: the works you cite were added to the reference list, empty, to fill in');
+          if (!this.opts.bib) this.notes.add('bibfile', 'A .bib file cannot be read here: the works you cite were added to the reference list, empty, to fill in');
         }
         i = Math.max(a.end, cm.end); continue;
       }
@@ -793,7 +794,7 @@
     else if (/width/.test(opt)) this.notes.add('figwidth', 'A figure width in cm or pt became a share of the line width');
     var cl = this.capLab(body);
     var file = (a.req[0] || '').trim();
-    this.notes.add('figimg', 'Images are not in the .tex file: choose each figure’s image again (' + file + ')');
+    if (!(this.opts.hasFile && this.opts.hasFile(file))) this.notes.add('figimg', 'Images are not in the .tex file: choose each figure’s image again (' + file + ')');
     return [{
       id: this.id(), t: 'figure', src: '', filename: file.replace(/[{}\\%#]/g, ''), caption: cl.caption, width: Math.round(w * 100) / 100,
       label: cl.label, placement: placement(whole)
@@ -1056,8 +1057,9 @@
           name === 'let' ? (/^\\let\\[A-Za-z@]+\s*=?\s*\\[A-Za-z@]+/.exec(s.slice(i)) || [s.slice(i, cm.end)])[0].length + i :
           /^(usetikzlibrary|usepgfplotslibrary|pgfplotsset|definecolor|newcounter|numberwithin|lstset|tikzset|DeclareUnicodeCharacter|captionsetup|setlist|newlength|newif|AtBeginDocument|sisetup|addbibresource)$/.test(name) ? args(s, cm.end, { definecolor: 3, numberwithin: 2, DeclareUnicodeCharacter: 2, setlist: 1 }[name] || 1).end :
           this.defEnd(s, cm);
-        if (name === 'addbibresource') this.notes.add('bibfile', 'A .bib file cannot be read here: the works you cite were added to the reference list, empty, to fill in');
-        else extra.push(s.slice(i, dEnd).trim());
+        if (name === 'addbibresource') {
+          if (!this.opts.bib) this.notes.add('bibfile', 'A .bib file cannot be read here: the works you cite were added to the reference list, empty, to fill in');
+        } else extra.push(s.slice(i, dEnd).trim());
         this.macro(s.slice(i, dEnd));
         i = dEnd; continue;
       }
@@ -1071,18 +1073,128 @@
     return extra.filter(Boolean).join('\n');
   };
 
+  /* ------------------------------------------------------------ projects */
+  /* A project's other .tex files, written in where \input, \include or
+     \subfile name them (not inside a comment). files: path → text. */
+  function findFile(files, name, exts) {
+    var n = String(name || '').trim().replace(/\\/g, '/').replace(/^\.\//, '');
+    var keys = Object.keys(files);
+    var tries = [n].concat((exts || []).map(function (e) { return n + e; }));
+    for (var t = 0; t < tries.length; t++) {
+      for (var k = 0; k < keys.length; k++) {
+        var key = keys[k].replace(/\\/g, '/').replace(/^\.\//, '');
+        if (key === tries[t] || key.slice(-tries[t].length - 1) === '/' + tries[t]) return keys[k];
+      }
+    }
+    return null;
+  }
+  function commentAt(line) {
+    for (var j = 0; j < line.length; j++) {
+      if (line[j] === '\\') { j++; continue; }
+      if (line[j] === '%') return j;
+    }
+    return -1;
+  }
+  function expandInputs(src, files, depth) {
+    if (!files || depth > 8) return src;
+    return src.split('\n').map(function (line) {
+      var cut = commentAt(line), code = cut < 0 ? line : line.slice(0, cut), rest = cut < 0 ? '' : line.slice(cut);
+      code = code.replace(/\\(input|include|subfile)\s*\{([^{}]+)\}/g, function (all, cmd, name) {
+        var key = findFile(files, name, ['.tex']);
+        if (key == null || typeof files[key] !== 'string') return all;
+        var inner = files[key].replace(/^[\s\S]*?\\begin\{document\}/, '').replace(/\\end\{document\}[\s\S]*$/, '');   /* a subfile's own wrapper */
+        return (cmd === 'include' ? '\\clearpage\n' : '') + expandInputs(inner, files, depth + 1) + '\n';
+      });
+      return code + rest;
+    }).join('\n');
+  }
+
+  /* A .bib file → { key: { type, fields } }. Values in braces, quotes or
+     bare (numbers, @string names), joined with #. */
+  function parseBib(text) {
+    var t = String(text || '').replace(/\r/g, ''), out = {}, strings = { jan: 'January', feb: 'February', mar: 'March',
+      apr: 'April', may: 'May', jun: 'June', jul: 'July', aug: 'August', sep: 'September', oct: 'October', nov: 'November', dec: 'December' };
+    var i = 0;
+    function value(b, k) {   /* one value at b[k]: returns [text, end] */
+      var parts = [];
+      while (k < b.length) {
+        k = skipWs(b, k);
+        if (b[k] === '{') { var g = group(b, k); parts.push(g.text); k = g.end; }
+        else if (b[k] === '"') {
+          var e = k + 1, depth = 0;
+          while (e < b.length && !(b[e] === '"' && !depth && b[e - 1] !== '\\')) { if (b[e] === '{') depth++; else if (b[e] === '}') depth--; e++; }
+          parts.push(b.slice(k + 1, e)); k = e + 1;
+        } else {
+          var m = /^[^,#}\s]+/.exec(b.slice(k));
+          if (!m) break;
+          parts.push(strings.hasOwnProperty(m[0].toLowerCase()) ? strings[m[0].toLowerCase()] : m[0]); k += m[0].length;
+        }
+        k = skipWs(b, k);
+        if (b[k] === '#') { k++; continue; }
+        break;
+      }
+      return [parts.join(''), k];
+    }
+    while ((i = t.indexOf('@', i)) >= 0) {
+      var m = /^@\s*(\w+)\s*([{(])/.exec(t.slice(i));
+      if (!m) { i++; continue; }
+      var type = m[1].toLowerCase(), j = i + m[0].length - 1, body;
+      if (m[2] === '{') body = group(t, j);
+      else { var cl = t.indexOf(')', j); body = { text: t.slice(j + 1, cl < 0 ? t.length : cl), end: cl < 0 ? t.length : cl + 1 }; }
+      i = body.end;
+      if (type === 'comment' || type === 'preamble') continue;
+      var b = body.text;
+      if (type === 'string') {
+        var sm = /^\s*([A-Za-z][\w-]*)\s*=\s*/.exec(b);
+        if (sm) strings[sm[1].toLowerCase()] = value(b, sm[0].length)[0];
+        continue;
+      }
+      var comma = b.indexOf(',');
+      if (comma < 0) continue;
+      var key = b.slice(0, comma).trim(), fields = {}, k = comma + 1;
+      while (k < b.length) {
+        var fm = /^[\s,]*([A-Za-z][\w:-]*)\s*=\s*/.exec(b.slice(k));
+        if (!fm) break;
+        k += fm[0].length;
+        var v = value(b, k);
+        fields[fm[1].toLowerCase()] = v[0].replace(/\s+/g, ' ').trim();
+        k = v[1];
+      }
+      if (key) out[key] = { type: type, fields: fields };
+    }
+    return out;
+  }
+  /* a .bib entry → a reference-list entry (rich text, as PaperTeX keeps them) */
+  function bibEntry(key, e, ctx) {
+    var f = e.fields, h = function (s) { return s ? ctx.inline(s).trim() : ''; };
+    /* "Last, First and Other, A." → "First Last and A. Other" */
+    var names = (f.author || f.editor || '').split(/\s+and\s+/i).map(function (n) {
+      var p = n.split(','); return p.length === 2 ? (p[1].trim() + ' ' + p[0].trim()) : n.trim();
+    }).filter(Boolean);
+    var who = names.length > 2 ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] : names.join(' and ');
+    var where = f.journal || f.booktitle || f.publisher || f.school || f.institution || f.howpublished || '';
+    if (f.volume) where += (where ? ' ' : '') + f.volume + (f.number ? '(' + f.number + ')' : '');
+    if (f.pages) where += (where ? ', ' : '') + f.pages.replace(/-+/g, '--');
+    var note = f.note || (f.doi ? 'doi:' + f.doi : f.url ? '\\url{' + f.url + '}' : '');
+    var out = { key: key, author: h(who), title: h(f.title), journal: h(where), year: h(f.year || (f.date || '').slice(0, 4)) };
+    if (note) out.note = h(note);
+    return out;
+  }
+
   /* --------------------------------------------------------------- read */
-  function read(src) {
+  function read(src, opts) {
+    opts = opts || {};
     var notes = new Notes();
     /* a chart's settings ride in a comment: kept before comments go */
     var charts = [];
-    src = String(src || '').replace(/\r\n?/g, '\n').replace(/^[ \t]*% ?papertex:chart (\{.*\})[ \t]*$/gm, function (_, j) {
+    src = expandInputs(String(src || '').replace(/\r\n?/g, '\n'), opts.files, 0).replace(/^[ \t]*% ?papertex:chart (\{.*\})[ \t]*$/gm, function (_, j) {
       charts.push(j);
       return '\u0000C' + (charts.length - 1) + '\u0000';
     });
     var sc = stripComments(src);
     var rd = new Reader(notes, sc.verb);
     rd.charts = charts;
+    rd.opts = opts;
     MACROS = {};
     var s = sc.text;
     var base = PT.doc && PT.doc.newDoc ? PT.doc.newDoc() : { meta: {}, settings: {}, blocks: [], bib: [] };
@@ -1121,10 +1233,20 @@
       return b;
     });
     /* every work cited has an entry, and the list is somewhere */
-    rd.ctx.citeOrder.forEach(function (k) {
+    /* every work cited has an entry: from the project's .bib when there is
+       one (
+ocite{*}: all of it), else empty, to fill in */
+    var bibdb = opts.bib ? parseBib(opts.bib) : {};
+    var cited = rd.ctx.citeOrder.slice();
+    if (cited.indexOf('*') >= 0) cited = cited.filter(function (k) { return k !== '*'; }).concat(Object.keys(bibdb));
+    var missing = [];
+    cited.forEach(function (k) {
       var key = label(k);
-      if (!rd.bib.some(function (e) { return e.key === key; })) rd.bib.push({ key: key, author: '', title: '', journal: '', year: '' });
+      if (rd.bib.some(function (e) { return e.key === key; })) return;
+      if (bibdb[k]) rd.bib.push(bibEntry(key, bibdb[k], rd.ctx));
+      else { rd.bib.push({ key: key, author: '', title: '', journal: '', year: '' }); if (opts.bib) missing.push(k); }
     });
+    if (missing.length) notes.add('bibmissing', 'Not in the .bib file, so left empty to fill in: ' + missing.join(', '));
     if (rd.bib.length && !blocks.some(function (b) { return b.t === 'bib'; })) blocks.push({ id: rd.id(), t: 'bib' });
     /* a package kept from the file that the writer loads anyway for these
        blocks: once is enough */
@@ -1172,6 +1294,57 @@
     return /\\(documentclass|begin\{document\}|section|begin\{|usepackage|title)\b/.test(t);
   }
 
+  /* A whole project — an Overleaf .zip, or several files picked together:
+     files is path → Uint8Array. The main .tex is the one with
+     \documentclass (main.tex first); its \input files, .bib files and
+     images come from the rest. Images the page can show are put into
+     their figures; PDF and EPS ones are named in the notes. */
+  var RASTER = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp' };
+  function decode(bytes) {
+    var t = new TextDecoder('utf-8').decode(bytes);
+    /* not UTF-8 (an older project in Latin-1): read it as that */
+    if ((t.match(/�/g) || []).length > 2) { try { t = new TextDecoder('windows-1252').decode(bytes); } catch (e) { /* keep */ } }
+    return t;
+  }
+  function b64(bytes) {
+    var s = '', CH = 0x8000;
+    for (var i = 0; i < bytes.length; i += CH) s += String.fromCharCode.apply(null, bytes.subarray(i, i + CH));
+    return btoa(s);
+  }
+  function readProject(files) {
+    var texts = {}, bibs = [], names = Object.keys(files);
+    names.forEach(function (n) {
+      if (/\.(tex|ltx|sty|cls)$/i.test(n)) texts[n] = decode(files[n]);
+      else if (/\.bib$/i.test(n)) bibs.push(decode(files[n]));
+    });
+    var mains = Object.keys(texts).filter(function (n) { return /\.(tex|ltx)$/i.test(n) && /\\documentclass/.test(texts[n]); });
+    if (!mains.length) mains = Object.keys(texts).filter(function (n) { return /\.(tex|ltx)$/i.test(n); });
+    if (!mains.length) throw new Error('There is no .tex file in it');
+    mains.sort(function (a, b) {
+      var ma = /(^|\/)main\.tex$/i.test(a), mb = /(^|\/)main\.tex$/i.test(b);
+      if (ma !== mb) return ma ? -1 : 1;
+      var da = /\\begin\{document\}/.test(texts[a]), db = /\\begin\{document\}/.test(texts[b]);
+      if (da !== db) return da ? -1 : 1;
+      return texts[b].length - texts[a].length;
+    });
+    var main = mains[0];
+    var image = function (name) { return findFile(files, name, ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.pdf', '.eps']); };
+    var r = read(texts[main], { files: texts, bib: bibs.join('\n'), hasFile: function (n) { return !!image(n); } });   /* a PDF image has its own note below */
+    var vector = [];
+    r.doc.blocks.forEach(function (b) {
+      if (b.t !== 'figure' || b.src || !b.filename) return;
+      var k = image(b.filename);
+      if (!k) return;
+      var ext = k.split('.').pop().toLowerCase();
+      if (!RASTER[ext]) { vector.push(k.replace(/^.*[\\/]/, '')); return; }
+      b.src = 'data:' + RASTER[ext] + ';base64,' + b64(files[k]);
+      b.filename = k.replace(/^.*[\\/]/, '');   /* the compiler gets it by this name */
+    });
+    if (vector.length) r.notes.unshift('PDF and EPS images cannot be shown on the page: save them as PNG and choose them again (' + vector.join(', ') + ')');
+    r.main = main;
+    return r;
+  }
+
   /* Pasted text: a whole document (open it, or insert its body), LaTeX to
      read into blocks, or ordinary text. Ordinary text with a "$5" or a
      Windows path in it must stay ordinary: only LaTeX's own commands, or
@@ -1186,5 +1359,5 @@
   }
 
   window.PT = window.PT || {};
-  window.PT.texread = { read: read, looksLikeTex: looksLikeTex, isLatex: isLatex, isDocument: isDocument };
+  window.PT.texread = { read: read, readProject: readProject, parseBib: parseBib, looksLikeTex: looksLikeTex, isLatex: isLatex, isDocument: isDocument };
 })();

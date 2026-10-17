@@ -1678,7 +1678,7 @@
     add('Document', 'edit.redo', 'Redo', ['Ctrl+Y', 'Ctrl+Shift+Z'], doRedo, { menu: 'redo', fieldsNative: true, glyph: '↷' });
     add('Document', 'doc.export', 'Download .tex', ['Ctrl+S'], exportTex, { menu: 'export', glyph: '⤓' });
     add('Document', 'doc.save', 'Save project', ['Ctrl+Shift+S'], click('#btnSave'), { menu: 'save', glyph: '💾' });
-    add('Document', 'doc.open', 'Open a project or .tex file', ['Ctrl+O'], openProject, { menu: 'open', glyph: '📂' });
+    add('Document', 'doc.open', 'Open a project, .tex or Overleaf .zip', ['Ctrl+O'], openProject, { menu: 'open', glyph: '📂' });
     add('Document', 'doc.new', 'New document', desk ? ['Ctrl+N'] : [], click('#btnNew'), { menu: 'new', glyph: '＋' });
     add('Document', 'doc.compile', 'Make PDF', desk ? ['Ctrl+R'] : [], compilePDF, { menu: 'compile', glyph: '▶' });
     add('Document', 'doc.print', 'Print the page as it looks', ['Ctrl+P'], printDoc, { menu: 'print', glyph: '⎙' });
@@ -1944,7 +1944,7 @@
         listBox.appendChild(row);
       });
     });
-    var f = h('button', 'popitem docfile', 'Open a file — a project or a .tex…');
+    var f = h('button', 'popitem docfile', 'Open a file — a project, a .tex or an Overleaf .zip…');
     f.onclick = function () { D.closeAllPop(); openFile(); };
     m.appendChild(f);
     var foot = h('div', 'docfoot');
@@ -2173,15 +2173,43 @@
       }
       var inp = h('input');
       inp.type = 'file';
-      inp.accept = '.json,.tex,application/json,application/x-tex,text/x-tex';
+      inp.multiple = true;
+      inp.accept = '.json,.tex,.zip,.bib,.png,.jpg,.jpeg,.gif,.webp,.pdf,.eps,application/json,application/x-tex,text/x-tex,application/zip';
       inp.onchange = function () {
-        var f = inp.files[0];
-        if (!f) return;
-        var fr = new FileReader();
-        fr.onload = function () { openText(fr.result, f.name); };
-        fr.readAsText(f);
+        var list = [].slice.call(inp.files || []);
+        if (!list.length) return;
+        /* one project file or .tex: as before; a .zip, or a .tex with its
+           .bib and images picked together: a whole LaTeX project */
+        if (list.length === 1 && !/\.zip$/i.test(list[0].name)) {
+          var f = list[0], fr = new FileReader();
+          fr.onload = function () { openText(fr.result, f.name); };
+          fr.readAsText(f);
+          return;
+        }
+        openTexProject(list);
       };
       inp.click();
+    }
+    /* Overleaf's "Download source" .zip, or several files at once */
+    function openTexProject(list) {
+      var files = {}, name = '';
+      Promise.all(list.map(function (f) {
+        return f.arrayBuffer().then(function (buf) {
+          if (!/\.zip$/i.test(f.name)) { files[f.name] = new Uint8Array(buf); return; }
+          name = name || f.name.replace(/\.zip$/i, '');
+          return PT.unzip(buf).then(function (got) { Object.keys(got).forEach(function (k) { files[k] = got[k]; }); });
+        });
+      })).then(function () {
+        var r, d;
+        try { r = PT.texread.readProject(files); d = normalizeDoc(r.doc); }
+        catch (e) { toast('PaperTeX could not open that: ' + (e && e.message ? e.message : 'not a LaTeX project') + '.'); return; }
+        var base = name || String(r.main || '').replace(/^.*\//, '').replace(/\.tex$/i, '');
+        if (!PT.latex.plainText(d.meta.title) && base) d.meta.title = base.replace(/[&<>]/g, '');
+        addDocument(d, 'Opened “' + (PT.latex.plainText(d.meta.title) || base) + '” from LaTeX (' + r.main + ').');
+        if (r.notes.length) texNotes(r.notes);
+      }, function (e) {
+        toast('That .zip could not be read: ' + (e && e.message ? e.message : 'damaged or unsupported') + '.');
+      });
     }
     function openProject() { docsMenu($('#btnOpen'), openFile); }
     $('#btnOpen').onclick = openProject;
