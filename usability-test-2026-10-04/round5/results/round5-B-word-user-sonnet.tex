@@ -1,0 +1,97 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb}
+\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\hypersetup{pdftitle={Heat Conduction in a Thin Rod: Steady State and Stability}, pdfauthor={Mira Castellanos, Sam Rivera}}
+
+\newtheorem{theorem}{Theorem}
+
+\title{Heat Conduction in a Thin Rod: Steady State and Stability}
+\author{Mira Castellanos\\ \small Department of Physics, Lakeside University \and Sam Rivera\\ \small Department of Mathematics, Lakeside University}
+\date{October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We look at how heat spreads along a thin rod whose ends are held at fixed temperatures, and at how a simple numerical scheme reproduces it.
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+
+A thin rod conducts heat along its length. By Fourier's law the heat flux is proportional to $-\partial u/\partial x$, which leads to the heat equation of Section~\ref{sec:model}. The classical treatment is in~\cite{carslaw1959}.
+
+\section{Model}\label{sec:model}
+
+The temperature $u(x,t)$ obeys the heat equation
+\begin{equation}
+  \frac{\partial u}{\partial t}=\alpha\frac{\partial^{2}u}{\partial x^{2}},
+  \label{eq:heat}
+\end{equation}
+where $\alpha>0$ is the thermal diffusivity. The ends are held at fixed temperatures:
+\begin{align}
+  u(0,t) &=T_{0}, \label{eq:bc0} \\
+  u(L,t) &=T_{1}. \label{eq:bc1}
+\end{align}
+As $t\to\infty$ the temperature settles to the steady state
+\begin{equation}
+  u_{s}(x)=T_{0}+(T_{1}-T_{0})\frac{x}{L}
+  \label{eq:4}
+\end{equation}
+
+\begin{theorem}[{Maximum principle}]\label{thm:max}
+  The largest and smallest temperatures are reached at $t=0$ or at the ends of the rod.
+\end{theorem}
+
+\begin{proof}
+  At an interior maximum $u_{xx}\leq0$, so by~\eqref{eq:heat} $u$ cannot grow there.
+\end{proof}
+
+\section{Results}\label{sec:results}
+
+We use the explicit scheme with $r=\alpha\,\Delta t/\Delta x^{2}=0.4$, which is stable because $r\leq1/2$~\cite{smith1985}. Table~\ref{tab:err} lists the largest error at $t=0.1$, and Figure~\ref{fig:profile} shows how the temperature approaches the steady state~\eqref{eq:4}.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Largest error at $t=0.1$, in units of $10^{-2}$.}
+  \label{tab:err}
+  \begin{tabular}{cc}
+    \toprule
+    $\Delta x$ & Error \\
+    \midrule
+    0.1 & 12.88 \\
+    0.05 & 3.19 \\
+    0.025 & 0.79 \\
+    0.0125 & 0.20 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\linewidth]{profile.png}
+  \caption{Temperature along the rod at $t=0$, 0.02, 0.05 and 0.2, with the steady state.}
+  \label{fig:profile}
+\end{figure}
+
+\section{Discussion}
+
+The explicit scheme is simple, but its time step must shrink like $\Delta x^{2}$, which makes fine grids expensive. Implicit schemes such as Crank--Nicolson~\cite{ref3} avoid this limit:\footnote{At the cost of solving a tridiagonal system at every step.}
+\begin{itemize}
+  \item they are stable for every $r>0$, and
+  \item they are second-order accurate in both $\Delta t$ and $\Delta x$.
+\end{itemize}
+
+\begin{thebibliography}{9}
+\bibitem{carslaw1959} H. S. Carslaw and J. C. Jaeger, \emph{Conduction of Heat in Solids}, Oxford University Press, 1959.
+\bibitem{smith1985} G. D. Smith, \emph{Numerical Solution of Partial Differential Equations: Finite Difference Methods}, Oxford University Press, 1985.
+\bibitem{ref3} J. Crank, \emph{The Mathematics of Diffusion}, Oxford University Press, 1975.
+\end{thebibliography}
+
+\end{document}

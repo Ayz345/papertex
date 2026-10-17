@@ -24,6 +24,10 @@ PORTS = [8800, 8801, 8802, 8803, 8804, 8811, 8812, 8813, 8814,
 # another session's edits in progress don't leak into the run:
 #   serve.py --snapshot <folder>   serves <folder> on 8831-8836
 SNAPSHOT_PORTS = {8831, 8832, 8833, 8834, 8835, 8836}
+# --snapshot-ports A-B: other ports for the snapshot (round 5: 8851-8856)
+if '--snapshot-ports' in sys.argv:
+    a, b = sys.argv[sys.argv.index('--snapshot-ports') + 1].split('-')
+    SNAPSHOT_PORTS = set(range(int(a), int(b) + 1))
 SNAPSHOT = None
 if '--snapshot' in sys.argv:
     SNAPSHOT = os.path.abspath(sys.argv[sys.argv.index('--snapshot') + 1])
@@ -66,7 +70,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
         name = os.path.basename(q.get('name', ['out.bin'])[0])
         sub = q.get('dir', ['test-document'])[0]
-        if sub not in ('test-document', 'results'):
+        if sub not in ('test-document', 'results', 'round5/results', 'round5/target'):
             self.send_error(400); return
         os.makedirs(os.path.join(LAB, sub), exist_ok=True)
         body = self.rfile.read(int(self.headers.get('Content-Length', 0)))

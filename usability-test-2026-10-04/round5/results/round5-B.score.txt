@@ -1,0 +1,1 @@
+B: 18/18 — all items 1. Differences from the target that do not change the PDF: no full stop after (4); the Crank key is ref3 (Crank had to be entered as a new work — the .bib entry was not kept on import). The whole Discussion was rebuilt on the page with blocks after pasting did nothing.

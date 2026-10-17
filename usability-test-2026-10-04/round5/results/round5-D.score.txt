@@ -1,0 +1,6 @@
+D: 16.5/18
+- 4 equation (4): 0.5 — u_{s(x)}: "(x)" went into the subscript; no full stop.
+- 9 Discussion section: 1 — \section{Discussion} is inside a "LaTeX code" block, not a page heading, but it is numbered 4 in the right place in the PDF.
+- 10 Discussion text: 0.5 — the LaTeX-code block lost its line breaks: "$\Delta x^2$,which" and "Crank--Nicolson\cite{ref3}" print "Δx²,which" and "Crank–Nicolson[3]" with no spaces (PaperTeX bug).
+- 11 Crank citation: 0.5 — live (\cite{ref3}) and filled in, but as "J. C. Crank"; the key had to be changed in the LaTeX because a reference's key can't be edited.
+- every other item 1; compiles (281 kB).

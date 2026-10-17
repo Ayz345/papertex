@@ -1,0 +1,1 @@
+A2: 18/18 — all items 1. Eq (4) has a stray thin space (\,) before x/L from the workaround (still 1). Crank entry typed in by hand from the target image (the .bib entry was not kept on import — a PaperTeX bug, see ROUND-5.md).
