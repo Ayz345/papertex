@@ -243,7 +243,9 @@
         if (b.zebra) { use.colortbl = true; t += '  \\rowcolors{2}' + (b.header ? '{ptzebra}{}' : '{}{ptzebra}') + '\n'; }
         var capLab = (b.caption ? '  \\caption{' + inline(capClean(b.caption), use).trim() + '}\n' : '') +
           (b.label ? '  \\label{' + PT.sanitize.label(b.label) + '}\n' : '');
-        if (!b.capBelow) t += capLab;
+        /* a caption above the table: the article class leaves no space
+           below a caption, and the table's top rule would touch its words */
+        if (!b.capBelow) t += capLab + (b.caption ? '  \\vspace{6pt}\n' : '');
         t += '  \\begin{tabular}{' + cols + '}\n';
         if (b.booktabs) { use.booktabs = true; t += '    \\toprule\n'; }
         else if (b.rules) t += '    \\hline\n';
