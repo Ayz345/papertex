@@ -1558,10 +1558,23 @@
     var self = this;
     this.paper.addEventListener('paste', function (e) {
       var f = imageIn(e);
-      if (!f) return;
+      if (f) {
+        e.preventDefault();
+        e.stopPropagation();
+        self.dropImage(f, e.target);
+        return;
+      }
+      /* LaTeX pasted onto the page is read, not pasted as its source —
+         except where text is taken as typed: in a formula (which reads
+         LaTeX itself), a code or LaTeX-code block, a table cell */
+      var t = e.clipboardData && e.clipboardData.getData('text/plain');
+      if (!t || !PT.texread || !PT.texread.isLatex(t)) return;
+      var tg = e.target && e.target.closest ? e.target : (e.target && e.target.parentElement);
+      if (!tg || tg.closest('.mfield, .mf-proxy, textarea, input, table, .pt-codew, .pt-raww')) return;
+      if (tg.closest('[contenteditable="true"]') && !tg.closest('[contenteditable="true"]').__rich && !PT.texread.isDocument(t)) return;
       e.preventDefault();
       e.stopPropagation();
-      self.dropImage(f, e.target);
+      self.pasteTex(t, tg);
     }, true);
     this.paper.addEventListener('dragover', function (e) {
       if (imageIn(e) || (e.dataTransfer && e.dataTransfer.types && [].indexOf.call(e.dataTransfer.types, 'Files') >= 0)) {
@@ -1575,6 +1588,56 @@
       e.preventDefault();
       self.dropImage(f, e.target);
     });
+  };
+
+  /* LaTeX pasted onto the page (see wirePaper), read by texread.js:
+     - a sentence ("Let $x$ be … \cite{a}") goes in where the caret is;
+     - anything with blocks in it goes in as blocks after the block you are
+       in — in place of it, when that is an empty paragraph;
+     - a whole document is asked about first: open it as a document of its
+       own, or insert its body here.
+     Works it cites join the reference list; its packages and \newcommand
+     join the extra preamble. */
+  Editor.prototype.pasteTex = function (text, target, asBlocks) {
+    var self = this, doc = this.doc;
+    if (!asBlocks && PT.texread.isDocument(text) && this.hooks.onTexDocument) {
+      this.hooks.onTexDocument(text, function () { self.pasteTex(text, target, true); });
+      return;
+    }
+    var r;
+    try { r = PT.texread.read(text); } catch (err) { if (this.hooks.toast) this.hooks.toast('PaperTeX could not read that LaTeX.'); return; }
+    var got = r.doc.blocks.filter(function (b) { return b.t !== 'bib' || !doc.blocks.some(function (x) { return x.t === 'bib'; }); });
+    var bibBlock = got.filter(function (b) { return b.t === 'bib'; })[0];
+    got = got.filter(function (b) { return b.t !== 'bib'; });
+    if (got.length && got[got.length - 1].t === 'para' && isBlank(got[got.length - 1].html)) got.pop();
+    /* the works it cites, its packages and shorthands */
+    r.doc.bib.forEach(function (e) { if (!doc.bib.some(function (w) { return w.key === e.key; })) doc.bib.push(e); });
+    if (bibBlock && r.doc.bib.length) doc.blocks.push(bibBlock);
+    var mine = String(doc.settings.preamble || '').split('\n');
+    var more = String(r.doc.settings.preamble || '').split('\n').filter(function (L) { return L.trim() && mine.indexOf(L) < 0; });
+    if (more.length) doc.settings.preamble = mine.concat(more).filter(function (L) { return L.trim(); }).join('\n');
+
+    var host = target.closest('[contenteditable="true"]');
+    if (got.length === 1 && got[0].t === 'para' && host && host.__rich && !asBlocks) {
+      /* a sentence: in the text, at the caret */
+      /* the spaces around what was copied are part of it */
+      var sp = function (re) { return re.test(text) ? ' ' : ''; };
+      document.execCommand('insertHTML', false, sp(/^\s/) + got[0].html + sp(/\s$/));
+      this.refreshInlineMath();
+      if (this.refreshXrefs) this.refreshXrefs();
+      if (this.refreshFootnotes) this.refreshFootnotes();
+      if (bibBlock && r.doc.bib.length) { this.change(true); this.render(); }
+    } else if (got.length) {
+      var hb = target.closest('[data-bid]'), idx = doc.blocks.length - 1;
+      if (hb) doc.blocks.forEach(function (b, i) { if (b.id === hb.dataset.bid) idx = i; });
+      var cur = doc.blocks[idx];
+      var spliceArgs = cur && cur.t === 'para' && isBlank(cur.html) ? [idx, 1] : [idx + 1, 0];
+      Array.prototype.splice.apply(doc.blocks, spliceArgs.concat(got));
+      this.focusBlock(got[got.length - 1].id, 'main', true);
+      this.change(true);
+      this.render();
+    }
+    if (r.notes.length && this.hooks.onTexNotes) this.hooks.onTexNotes(r.notes);
   };
 
   /* An image dropped on an empty figure fills it; anywhere else it becomes a

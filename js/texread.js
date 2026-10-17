@@ -1106,6 +1106,19 @@
     return /\\(documentclass|begin\{document\}|section|begin\{|usepackage|title)\b/.test(t);
   }
 
+  /* Pasted text: a whole document (open it, or insert its body), LaTeX to
+     read into blocks, or ordinary text. Ordinary text with a "$5" or a
+     Windows path in it must stay ordinary: only LaTeX's own commands, or
+     $…$ with maths in it, count. */
+  function isDocument(text) { return /\\documentclass\b|\\begin\{document\}/.test(String(text || '')); }
+  function isLatex(text) {
+    var t = String(text || '');
+    if (isDocument(t)) return true;
+    if (/\\(section|subsection|subsubsection|chapter|paragraph|begin|item|cite|citep|citet|ref|eqref|autoref|cref|label|emph|textbf|textit|texttt|underline|footnote|frac|sqrt|sum|int|alpha|beta|gamma|mathbb|mathrm|left|includegraphics|caption|maketitle|tableofcontents)\b/.test(t)) return true;
+    if (/\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)/.test(t)) return true;
+    return /(^|[^\\$])\$[^$\n]*[\\^_{][^$\n]*\$/.test(t);
+  }
+
   window.PT = window.PT || {};
-  window.PT.texread = { read: read, looksLikeTex: looksLikeTex };
+  window.PT.texread = { read: read, looksLikeTex: looksLikeTex, isLatex: isLatex, isDocument: isDocument };
 })();

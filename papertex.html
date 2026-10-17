@@ -11,7 +11,7 @@
      are data: URLs; the compiled PDF is a blob:. connect-src names the
      engine host — tools/build-web.js narrows it to this site alone when
      TeX Live is deployed beside the page. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-hfOfR8PDYQKfSyZseVQAn/84OT4AhIEDL63/4K5V2Y0=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-U1pkv8s+ryMVSMfr5rDXLwc7UfPUZaL/QMWG94Y00dQ=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-cJnXCB+qOyq+hj86Q/SDcaRyzwowZg9zfdjE+JyQUbI=' 'sha256-/my8OrM9PX/f6Bjiwp9Ni5P4zLRQH3Y3MAHhLpUTOKU=' 'sha256-6VRLLIfqRBfREroWOK9DfZLxjCkcYguY2j//lh+gWJk=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-FhIJdB2P9akUK79/DSM8iXdsf+ylY8k0PqM4qeuNp40=' 'sha256-a3y1woSD5+kkclCBe1CxjAR7tZ1IesUlzCOV9xbhSms=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-eq0kUv1thRTbcoPpUaWigwWdHhadEXrYy/iGpMuqVcQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-hfOfR8PDYQKfSyZseVQAn/84OT4AhIEDL63/4K5V2Y0=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-U1pkv8s+ryMVSMfr5rDXLwc7UfPUZaL/QMWG94Y00dQ=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-cJnXCB+qOyq+hj86Q/SDcaRyzwowZg9zfdjE+JyQUbI=' 'sha256-r3q+Xrl/isRFioU/V6uvrSbl8ay11cH6yBkGj+KUvZg=' 'sha256-0ODX0uIHdlp97WE0nL4REaQYCS4SEkLCw9JxeLfO4Js=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-FhIJdB2P9akUK79/DSM8iXdsf+ylY8k0PqM4qeuNp40=' 'sha256-a3y1woSD5+kkclCBe1CxjAR7tZ1IesUlzCOV9xbhSms=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-VH3THyXAVJsZDpDyIyCT+nuAR59QxCHBg2jiKOwzFvc='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <!-- Where the compiler's wasm and TeX Live live, if not beside this page
      (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
 <meta name="papertex-engine" content="">
@@ -10816,10 +10816,23 @@ blockquote.pt-quote {
     var self = this;
     this.paper.addEventListener('paste', function (e) {
       var f = imageIn(e);
-      if (!f) return;
+      if (f) {
+        e.preventDefault();
+        e.stopPropagation();
+        self.dropImage(f, e.target);
+        return;
+      }
+      /* LaTeX pasted onto the page is read, not pasted as its source —
+         except where text is taken as typed: in a formula (which reads
+         LaTeX itself), a code or LaTeX-code block, a table cell */
+      var t = e.clipboardData && e.clipboardData.getData('text/plain');
+      if (!t || !PT.texread || !PT.texread.isLatex(t)) return;
+      var tg = e.target && e.target.closest ? e.target : (e.target && e.target.parentElement);
+      if (!tg || tg.closest('.mfield, .mf-proxy, textarea, input, table, .pt-codew, .pt-raww')) return;
+      if (tg.closest('[contenteditable="true"]') && !tg.closest('[contenteditable="true"]').__rich && !PT.texread.isDocument(t)) return;
       e.preventDefault();
       e.stopPropagation();
-      self.dropImage(f, e.target);
+      self.pasteTex(t, tg);
     }, true);
     this.paper.addEventListener('dragover', function (e) {
       if (imageIn(e) || (e.dataTransfer && e.dataTransfer.types && [].indexOf.call(e.dataTransfer.types, 'Files') >= 0)) {
@@ -10833,6 +10846,56 @@ blockquote.pt-quote {
       e.preventDefault();
       self.dropImage(f, e.target);
     });
+  };
+
+  /* LaTeX pasted onto the page (see wirePaper), read by texread.js:
+     - a sentence ("Let $x$ be … \cite{a}") goes in where the caret is;
+     - anything with blocks in it goes in as blocks after the block you are
+       in — in place of it, when that is an empty paragraph;
+     - a whole document is asked about first: open it as a document of its
+       own, or insert its body here.
+     Works it cites join the reference list; its packages and \newcommand
+     join the extra preamble. */
+  Editor.prototype.pasteTex = function (text, target, asBlocks) {
+    var self = this, doc = this.doc;
+    if (!asBlocks && PT.texread.isDocument(text) && this.hooks.onTexDocument) {
+      this.hooks.onTexDocument(text, function () { self.pasteTex(text, target, true); });
+      return;
+    }
+    var r;
+    try { r = PT.texread.read(text); } catch (err) { if (this.hooks.toast) this.hooks.toast('PaperTeX could not read that LaTeX.'); return; }
+    var got = r.doc.blocks.filter(function (b) { return b.t !== 'bib' || !doc.blocks.some(function (x) { return x.t === 'bib'; }); });
+    var bibBlock = got.filter(function (b) { return b.t === 'bib'; })[0];
+    got = got.filter(function (b) { return b.t !== 'bib'; });
+    if (got.length && got[got.length - 1].t === 'para' && isBlank(got[got.length - 1].html)) got.pop();
+    /* the works it cites, its packages and shorthands */
+    r.doc.bib.forEach(function (e) { if (!doc.bib.some(function (w) { return w.key === e.key; })) doc.bib.push(e); });
+    if (bibBlock && r.doc.bib.length) doc.blocks.push(bibBlock);
+    var mine = String(doc.settings.preamble || '').split('\n');
+    var more = String(r.doc.settings.preamble || '').split('\n').filter(function (L) { return L.trim() && mine.indexOf(L) < 0; });
+    if (more.length) doc.settings.preamble = mine.concat(more).filter(function (L) { return L.trim(); }).join('\n');
+
+    var host = target.closest('[contenteditable="true"]');
+    if (got.length === 1 && got[0].t === 'para' && host && host.__rich && !asBlocks) {
+      /* a sentence: in the text, at the caret */
+      /* the spaces around what was copied are part of it */
+      var sp = function (re) { return re.test(text) ? ' ' : ''; };
+      document.execCommand('insertHTML', false, sp(/^\s/) + got[0].html + sp(/\s$/));
+      this.refreshInlineMath();
+      if (this.refreshXrefs) this.refreshXrefs();
+      if (this.refreshFootnotes) this.refreshFootnotes();
+      if (bibBlock && r.doc.bib.length) { this.change(true); this.render(); }
+    } else if (got.length) {
+      var hb = target.closest('[data-bid]'), idx = doc.blocks.length - 1;
+      if (hb) doc.blocks.forEach(function (b, i) { if (b.id === hb.dataset.bid) idx = i; });
+      var cur = doc.blocks[idx];
+      var spliceArgs = cur && cur.t === 'para' && isBlank(cur.html) ? [idx, 1] : [idx + 1, 0];
+      Array.prototype.splice.apply(doc.blocks, spliceArgs.concat(got));
+      this.focusBlock(got[got.length - 1].id, 'main', true);
+      this.change(true);
+      this.render();
+    }
+    if (r.notes.length && this.hooks.onTexNotes) this.hooks.onTexNotes(r.notes);
   };
 
   /* An image dropped on an empty figure fills it; anywhere else it becomes a
@@ -12752,8 +12815,21 @@ blockquote.pt-quote {
     return /\\(documentclass|begin\{document\}|section|begin\{|usepackage|title)\b/.test(t);
   }
 
+  /* Pasted text: a whole document (open it, or insert its body), LaTeX to
+     read into blocks, or ordinary text. Ordinary text with a "$5" or a
+     Windows path in it must stay ordinary: only LaTeX's own commands, or
+     $…$ with maths in it, count. */
+  function isDocument(text) { return /\\documentclass\b|\\begin\{document\}/.test(String(text || '')); }
+  function isLatex(text) {
+    var t = String(text || '');
+    if (isDocument(t)) return true;
+    if (/\\(section|subsection|subsubsection|chapter|paragraph|begin|item|cite|citep|citet|ref|eqref|autoref|cref|label|emph|textbf|textit|texttt|underline|footnote|frac|sqrt|sum|int|alpha|beta|gamma|mathbb|mathrm|left|includegraphics|caption|maketitle|tableofcontents)\b/.test(t)) return true;
+    if (/\\\[[\s\S]*?\\\]|\\\([\s\S]*?\\\)/.test(t)) return true;
+    return /(^|[^\\$])\$[^$\n]*[\\^_{][^$\n]*\$/.test(t);
+  }
+
   window.PT = window.PT || {};
-  window.PT.texread = { read: read, looksLikeTex: looksLikeTex };
+  window.PT.texread = { read: read, looksLikeTex: looksLikeTex, isLatex: isLatex, isDocument: isDocument };
 })();
 </script>
 <script>
@@ -17022,6 +17098,12 @@ blockquote.pt-quote {
       var cancel = h('button', 'dlg-btn', opts.cancelLabel || 'Cancel');
       var ok = h('button', 'dlg-btn primary', opts.okLabel || 'OK');
       if (!opts.noCancel) row.appendChild(cancel);   /* a message, not a question */
+      /* a second answer besides OK (resolves 'alt') */
+      if (opts.altLabel) {
+        var alt = h('button', 'dlg-btn', opts.altLabel);
+        alt.onclick = function () { close('alt'); };
+        row.appendChild(alt);
+      }
       row.appendChild(ok);
       box.appendChild(row);
       back.appendChild(box);
@@ -17480,6 +17562,18 @@ blockquote.pt-quote {
         toast('Image added as ' + b.filename + ' — Download .tex sends the file with it.');
       },
       onFieldFocus: function (f) { state.editor.activeField = f; },
+      /* LaTeX pasted onto the page (doc.js pasteTex) */
+      onTexDocument: function (text, insertHere) {
+        dialog({
+          title: 'A whole LaTeX document',
+          body: 'Open it as a document of its own, or insert its text here, into this one?',
+          okLabel: 'Open as a new document', altLabel: 'Insert here'
+        }).then(function (v) {
+          if (v === 'alt') insertHere();
+          else if (v) openTex(text, '');
+        });
+      },
+      onTexNotes: function (notes) { texNotes(notes, 'The LaTeX is in. A few things in it are not things PaperTeX edits on the page:', 'Pasted LaTeX'); },
       onSettings: function () { buildSettings(); },
       toast: function (t) { toast(t); }
     });
@@ -17572,14 +17666,14 @@ blockquote.pt-quote {
       if (r.notes.length) texNotes(r.notes);
     }
     /* what did not come back as it was, said once, plainly */
-    function texNotes(notes) {
+    function texNotes(notes, intro, title) {
       var box = h('div');
-      box.appendChild(h('p', '', 'The document is open. A few things in the LaTeX are not things PaperTeX edits on the page:'));
+      box.appendChild(h('p', '', intro || 'The document is open. A few things in the LaTeX are not things PaperTeX edits on the page:'));
       var ul = h('ul', 'texnotes');
       notes.forEach(function (n) { ul.appendChild(h('li', '', n)); });
       box.appendChild(ul);
       box.appendChild(h('p', 'shint', 'Parts kept as LaTeX code are still in the .tex and in the PDF. Packages and \\newcommand are under Document → Extra preamble.'));
-      dialog({ title: 'Opened from LaTeX', node: box, noCancel: true });
+      dialog({ title: title || 'Opened from LaTeX', node: box, noCancel: true });
     }
     function openFile() {
       if (NATIVE) {

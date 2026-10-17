@@ -1481,6 +1481,12 @@
       var cancel = h('button', 'dlg-btn', opts.cancelLabel || 'Cancel');
       var ok = h('button', 'dlg-btn primary', opts.okLabel || 'OK');
       if (!opts.noCancel) row.appendChild(cancel);   /* a message, not a question */
+      /* a second answer besides OK (resolves 'alt') */
+      if (opts.altLabel) {
+        var alt = h('button', 'dlg-btn', opts.altLabel);
+        alt.onclick = function () { close('alt'); };
+        row.appendChild(alt);
+      }
       row.appendChild(ok);
       box.appendChild(row);
       back.appendChild(box);
@@ -1939,6 +1945,18 @@
         toast('Image added as ' + b.filename + ' — Download .tex sends the file with it.');
       },
       onFieldFocus: function (f) { state.editor.activeField = f; },
+      /* LaTeX pasted onto the page (doc.js pasteTex) */
+      onTexDocument: function (text, insertHere) {
+        dialog({
+          title: 'A whole LaTeX document',
+          body: 'Open it as a document of its own, or insert its text here, into this one?',
+          okLabel: 'Open as a new document', altLabel: 'Insert here'
+        }).then(function (v) {
+          if (v === 'alt') insertHere();
+          else if (v) openTex(text, '');
+        });
+      },
+      onTexNotes: function (notes) { texNotes(notes, 'The LaTeX is in. A few things in it are not things PaperTeX edits on the page:', 'Pasted LaTeX'); },
       onSettings: function () { buildSettings(); },
       toast: function (t) { toast(t); }
     });
@@ -2031,14 +2049,14 @@
       if (r.notes.length) texNotes(r.notes);
     }
     /* what did not come back as it was, said once, plainly */
-    function texNotes(notes) {
+    function texNotes(notes, intro, title) {
       var box = h('div');
-      box.appendChild(h('p', '', 'The document is open. A few things in the LaTeX are not things PaperTeX edits on the page:'));
+      box.appendChild(h('p', '', intro || 'The document is open. A few things in the LaTeX are not things PaperTeX edits on the page:'));
       var ul = h('ul', 'texnotes');
       notes.forEach(function (n) { ul.appendChild(h('li', '', n)); });
       box.appendChild(ul);
       box.appendChild(h('p', 'shint', 'Parts kept as LaTeX code are still in the .tex and in the PDF. Packages and \\newcommand are under Document → Extra preamble.'));
-      dialog({ title: 'Opened from LaTeX', node: box, noCancel: true });
+      dialog({ title: title || 'Opened from LaTeX', node: box, noCancel: true });
     }
     function openFile() {
       if (NATIVE) {
