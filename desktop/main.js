@@ -105,8 +105,8 @@ ipcMain.handle('papertex:exportProject', async (_e, { filename, tex, files }) =>
 
 ipcMain.handle('papertex:open', async () => {
   const res = await dialog.showOpenDialog(win, {
-    title: 'Open PaperTeX project',
-    filters: FILTERS['.json'],
+    title: 'Open a PaperTeX project or a .tex file',
+    filters: [{ name: 'PaperTeX project or LaTeX', extensions: ['json', 'tex'] }],
     properties: ['openFile']
   });
   if (res.canceled || !res.filePaths.length) return { status: 'declined' };

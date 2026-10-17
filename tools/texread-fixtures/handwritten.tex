@@ -1,0 +1,132 @@
+% A hand-written paper, not made by PaperTeX
+\documentclass[12pt,letterpaper]{amsart}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{siunitx}
+\usepackage{listings}
+\usepackage[colorlinks=true]{hyperref}
+
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{conj}{Conjecture}
+\theoremstyle{definition}
+\newtheorem{defn}{Definition}
+
+\newcommand{\R}{\mathbb{R}}
+\DeclareMathOperator{\tr}{tr}
+
+\title{On the Stability of Small Things\thanks{Supported by nobody.}}
+\author{Ana Pérez \\ University of Somewhere \\ \texttt{ana@example.org} \and Bo Li}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We show that small things are stable. % a comment that should vanish
+This uses \emph{two} ideas.
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+Let $f\colon \R \to \R$ be smooth, and write $\|x\|$ for the norm. Following
+Erd\H{o}s and Gödel---and also Poincar\'e~\cite[p.~3]{poincare,godel}---we
+consider ``quoted'' text, {\bf bold}, {\em emphasis}, \textsc{Small Caps}, 50\% of
+cases and \$5. See Section~\ref{sec:main} and \eqref{eq:main}.\footnote{A note with $x^2$ in it.}
+
+\[ E = mc^2 \]
+and also
+$$ a^2 + b^2 = c^2 $$
+
+\begin{align}
+  f(x) &= \sum_{n=0}^{\infty} \frac{x^n}{n!} \label{eq:main} \\
+       &= e^x \nonumber
+\end{align}
+
+\begin{equation*}
+  \begin{split}
+    g(x) &= \int_0^x t\,dt \\
+         &= \frac{x^2}{2}
+  \end{split}
+\end{equation*}
+
+\section{Main result}
+\label{sec:main}
+
+\begin{thm}[Stability]\label{thm:stab}
+Every small thing is stable.
+\end{thm}
+
+\begin{proof}
+Trivial, since
+\[ 0 \le \tr A \le 1. \qedhere \]
+\end{proof}
+
+\begin{conj}
+Large things are stable too.
+\end{conj}
+
+\begin{defn}
+A thing is \emph{small} if it fits.
+\end{defn}
+
+\subsection{Lists}
+\begin{enumerate}
+  \item First
+  \item Second, with
+  \begin{enumerate}
+    \item a nested one
+    \item and another
+  \end{enumerate}
+  \item Third
+\end{enumerate}
+
+\begin{description}
+  \item[Term] Its meaning.
+  \item[Other] Another meaning.
+\end{description}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|r|}
+\hline
+\textbf{Name} & \textbf{Value} & \textbf{Unit} \\
+\hline
+Mass & 1.5 & kg \\
+Speed & \multicolumn{2}{c|}{fast} \\
+\hline
+\end{tabular}
+\caption{Some values.}
+\label{tab:vals}
+\end{table}
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.5\textwidth]{plot.pdf}
+  \caption{A plot.}\label{fig:plot}
+\end{figure}
+
+\begin{lstlisting}[language=Python, caption={Hello}]
+print("hi")  # 100% sure
+\end{lstlisting}
+
+\begin{verbatim}
+raw % text { here
+\end{verbatim}
+
+\begin{itemize}
+\item Odd \verb|code| inline
+\end{itemize}
+
+\vspace{1cm}
+\SI{3}{\metre} is a length.
+
+\input{appendix}
+
+\begin{thebibliography}{9}
+\bibitem{poincare} H.~Poincar\'e, \emph{Science and Hypothesis}, Walter Scott, 1905.
+\bibitem{godel} K. Gödel. On formally undecidable propositions. 1931.
+\end{thebibliography}
+
+\end{document}

@@ -317,6 +317,14 @@ body.nopanel .side { margin-right: calc(-1 * var(--sidew)); }
 .sf select:hover, .sf input[type=text]:hover { border-color: #cbc5ba; }
 .sf select:focus, .sf input[type=text]:focus { border-color: var(--accent-2); outline: none; box-shadow: 0 0 0 3px rgba(184, 134, 11, .2); }
 .sf input[type=checkbox] { width: 15px; height: 15px; margin: 0; accent-color: var(--accent-2); cursor: pointer; }
+.sfpre {
+  display: block; width: 100%; box-sizing: border-box; margin: 8px 0 2px; padding: 6px 8px; resize: vertical;
+  font: 12px/1.45 Consolas, "Cascadia Mono", monospace; color: var(--ink); background: var(--panel);
+  border: 1px solid var(--line); border-radius: 5px; transition: border-color .15s, box-shadow .15s;
+}
+.sfpre:hover { border-color: #cbc5ba; }
+.sfpre:focus { border-color: var(--accent-2); outline: none; box-shadow: 0 0 0 3px rgba(184, 134, 11, .2); }
+@media (max-width: 760px) { .sfpre { font-size: 16px; } }
 .shint { font-size: 11px; line-height: 1.5; color: var(--muted); margin: 2px 0 4px; }
 .sfz { display: flex; align-items: center; gap: 8px; }
 .sfz input[type=range] { width: 108px; accent-color: var(--accent-2); }
@@ -531,6 +539,10 @@ body.nopanel .side { margin-right: calc(-1 * var(--sidew)); }
 }
 .dlg-t { font-size: 15px; font-weight: 600; letter-spacing: -.01em; color: var(--ink); }
 .dlg-b { font-size: 12.5px; line-height: 1.55; color: var(--muted); margin-top: 7px; }
+.dlg-b p { margin: 0 0 8px; }
+/* what an opened .tex kept as LaTeX: a short list, scrolling if long */
+.texnotes { margin: 0 0 8px; padding-left: 18px; max-height: 40vh; overflow-y: auto; color: var(--ink-2); }
+.texnotes li { margin: 3px 0; }
 .dlg-i {
   width: 100%; margin-top: 14px; padding: 7px 9px; font: inherit; font-size: 13px;
   border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink);

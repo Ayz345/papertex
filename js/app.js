@@ -895,6 +895,18 @@
     dt.oninput = function () { meta.date = dt.value; state.editor.change(); refresh(); };
     field('Date', dt);
 
+    /* packages and \newcommand of your own (an opened .tex keeps its own
+       here); written before hyperref, after what PaperTeX loads itself */
+    group('Extra preamble');
+    var pre = h('textarea', 'sfpre');
+    pre.value = S.preamble || '';
+    pre.rows = Math.min(10, Math.max(3, (S.preamble || '').split('\n').length + 1));
+    pre.spellcheck = false;
+    pre.placeholder = '\\usepackage{siunitx}\n\\newcommand{\\R}{\\mathbb{R}}';
+    pre.oninput = function () { S.preamble = pre.value; state.editor.change(); refresh(); };
+    box.appendChild(pre);
+    box.appendChild(h('div', 'shint', 'LaTeX of your own for the preamble. PaperTeX does not check it: a mistake here stops Make PDF.'));
+
     group('View');
     var zw = h('div', 'sfz');
     var z = h('input');
@@ -1456,6 +1468,7 @@
       var box = h('div', 'dlg');
       box.appendChild(h('div', 'dlg-t', opts.title));
       if (opts.body) box.appendChild(h('div', 'dlg-b', opts.body));
+      if (opts.node) { opts.node.classList.add('dlg-b'); box.appendChild(opts.node); }
       var input = null;
       if (opts.input != null) {
         input = h('input', 'dlg-i');
@@ -1467,7 +1480,7 @@
       var row = h('div', 'dlg-r');
       var cancel = h('button', 'dlg-btn', opts.cancelLabel || 'Cancel');
       var ok = h('button', 'dlg-btn primary', opts.okLabel || 'OK');
-      row.appendChild(cancel);
+      if (!opts.noCancel) row.appendChild(cancel);   /* a message, not a question */
       row.appendChild(ok);
       box.appendChild(row);
       back.appendChild(box);
@@ -1551,7 +1564,7 @@
     add('Document', 'edit.redo', 'Redo', ['Ctrl+Y', 'Ctrl+Shift+Z'], doRedo, { menu: 'redo', fieldsNative: true, glyph: '↷' });
     add('Document', 'doc.export', 'Download .tex', ['Ctrl+S'], exportTex, { menu: 'export', glyph: '⤓' });
     add('Document', 'doc.save', 'Save project', ['Ctrl+Shift+S'], click('#btnSave'), { menu: 'save', glyph: '💾' });
-    add('Document', 'doc.open', 'Open project', ['Ctrl+O'], openProject, { menu: 'open', glyph: '📂' });
+    add('Document', 'doc.open', 'Open a project or .tex file', ['Ctrl+O'], openProject, { menu: 'open', glyph: '📂' });
     add('Document', 'doc.new', 'New document', desk ? ['Ctrl+N'] : [], click('#btnNew'), { menu: 'new', glyph: '＋' });
     add('Document', 'doc.compile', 'Make PDF', desk ? ['Ctrl+R'] : [], compilePDF, { menu: 'compile', glyph: '▶' });
     add('Document', 'doc.print', 'Print the page as it looks', ['Ctrl+P'], printDoc, { menu: 'print', glyph: '⎙' });
@@ -1817,7 +1830,7 @@
         listBox.appendChild(row);
       });
     });
-    var f = h('button', 'popitem docfile', 'Open a project file…');
+    var f = h('button', 'popitem docfile', 'Open a file — a project or a .tex…');
     f.onclick = function () { D.closeAllPop(); openFile(); };
     m.appendChild(f);
     var foot = h('div', 'docfoot');
@@ -2001,24 +2014,45 @@
     $('#btnMore').onclick = function () { moreMenu($('#btnMore')); };
     $('#btnSave').onclick = saveProject;
     /* a project file becomes a document of its own */
-    function openText(text) {
+    /* …and so does a .tex file, read back into blocks (texread.js) */
+    function openText(text, name) {
       var d;
-      try { d = normalizeDoc(JSON.parse(text)); } catch (e) { toast('That file is not a PaperTeX document.'); return; }
+      if (/\.tex$/i.test(name || '') || PT.texread.looksLikeTex(text)) { openTex(text, name); return; }
+      try { d = normalizeDoc(JSON.parse(text)); } catch (e) { toast('That file is neither a PaperTeX project nor a .tex file.'); return; }
       addDocument(d, 'Opened “' + (PT.latex.plainText(d.meta.title) || 'Untitled document') + '”.');
+    }
+    function openTex(text, name) {
+      var r, d;
+      try { r = PT.texread.read(text); d = normalizeDoc(r.doc); }
+      catch (e) { toast('PaperTeX could not read that .tex file.'); return; }
+      var base = String(name || '').replace(/^.*[\\/]/, '').replace(/\.tex$/i, '');
+      if (!PT.latex.plainText(d.meta.title) && base) d.meta.title = base.replace(/[&<>]/g, '');
+      addDocument(d, 'Opened “' + (PT.latex.plainText(d.meta.title) || base || 'Untitled document') + '” from LaTeX.');
+      if (r.notes.length) texNotes(r.notes);
+    }
+    /* what did not come back as it was, said once, plainly */
+    function texNotes(notes) {
+      var box = h('div');
+      box.appendChild(h('p', '', 'The document is open. A few things in the LaTeX are not things PaperTeX edits on the page:'));
+      var ul = h('ul', 'texnotes');
+      notes.forEach(function (n) { ul.appendChild(h('li', '', n)); });
+      box.appendChild(ul);
+      box.appendChild(h('p', 'shint', 'Parts kept as LaTeX code are still in the .tex and in the PDF. Packages and \\newcommand are under Document → Extra preamble.'));
+      dialog({ title: 'Opened from LaTeX', node: box, noCancel: true });
     }
     function openFile() {
       if (NATIVE) {
-        NATIVE.open().then(function (r) { if (r.status === 'ok') openText(r.text); });
+        NATIVE.open().then(function (r) { if (r.status === 'ok') openText(r.text, r.path); });
         return;
       }
       var inp = h('input');
       inp.type = 'file';
-      inp.accept = '.json,application/json';
+      inp.accept = '.json,.tex,application/json,application/x-tex,text/x-tex';
       inp.onchange = function () {
         var f = inp.files[0];
         if (!f) return;
         var fr = new FileReader();
-        fr.onload = function () { openText(fr.result); };
+        fr.onload = function () { openText(fr.result, f.name); };
         fr.readAsText(f);
       };
       inp.click();

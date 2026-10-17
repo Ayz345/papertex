@@ -405,6 +405,9 @@
     if (use.soul) p.push('\\usepackage{soul}');
     if (S.margin) p.push('\\usepackage[margin=' + S.margin + ']{geometry}');
     if (S.lineSpacing && S.lineSpacing !== 1) p.push('\\usepackage{setspace}');
+    /* the writer's own preamble lines (Document settings; an opened .tex
+       keeps its packages and \newcommand here) */
+    if (S.preamble && String(S.preamble).trim()) p.push(String(S.preamble).trim());
     p.push('\\usepackage{hyperref}');
     /* the PDF's own title and author, as a viewer's title bar and a search
        show them: plain words, formulas spelled out */
