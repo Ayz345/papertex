@@ -11,7 +11,7 @@
      are data: URLs; the compiled PDF is a blob:. connect-src names the
      engine host — tools/build-web.js narrows it to this site alone when
      TeX Live is deployed beside the page. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-hfOfR8PDYQKfSyZseVQAn/84OT4AhIEDL63/4K5V2Y0=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-U1pkv8s+ryMVSMfr5rDXLwc7UfPUZaL/QMWG94Y00dQ=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-cJnXCB+qOyq+hj86Q/SDcaRyzwowZg9zfdjE+JyQUbI=' 'sha256-/my8OrM9PX/f6Bjiwp9Ni5P4zLRQH3Y3MAHhLpUTOKU=' 'sha256-6VRLLIfqRBfREroWOK9DfZLxjCkcYguY2j//lh+gWJk=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-Ngxw6CloW0RWdzm9FS4199NJDCjjQ1iM0ymu6VbIGKQ=' 'sha256-a3y1woSD5+kkclCBe1CxjAR7tZ1IesUlzCOV9xbhSms=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-eq0kUv1thRTbcoPpUaWigwWdHhadEXrYy/iGpMuqVcQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-hfOfR8PDYQKfSyZseVQAn/84OT4AhIEDL63/4K5V2Y0=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-U1pkv8s+ryMVSMfr5rDXLwc7UfPUZaL/QMWG94Y00dQ=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-cJnXCB+qOyq+hj86Q/SDcaRyzwowZg9zfdjE+JyQUbI=' 'sha256-/my8OrM9PX/f6Bjiwp9Ni5P4zLRQH3Y3MAHhLpUTOKU=' 'sha256-6VRLLIfqRBfREroWOK9DfZLxjCkcYguY2j//lh+gWJk=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-FhIJdB2P9akUK79/DSM8iXdsf+ylY8k0PqM4qeuNp40=' 'sha256-a3y1woSD5+kkclCBe1CxjAR7tZ1IesUlzCOV9xbhSms=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-eq0kUv1thRTbcoPpUaWigwWdHhadEXrYy/iGpMuqVcQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <!-- Where the compiler's wasm and TeX Live live, if not beside this page
      (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
 <meta name="papertex-engine" content="">
@@ -14732,13 +14732,64 @@ blockquote.pt-quote {
     }).catch(function () { return {}; });   /* then TeX says which file it missed */
   }
 
+  /* Nor are many everyday packages — listings, cleveref, enumitem, float, …
+     They live beside the compiler too (engine/texmf/pkg/, from
+     tools/fetch-packages.js), and a document gets the files of the packages
+     it loads, with what those need. Fetched as bytes: some are Latin-1. */
+  var pkgCache = {};
+  function fetchBytes(url) {
+    if (!pkgCache[url]) {
+      pkgCache[url] = fetch(url).then(function (r) {
+        if (!r.ok) throw new Error(url + ': ' + r.status);
+        return r.arrayBuffer();
+      }).then(function (b) { return new Uint8Array(b); });
+      pkgCache[url].catch(function () { delete pkgCache[url]; });
+    }
+    return pkgCache[url];
+  }
+  function packageFiles(tex) {
+    var none = { files: {}, needs: [] };
+    var src = tex.replace(/(^|[^\\])%.*$/gm, '$1'), names = {}, m;
+    var re = /\\(?:usepackage|RequirePackage)\s*(?:\[[^\]]*\]\s*)?\{([^}]*)\}/g;
+    while ((m = re.exec(src))) {
+      m[1].split(',').forEach(function (n) { n = n.trim(); if (n) names[n] = true; });
+    }
+    if (!Object.keys(names).length) return Promise.resolve(none);
+    var base = CFG.script.replace(/[^/]*$/, '') + 'texmf/pkg/';
+    return fetchText(base + 'manifest.json').then(function (txt) {
+      var manifest = JSON.parse(txt), want = {}, needs = {};
+      Object.keys(names).forEach(function (n) {
+        var e = Object.prototype.hasOwnProperty.call(manifest, n) && manifest[n];
+        if (!e) return;
+        e.files.forEach(function (f) { want[f] = true; });
+        (e.needs || []).forEach(function (p) { needs[p] = true; });
+      });
+      var list = Object.keys(want);
+      return Promise.all(list.map(function (f) {
+        return fetchBytes(base + f).catch(function () { return null; });
+      })).then(function (bodies) {
+        var files = {};
+        list.forEach(function (f, i) { if (bodies[i]) files[f] = bodies[i]; });
+        return { files: files, needs: Object.keys(needs) };
+      });
+    }).catch(function () { return none; });   /* then TeX says which file it missed */
+  }
+
   function compile(tex, doc, onProgress) {
     var logs = [];
     return getCompiler(onProgress).then(function (c) {
       c.onLog = function (m) { logs.push(String(m)); };
-      return babelFiles(tex).then(function (lang) {
+      return Promise.all([babelFiles(tex), packageFiles(tex)]).then(function (got) {
         var files = sidecarFiles(tex, doc);
-        Object.keys(lang).forEach(function (k) { files[k] = lang[k]; });
+        Object.keys(got[0]).forEach(function (k) { files[k] = got[0][k]; });
+        Object.keys(got[1].files).forEach(function (k) { if (!files[k]) files[k] = got[1].files[k]; });
+        /* The engine picks which parts of TeX Live to load from the
+           \usepackage lines it sees in the document; packages that only our
+           files load (amsmath for physics, tikz for chemfig, …) are named to
+           it here, after \end{document}, where TeX never reads. */
+        if (got[1].needs.length) {
+          tex += '\n% Loaded by the packages above, for the engine:\n% \\RequirePackage{' + got[1].needs.join(',') + '}\n';
+        }
         return c.compile(tex, { additionalFiles: files });
       });
     }).then(function (r) {

@@ -112,6 +112,9 @@ for (const f of ['siglum.js', 'siglum.worker.js']) {
 }
 /* babel's language files, fetched at compile time for non-English documents */
 copyDir(path.join(root, 'engine', 'texmf', 'babel'), path.join(out, 'engine', 'texmf', 'babel'));
+/* the LaTeX packages the engine lacks, fetched at compile time for a
+   document that loads them (tools/fetch-packages.js) */
+copyDir(path.join(root, 'engine', 'texmf', 'pkg'), path.join(out, 'engine', 'texmf', 'pkg'));
 if (withTexlive) {
   const tl = path.join(root, 'engine', 'texlive');
   if (!fs.existsSync(path.join(tl, 'bundles', 'file-manifest.json'))) {

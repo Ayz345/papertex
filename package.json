@@ -17,6 +17,7 @@
     "build:texmf": "node tools/bundle-texmf.js",
     "fonts": "node tools/genfonts.js",
     "fetch-texlive": "node tools/fetch-texlive.js",
+    "fetch-packages": "node tools/fetch-packages.js",
     "package": "node tools/package-app.js",
     "dist": "electron-builder",
     "icon": "python tools/make-icon.py",

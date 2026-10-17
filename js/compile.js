@@ -174,13 +174,64 @@
     }).catch(function () { return {}; });   /* then TeX says which file it missed */
   }
 
+  /* Nor are many everyday packages — listings, cleveref, enumitem, float, …
+     They live beside the compiler too (engine/texmf/pkg/, from
+     tools/fetch-packages.js), and a document gets the files of the packages
+     it loads, with what those need. Fetched as bytes: some are Latin-1. */
+  var pkgCache = {};
+  function fetchBytes(url) {
+    if (!pkgCache[url]) {
+      pkgCache[url] = fetch(url).then(function (r) {
+        if (!r.ok) throw new Error(url + ': ' + r.status);
+        return r.arrayBuffer();
+      }).then(function (b) { return new Uint8Array(b); });
+      pkgCache[url].catch(function () { delete pkgCache[url]; });
+    }
+    return pkgCache[url];
+  }
+  function packageFiles(tex) {
+    var none = { files: {}, needs: [] };
+    var src = tex.replace(/(^|[^\\])%.*$/gm, '$1'), names = {}, m;
+    var re = /\\(?:usepackage|RequirePackage)\s*(?:\[[^\]]*\]\s*)?\{([^}]*)\}/g;
+    while ((m = re.exec(src))) {
+      m[1].split(',').forEach(function (n) { n = n.trim(); if (n) names[n] = true; });
+    }
+    if (!Object.keys(names).length) return Promise.resolve(none);
+    var base = CFG.script.replace(/[^/]*$/, '') + 'texmf/pkg/';
+    return fetchText(base + 'manifest.json').then(function (txt) {
+      var manifest = JSON.parse(txt), want = {}, needs = {};
+      Object.keys(names).forEach(function (n) {
+        var e = Object.prototype.hasOwnProperty.call(manifest, n) && manifest[n];
+        if (!e) return;
+        e.files.forEach(function (f) { want[f] = true; });
+        (e.needs || []).forEach(function (p) { needs[p] = true; });
+      });
+      var list = Object.keys(want);
+      return Promise.all(list.map(function (f) {
+        return fetchBytes(base + f).catch(function () { return null; });
+      })).then(function (bodies) {
+        var files = {};
+        list.forEach(function (f, i) { if (bodies[i]) files[f] = bodies[i]; });
+        return { files: files, needs: Object.keys(needs) };
+      });
+    }).catch(function () { return none; });   /* then TeX says which file it missed */
+  }
+
   function compile(tex, doc, onProgress) {
     var logs = [];
     return getCompiler(onProgress).then(function (c) {
       c.onLog = function (m) { logs.push(String(m)); };
-      return babelFiles(tex).then(function (lang) {
+      return Promise.all([babelFiles(tex), packageFiles(tex)]).then(function (got) {
         var files = sidecarFiles(tex, doc);
-        Object.keys(lang).forEach(function (k) { files[k] = lang[k]; });
+        Object.keys(got[0]).forEach(function (k) { files[k] = got[0][k]; });
+        Object.keys(got[1].files).forEach(function (k) { if (!files[k]) files[k] = got[1].files[k]; });
+        /* The engine picks which parts of TeX Live to load from the
+           \usepackage lines it sees in the document; packages that only our
+           files load (amsmath for physics, tikz for chemfig, …) are named to
+           it here, after \end{document}, where TeX never reads. */
+        if (got[1].needs.length) {
+          tex += '\n% Loaded by the packages above, for the engine:\n% \\RequirePackage{' + got[1].needs.join(',') + '}\n';
+        }
         return c.compile(tex, { additionalFiles: files });
       });
     }).then(function (r) {

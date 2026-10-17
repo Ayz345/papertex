@@ -33,6 +33,10 @@ Then point `CFG.wasm` and `CFG.bundles` in `js/compile.js` at your own copies.
 
 ## Packages beyond the bundled set
 
+`texmf/pkg/` holds about 220 everyday packages the bundles lack, from TeX Live 2024's archives: listings, cleveref, enumitem, float, multirow, physics, algorithmicx, titlesec, mhchem and others, with their dependencies. `manifest.json` lists them. A compile receives only the files of the packages its document loads (`js/compile.js`, `packageFiles`). Rebuild the folder with `npm run fetch-packages`. A package that needs fonts the engine lacks, biber or shell escape (biblatex, minted, stmaryrd …) can't be added this way; the tool lists those.
+
+The text below describes the first, smaller fix.
+
 The bundles carry ~710 packages: `article`, `amsmath`, `amssymb`, `amsthm`,
 `graphicx`, `geometry`, `hyperref`, `lmodern` and friends. `booktabs`,
 `setspace`, `ulem` and `soul` are not among them, so PaperTeX ships those in
