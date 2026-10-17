@@ -231,7 +231,7 @@
           '\\end{figure}\n';
       }
       case 'chart':
-        return PT.chart.tex(b, doc, use, inline);
+        return (chartData ? chartComment(b, doc) : '') + PT.chart.tex(b, doc, use, inline);
       case 'table': {
         var cols = b.align.join(b.rules ? '|' : '');
         if (b.rules) cols = '|' + cols + '|';
@@ -339,7 +339,26 @@
   function joins(a, b) { return !!((INSIDE[a.t] && b.t === 'para') || (a.t === 'para' && INSIDE[b.t])); }
 
   /* ---- whole document ---- */
-  function build(doc) {
+  /* A chart's own settings, as a comment LaTeX skips, above its drawing:
+     PaperTeX reads them back (texread.js), so an opened .tex has the chart
+     you can edit, not only the picture it drew. The table a chart takes its
+     data from is named by its place among the tables (ids are not kept). */
+  var chartData = true;
+  function chartComment(b, doc) {
+    var keep = {};
+    Object.keys(b).forEach(function (k) { if (k !== 'id' && k.charAt(0) !== '_') keep[k] = b[k]; });
+    if (b.from) {
+      var tables = ((doc && doc.blocks) || []).filter(function (x) { return x.t === 'table'; });
+      keep.from = '';
+      keep.fromTable = tables.map(function (x) { return x.id; }).indexOf(b.from);
+    }
+    return '% papertex:chart ' + JSON.stringify(keep).replace(/[\u2028\u2029]/g, ' ') + '\n';
+  }
+
+  /* opts.chartData false: no chart comments (the LaTeX pane, which keeps
+     its charts itself and is easier to read without them) */
+  function build(doc, opts) {
+    chartData = !(opts && opts.chartData === false);
     var use = {}, S = doc.settings, meta = doc.meta;
 
     /* The title block first: formulas in it may call for packages too.
@@ -448,7 +467,10 @@
   }
 
   /* one block's LaTeX on its own, to find which block a TeX error is in */
-  function texOf(b, doc) { try { return blockTex(b, {}, doc, b.t === 'theorem' ? [] : null); } catch (e) { return ''; } }
+  function texOf(b, doc) {
+    var was = chartData; chartData = false;
+    try { return blockTex(b, {}, doc, b.t === 'theorem' ? [] : null); } catch (e) { return ''; } finally { chartData = was; }
+  }
 
   /* "Table 1: Results" typed into a caption: LaTeX (and the page) number
      it already, so the hand-written label goes */

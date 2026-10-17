@@ -513,6 +513,21 @@
         if (s[j] === '\n') { flush(); i = j + 1; continue; }
         para += ' '; i++; continue;
       }
+      if (c === '\u0000' && s[i + 1] === 'C') {
+        /* a chart PaperTeX wrote: its settings (a "% papertex:chart" line),
+           then the figure that draws it — read as the chart again */
+        var zc = s.indexOf('\u0000', i + 1), json = this.charts[+s.slice(i + 2, zc)];
+        i = zc + 1;
+        var fj = skipWs(s, i), fm = /^\\begin\{(figure\*?)\}/.exec(s.slice(fj)), blk = null;
+        try { blk = JSON.parse(json); } catch (e) { blk = null; }
+        if (blk && typeof blk === 'object' && fm) {
+          var fb = envBody(s, fj + fm[0].length, fm[1]);
+          blk.t = 'chart'; blk.id = this.id(); blk._drawn = s.slice(fj, fb.end);
+          push(blk);
+          i = fb.end;
+        }
+        continue;
+      }
       if (c === '\u0000') {     /* a verbatim environment, set aside before comments went */
         var z = s.indexOf('\u0000', i + 1);
         var vtxt = this.verb[+s.slice(i + 2, z)];
@@ -763,6 +778,13 @@
       return null;
     }
     var gs = body.match(/\\includegraphics/g);
+    /* PaperTeX's own frame for a figure whose image is not chosen yet */
+    var ph = !gs && /Image not chosen yet/.test(body) && /\\parbox\[c\]\[[^\]]*\]\[c\]\{([0-9.]+)\\linewidth\}/.exec(body);
+    if (ph) {
+      var pcl = this.capLab(body);
+      return [{ id: this.id(), t: 'figure', src: '', filename: '', caption: pcl.caption, width: Math.max(0.1, Math.min(1, parseFloat(ph[1]) || 0.8)),
+        label: pcl.label, placement: placement(whole) }];
+    }
     if (!gs || gs.length !== 1) return null;
     var gi = body.indexOf('\\includegraphics'), a = args(body, gi + 16, 1);
     var w = 0.8, opt = a.opt || '';
@@ -1029,10 +1051,10 @@
       if (/^(hypersetup|theoremstyle|graphicspath|bibliographystyle|pagestyle)$/.test(name)) {
         a = args(s, cm.end, 1); i = a.end; continue;
       }
-      if (/^(newcommand|renewcommand|providecommand|def|DeclareMathOperator|newenvironment|renewenvironment|setlength|usetikzlibrary|pgfplotsset|definecolor|newcounter|numberwithin|let|lstset|tikzset|DeclareUnicodeCharacter|captionsetup|setlist|newlength|newif|makeatletter|makeatother|AtBeginDocument|sisetup|allowdisplaybreaks|addbibresource)\*?$/.test(name)) {
+      if (/^(newcommand|renewcommand|providecommand|def|DeclareMathOperator|newenvironment|renewenvironment|setlength|usetikzlibrary|usepgfplotslibrary|pgfplotsset|definecolor|newcounter|numberwithin|let|lstset|tikzset|DeclareUnicodeCharacter|captionsetup|setlist|newlength|newif|makeatletter|makeatother|AtBeginDocument|sisetup|allowdisplaybreaks|addbibresource)\*?$/.test(name)) {
         var dEnd = /^(makeatletter|makeatother|allowdisplaybreaks)$/.test(name) ? cm.end :
           name === 'let' ? (/^\\let\\[A-Za-z@]+\s*=?\s*\\[A-Za-z@]+/.exec(s.slice(i)) || [s.slice(i, cm.end)])[0].length + i :
-          /^(usetikzlibrary|pgfplotsset|definecolor|newcounter|numberwithin|lstset|tikzset|DeclareUnicodeCharacter|captionsetup|setlist|newlength|newif|AtBeginDocument|sisetup|addbibresource)$/.test(name) ? args(s, cm.end, { definecolor: 3, numberwithin: 2, DeclareUnicodeCharacter: 2, setlist: 1 }[name] || 1).end :
+          /^(usetikzlibrary|usepgfplotslibrary|pgfplotsset|definecolor|newcounter|numberwithin|lstset|tikzset|DeclareUnicodeCharacter|captionsetup|setlist|newlength|newif|AtBeginDocument|sisetup|addbibresource)$/.test(name) ? args(s, cm.end, { definecolor: 3, numberwithin: 2, DeclareUnicodeCharacter: 2, setlist: 1 }[name] || 1).end :
           this.defEnd(s, cm);
         if (name === 'addbibresource') this.notes.add('bibfile', 'A .bib file cannot be read here: the works you cite were added to the reference list, empty, to fill in');
         else extra.push(s.slice(i, dEnd).trim());
@@ -1052,8 +1074,15 @@
   /* --------------------------------------------------------------- read */
   function read(src) {
     var notes = new Notes();
-    var sc = stripComments(String(src || '').replace(/\r\n?/g, '\n'));
+    /* a chart's settings ride in a comment: kept before comments go */
+    var charts = [];
+    src = String(src || '').replace(/\r\n?/g, '\n').replace(/^[ \t]*% ?papertex:chart (\{.*\})[ \t]*$/gm, function (_, j) {
+      charts.push(j);
+      return '\u0000C' + (charts.length - 1) + '\u0000';
+    });
+    var sc = stripComments(src);
     var rd = new Reader(notes, sc.verb);
+    rd.charts = charts;
     MACROS = {};
     var s = sc.text;
     var base = PT.doc && PT.doc.newDoc ? PT.doc.newDoc() : { meta: {}, settings: {}, blocks: [], bib: [] };
@@ -1072,6 +1101,25 @@
        PaperTeX's own default stays */
 
     var blocks = rd.blocks(body).filter(Boolean);
+    /* charts read back: the table each takes its data from, by its place
+       among the tables; and a chart whose drawing was since edited as
+       LaTeX is that LaTeX (the edit wins over the settings) */
+    var tables = blocks.filter(function (b) { return b.t === 'table'; });
+    var docNow = { meta: base.meta, settings: settings, blocks: blocks, bib: rd.bib };
+    blocks = blocks.map(function (b) {
+      if (b.t !== 'chart') return b;
+      if (typeof b.fromTable === 'number') { b.from = b.fromTable >= 0 && tables[b.fromTable] ? tables[b.fromTable].id : ''; }
+      delete b.fromTable;
+      var drawn = b._drawn; delete b._drawn;
+      if (PT.latex && PT.latex.texOf && PT.chart) {
+        var flat = function (t) { return String(t || '').replace(/(^|[^\\])%.*$/gm, '$1').replace(/\s+/g, ' ').trim(); };
+        if (flat(PT.latex.texOf(b, docNow)) !== flat(drawn)) {
+          notes.add('chartedit', 'A chart whose LaTeX was edited by hand was kept as that LaTeX');
+          return { id: rd.id(), t: 'raw', tex: drawn };
+        }
+      }
+      return b;
+    });
     /* every work cited has an entry, and the list is somewhere */
     rd.ctx.citeOrder.forEach(function (k) {
       var key = label(k);
@@ -1105,6 +1153,15 @@
     meta.keywords = m.keywords || '';
     meta.headHtml = true; meta.bibHtml = true;
     settings.showAbstract = !!m.abstract || bd < 0;
+    /* preamble lines the page writes by itself for these blocks (a chart's
+       pgfplots setup …) are not "extra" (only where the writer is here) */
+    if (PT.latex && PT.latex.build) {
+      try {
+        var auto = PT.latex.build({ meta: meta, settings: Object.assign({}, settings, { preamble: '' }), blocks: blocks, bib: rd.bib }, { chartData: false })
+          .split('\\begin{document}')[0].split('\n').map(function (x) { return x.trim(); });
+        settings.preamble = String(settings.preamble || '').split('\n').filter(function (x) { return x.trim() && auto.indexOf(x.trim()) < 0; }).join('\n');
+      } catch (e) { /* keep it as read */ }
+    }
     return { doc: { meta: meta, settings: settings, blocks: blocks, bib: rd.bib }, notes: notes.out(), broken: rd.broken };
   }
 

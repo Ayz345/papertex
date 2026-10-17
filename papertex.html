@@ -11,7 +11,7 @@
      are data: URLs; the compiled PDF is a blob:. connect-src names the
      engine host — tools/build-web.js narrows it to this site alone when
      TeX Live is deployed beside the page. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-hfOfR8PDYQKfSyZseVQAn/84OT4AhIEDL63/4K5V2Y0=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-U1pkv8s+ryMVSMfr5rDXLwc7UfPUZaL/QMWG94Y00dQ=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-cJnXCB+qOyq+hj86Q/SDcaRyzwowZg9zfdjE+JyQUbI=' 'sha256-r3q+Xrl/isRFioU/V6uvrSbl8ay11cH6yBkGj+KUvZg=' 'sha256-mgE/RuQN+UHJQ2uckQOvW9iiHPEtrqwmugV0R9xfOcQ=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-FhIJdB2P9akUK79/DSM8iXdsf+ylY8k0PqM4qeuNp40=' 'sha256-a3y1woSD5+kkclCBe1CxjAR7tZ1IesUlzCOV9xbhSms=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-S/jGjkM3zm7Ex/Bb98ozMdX8qzHsD4WSFA7hOMqRVU0='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-hfOfR8PDYQKfSyZseVQAn/84OT4AhIEDL63/4K5V2Y0=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-U1pkv8s+ryMVSMfr5rDXLwc7UfPUZaL/QMWG94Y00dQ=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-zw4B1JROmyL1AXWIGCjK0vfrqmUiPSGqJ+SdBbiwNPY=' 'sha256-r3q+Xrl/isRFioU/V6uvrSbl8ay11cH6yBkGj+KUvZg=' 'sha256-PLifeeCnupF+Hqrdo4riZy06AN3p/YdzhwWljMWjq54=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-FhIJdB2P9akUK79/DSM8iXdsf+ylY8k0PqM4qeuNp40=' 'sha256-a3y1woSD5+kkclCBe1CxjAR7tZ1IesUlzCOV9xbhSms=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-r/vNhvZJH9VAKc+kgbovQQkfbsLi7Dal+//Fl/a7onM='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <!-- Where the compiler's wasm and TeX Live live, if not beside this page
      (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
 <meta name="papertex-engine" content="">
@@ -9044,7 +9044,7 @@ blockquote.pt-quote {
           '\\end{figure}\n';
       }
       case 'chart':
-        return PT.chart.tex(b, doc, use, inline);
+        return (chartData ? chartComment(b, doc) : '') + PT.chart.tex(b, doc, use, inline);
       case 'table': {
         var cols = b.align.join(b.rules ? '|' : '');
         if (b.rules) cols = '|' + cols + '|';
@@ -9152,7 +9152,26 @@ blockquote.pt-quote {
   function joins(a, b) { return !!((INSIDE[a.t] && b.t === 'para') || (a.t === 'para' && INSIDE[b.t])); }
 
   /* ---- whole document ---- */
-  function build(doc) {
+  /* A chart's own settings, as a comment LaTeX skips, above its drawing:
+     PaperTeX reads them back (texread.js), so an opened .tex has the chart
+     you can edit, not only the picture it drew. The table a chart takes its
+     data from is named by its place among the tables (ids are not kept). */
+  var chartData = true;
+  function chartComment(b, doc) {
+    var keep = {};
+    Object.keys(b).forEach(function (k) { if (k !== 'id' && k.charAt(0) !== '_') keep[k] = b[k]; });
+    if (b.from) {
+      var tables = ((doc && doc.blocks) || []).filter(function (x) { return x.t === 'table'; });
+      keep.from = '';
+      keep.fromTable = tables.map(function (x) { return x.id; }).indexOf(b.from);
+    }
+    return '% papertex:chart ' + JSON.stringify(keep).replace(/[\u2028\u2029]/g, ' ') + '\n';
+  }
+
+  /* opts.chartData false: no chart comments (the LaTeX pane, which keeps
+     its charts itself and is easier to read without them) */
+  function build(doc, opts) {
+    chartData = !(opts && opts.chartData === false);
     var use = {}, S = doc.settings, meta = doc.meta;
 
     /* The title block first: formulas in it may call for packages too.
@@ -9261,7 +9280,10 @@ blockquote.pt-quote {
   }
 
   /* one block's LaTeX on its own, to find which block a TeX error is in */
-  function texOf(b, doc) { try { return blockTex(b, {}, doc, b.t === 'theorem' ? [] : null); } catch (e) { return ''; } }
+  function texOf(b, doc) {
+    var was = chartData; chartData = false;
+    try { return blockTex(b, {}, doc, b.t === 'theorem' ? [] : null); } catch (e) { return ''; } finally { chartData = was; }
+  }
 
   /* "Table 1: Results" typed into a caption: LaTeX (and the page) number
      it already, so the hand-written label goes */
@@ -12240,6 +12262,21 @@ blockquote.pt-quote {
         if (s[j] === '\n') { flush(); i = j + 1; continue; }
         para += ' '; i++; continue;
       }
+      if (c === '\u0000' && s[i + 1] === 'C') {
+        /* a chart PaperTeX wrote: its settings (a "% papertex:chart" line),
+           then the figure that draws it — read as the chart again */
+        var zc = s.indexOf('\u0000', i + 1), json = this.charts[+s.slice(i + 2, zc)];
+        i = zc + 1;
+        var fj = skipWs(s, i), fm = /^\\begin\{(figure\*?)\}/.exec(s.slice(fj)), blk = null;
+        try { blk = JSON.parse(json); } catch (e) { blk = null; }
+        if (blk && typeof blk === 'object' && fm) {
+          var fb = envBody(s, fj + fm[0].length, fm[1]);
+          blk.t = 'chart'; blk.id = this.id(); blk._drawn = s.slice(fj, fb.end);
+          push(blk);
+          i = fb.end;
+        }
+        continue;
+      }
       if (c === '\u0000') {     /* a verbatim environment, set aside before comments went */
         var z = s.indexOf('\u0000', i + 1);
         var vtxt = this.verb[+s.slice(i + 2, z)];
@@ -12490,6 +12527,13 @@ blockquote.pt-quote {
       return null;
     }
     var gs = body.match(/\\includegraphics/g);
+    /* PaperTeX's own frame for a figure whose image is not chosen yet */
+    var ph = !gs && /Image not chosen yet/.test(body) && /\\parbox\[c\]\[[^\]]*\]\[c\]\{([0-9.]+)\\linewidth\}/.exec(body);
+    if (ph) {
+      var pcl = this.capLab(body);
+      return [{ id: this.id(), t: 'figure', src: '', filename: '', caption: pcl.caption, width: Math.max(0.1, Math.min(1, parseFloat(ph[1]) || 0.8)),
+        label: pcl.label, placement: placement(whole) }];
+    }
     if (!gs || gs.length !== 1) return null;
     var gi = body.indexOf('\\includegraphics'), a = args(body, gi + 16, 1);
     var w = 0.8, opt = a.opt || '';
@@ -12756,10 +12800,10 @@ blockquote.pt-quote {
       if (/^(hypersetup|theoremstyle|graphicspath|bibliographystyle|pagestyle)$/.test(name)) {
         a = args(s, cm.end, 1); i = a.end; continue;
       }
-      if (/^(newcommand|renewcommand|providecommand|def|DeclareMathOperator|newenvironment|renewenvironment|setlength|usetikzlibrary|pgfplotsset|definecolor|newcounter|numberwithin|let|lstset|tikzset|DeclareUnicodeCharacter|captionsetup|setlist|newlength|newif|makeatletter|makeatother|AtBeginDocument|sisetup|allowdisplaybreaks|addbibresource)\*?$/.test(name)) {
+      if (/^(newcommand|renewcommand|providecommand|def|DeclareMathOperator|newenvironment|renewenvironment|setlength|usetikzlibrary|usepgfplotslibrary|pgfplotsset|definecolor|newcounter|numberwithin|let|lstset|tikzset|DeclareUnicodeCharacter|captionsetup|setlist|newlength|newif|makeatletter|makeatother|AtBeginDocument|sisetup|allowdisplaybreaks|addbibresource)\*?$/.test(name)) {
         var dEnd = /^(makeatletter|makeatother|allowdisplaybreaks)$/.test(name) ? cm.end :
           name === 'let' ? (/^\\let\\[A-Za-z@]+\s*=?\s*\\[A-Za-z@]+/.exec(s.slice(i)) || [s.slice(i, cm.end)])[0].length + i :
-          /^(usetikzlibrary|pgfplotsset|definecolor|newcounter|numberwithin|lstset|tikzset|DeclareUnicodeCharacter|captionsetup|setlist|newlength|newif|AtBeginDocument|sisetup|addbibresource)$/.test(name) ? args(s, cm.end, { definecolor: 3, numberwithin: 2, DeclareUnicodeCharacter: 2, setlist: 1 }[name] || 1).end :
+          /^(usetikzlibrary|usepgfplotslibrary|pgfplotsset|definecolor|newcounter|numberwithin|lstset|tikzset|DeclareUnicodeCharacter|captionsetup|setlist|newlength|newif|AtBeginDocument|sisetup|addbibresource)$/.test(name) ? args(s, cm.end, { definecolor: 3, numberwithin: 2, DeclareUnicodeCharacter: 2, setlist: 1 }[name] || 1).end :
           this.defEnd(s, cm);
         if (name === 'addbibresource') this.notes.add('bibfile', 'A .bib file cannot be read here: the works you cite were added to the reference list, empty, to fill in');
         else extra.push(s.slice(i, dEnd).trim());
@@ -12779,8 +12823,15 @@ blockquote.pt-quote {
   /* --------------------------------------------------------------- read */
   function read(src) {
     var notes = new Notes();
-    var sc = stripComments(String(src || '').replace(/\r\n?/g, '\n'));
+    /* a chart's settings ride in a comment: kept before comments go */
+    var charts = [];
+    src = String(src || '').replace(/\r\n?/g, '\n').replace(/^[ \t]*% ?papertex:chart (\{.*\})[ \t]*$/gm, function (_, j) {
+      charts.push(j);
+      return '\u0000C' + (charts.length - 1) + '\u0000';
+    });
+    var sc = stripComments(src);
     var rd = new Reader(notes, sc.verb);
+    rd.charts = charts;
     MACROS = {};
     var s = sc.text;
     var base = PT.doc && PT.doc.newDoc ? PT.doc.newDoc() : { meta: {}, settings: {}, blocks: [], bib: [] };
@@ -12799,6 +12850,25 @@ blockquote.pt-quote {
        PaperTeX's own default stays */
 
     var blocks = rd.blocks(body).filter(Boolean);
+    /* charts read back: the table each takes its data from, by its place
+       among the tables; and a chart whose drawing was since edited as
+       LaTeX is that LaTeX (the edit wins over the settings) */
+    var tables = blocks.filter(function (b) { return b.t === 'table'; });
+    var docNow = { meta: base.meta, settings: settings, blocks: blocks, bib: rd.bib };
+    blocks = blocks.map(function (b) {
+      if (b.t !== 'chart') return b;
+      if (typeof b.fromTable === 'number') { b.from = b.fromTable >= 0 && tables[b.fromTable] ? tables[b.fromTable].id : ''; }
+      delete b.fromTable;
+      var drawn = b._drawn; delete b._drawn;
+      if (PT.latex && PT.latex.texOf && PT.chart) {
+        var flat = function (t) { return String(t || '').replace(/(^|[^\\])%.*$/gm, '$1').replace(/\s+/g, ' ').trim(); };
+        if (flat(PT.latex.texOf(b, docNow)) !== flat(drawn)) {
+          notes.add('chartedit', 'A chart whose LaTeX was edited by hand was kept as that LaTeX');
+          return { id: rd.id(), t: 'raw', tex: drawn };
+        }
+      }
+      return b;
+    });
     /* every work cited has an entry, and the list is somewhere */
     rd.ctx.citeOrder.forEach(function (k) {
       var key = label(k);
@@ -12832,6 +12902,15 @@ blockquote.pt-quote {
     meta.keywords = m.keywords || '';
     meta.headHtml = true; meta.bibHtml = true;
     settings.showAbstract = !!m.abstract || bd < 0;
+    /* preamble lines the page writes by itself for these blocks (a chart's
+       pgfplots setup …) are not "extra" (only where the writer is here) */
+    if (PT.latex && PT.latex.build) {
+      try {
+        var auto = PT.latex.build({ meta: meta, settings: Object.assign({}, settings, { preamble: '' }), blocks: blocks, bib: rd.bib }, { chartData: false })
+          .split('\\begin{document}')[0].split('\n').map(function (x) { return x.trim(); });
+        settings.preamble = String(settings.preamble || '').split('\n').filter(function (x) { return x.trim() && auto.indexOf(x.trim()) < 0; }).join('\n');
+      } catch (e) { /* keep it as read */ }
+    }
     return { doc: { meta: meta, settings: settings, blocks: blocks, bib: rd.bib }, notes: notes.out(), broken: rd.broken };
   }
 
@@ -15887,7 +15966,7 @@ blockquote.pt-quote {
   function refresh() {
     clearTimeout(texTimer);
     texTimer = setTimeout(function () {
-      var tex = L.build(state.doc);
+      var tex = L.build(state.doc, { chartData: false });   /* the pane: no chart comments */
       state.tex = tex;
       /* while you type in the pane it is yours: the page follows it, not
          the other way round (applyTex) */
@@ -15996,7 +16075,7 @@ blockquote.pt-quote {
       return b;
     });
     /* what the page writes by itself for these blocks is not "extra" */
-    var auto = L.build({ meta: od.meta, settings: Object.assign({}, od.settings, nd.settings, { preamble: '' }), blocks: nd.blocks, bib: nd.bib })
+    var auto = L.build({ meta: od.meta, settings: Object.assign({}, od.settings, nd.settings, { preamble: '' }), blocks: nd.blocks, bib: nd.bib }, { chartData: false })
       .split('\\begin{document}')[0].split('\n').map(function (x) { return x.trim(); });
     nd.settings.preamble = String(nd.settings.preamble || '').split('\n').filter(function (x) { return x.trim() && auto.indexOf(x.trim()) < 0; }).join('\n');
     ['docclass', 'fontsize', 'paper', 'columns', 'margin', 'lineSpacing', 'lang', 'titlepage', 'numbered', 'thmWithin', 'preamble'].forEach(function (k) {

@@ -243,7 +243,7 @@
   function refresh() {
     clearTimeout(texTimer);
     texTimer = setTimeout(function () {
-      var tex = L.build(state.doc);
+      var tex = L.build(state.doc, { chartData: false });   /* the pane: no chart comments */
       state.tex = tex;
       /* while you type in the pane it is yours: the page follows it, not
          the other way round (applyTex) */
@@ -352,7 +352,7 @@
       return b;
     });
     /* what the page writes by itself for these blocks is not "extra" */
-    var auto = L.build({ meta: od.meta, settings: Object.assign({}, od.settings, nd.settings, { preamble: '' }), blocks: nd.blocks, bib: nd.bib })
+    var auto = L.build({ meta: od.meta, settings: Object.assign({}, od.settings, nd.settings, { preamble: '' }), blocks: nd.blocks, bib: nd.bib }, { chartData: false })
       .split('\\begin{document}')[0].split('\n').map(function (x) { return x.trim(); });
     nd.settings.preamble = String(nd.settings.preamble || '').split('\n').filter(function (x) { return x.trim() && auto.indexOf(x.trim()) < 0; }).join('\n');
     ['docclass', 'fontsize', 'paper', 'columns', 'margin', 'lineSpacing', 'lang', 'titlepage', 'numbered', 'thmWithin', 'preamble'].forEach(function (k) {
