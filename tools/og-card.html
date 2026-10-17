@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- The link-preview picture (1200×630), rendered to img/og-card.png by
+     tools/make-og.js. Same desk, paper and Computer Modern as the site. -->
+<link rel="stylesheet" href="../css/fonts.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    background: radial-gradient(120% 90% at 85% 10%, #efede9 0%, #e4e2de 55%, #d9d6d0 100%);
+    color: #23262b; font-family: "PaperTeX", Georgia, serif; position: relative;
+  }
+  .left { position: absolute; left: 76px; top: 0; bottom: 0; width: 590px; display: flex; flex-direction: column; justify-content: center; }
+  .brand { display: flex; align-items: center; gap: 18px; font: 700 40px "PaperTeX", Georgia, serif; letter-spacing: -.01em; }
+  .brand img { width: 58px; height: 58px; }
+  h1 { margin: 40px 0 0; font-weight: 400; font-size: 60px; line-height: 1.1; letter-spacing: -.015em; }
+  h1 em { color: #9a5b06; }
+  .sub { margin: 30px 0 0; font: 25px/1.45 system-ui, "Segoe UI", sans-serif; color: #4b5058; }
+  .chips { display: flex; gap: 10px; margin-top: 34px; }
+  .chips span { font: 600 18px system-ui, "Segoe UI", sans-serif; color: #7a4f10; background: #fdf3dd; border: 1px solid #f0dcb4; border-radius: 999px; padding: 8px 16px; }
+
+  .sheet {
+    position: absolute; left: 700px; top: 58px; width: 440px; height: 600px; background: #fffefb;
+    border-radius: 3px; padding: 46px 44px; transform: rotate(2.2deg);
+    box-shadow: 0 0 0 1px rgba(30,28,24,.06), 0 30px 60px -20px rgba(30,28,24,.38);
+  }
+  .sheet h2 { margin: 0 0 4px; text-align: center; font-weight: 400; font-size: 25px; }
+  .sheet .au { text-align: center; font-size: 15px; color: #4b5058; margin-bottom: 26px; }
+  .sheet h3 { margin: 0 0 10px; font-size: 18px; font-weight: 700; }
+  .sheet p { margin: 0; font-size: 15.5px; line-height: 1.5; text-align: justify; hyphens: auto; }
+  .eq { position: relative; margin: 22px -10px; padding: 14px 10px; text-align: center; font-size: 23px;
+        background: #fdf3dd; outline: 2px solid #e6b866; border-radius: 4px; }
+  .eq i { font-family: "PaperTeX Math"; font-style: normal; }
+  .eq sup { font-size: .68em; }
+  .eq .n { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 16px; }
+  .caret { display: inline-block; width: 2px; height: 1.05em; background: #9a5b06; vertical-align: -.15em; margin-left: 1px; }
+  .lines span { display: block; height: 9px; margin: 11px 0; background: #e9e7e2; border-radius: 3px; }
+
+  .tex {
+    position: absolute; left: 640px; top: 452px; width: 470px; padding: 18px 22px; border-radius: 10px;
+    background: #23262b; color: #e9e3d6; font: 17px/1.55 Consolas, "Cascadia Mono", monospace;
+    box-shadow: 0 24px 48px -18px rgba(20,18,14,.6); transform: rotate(-1.2deg);
+  }
+  .tex .k { color: #f0b85a; } .tex .c { color: #8e96a3; }
+</style>
+</head>
+<body>
+  <div class="left">
+    <div class="brand"><img src="../desktop/papertex.png" alt=""><span>PaperTeX</span></div>
+    <h1>You write on the page.<br><em>It writes the LaTeX.</em></h1>
+    <p class="sub">A free LaTeX editor in your browser. Equations, tables, charts and citations, on a page that looks like the PDF.</p>
+    <div class="chips"><span>Free</span><span>No account</span><span>Nothing uploaded</span></div>
+  </div>
+
+  <div class="sheet">
+    <h2>The Damped Oscillator</h2>
+    <div class="au">A. Student · 17 October 2026</div>
+    <h3>1&nbsp;&nbsp;Introduction</h3>
+    <p>A mass on a spring, slowed by friction, swings with a shrinking amplitude. Its position is</p>
+    <div class="eq"><i>x</i>(<i>t</i>) = <i>A</i>&#8202;<i>e</i><sup>−<i>γt</i></sup> cos(<i>ωt</i> + <i>φ</i>)<span class="caret"></span><span class="n">(1)</span></div>
+    <div class="lines"><span></span><span style="width:92%"></span><span style="width:97%"></span><span style="width:60%"></span></div>
+  </div>
+
+  <div class="tex"><span class="k">\begin</span>{equation}<br>&nbsp;&nbsp;x(t) = A e^{-<span class="k">\gamma</span> t}<span class="k">\cos</span>(<span class="k">\omega</span> t + <span class="k">\phi</span>)<br><span class="k">\end</span>{equation}</div>
+</body>
+</html>

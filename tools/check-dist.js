@@ -19,8 +19,8 @@ if (!fs.existsSync(built)) {
 const at = fs.statSync(built).mtimeMs;
 
 /* everything the site is made from */
-const SOURCES = ['app.html', 'index.html', 'about.html', 'build.js', 'tools/build-web.js'];
-const DIRS = [['js', /\.js$/], ['css', /\.css$/], ['fonts', /\.(woff2|json|txt)$/], ['engine', /\.js$/]];
+const SOURCES = ['app.html', 'index.html', 'about.html', '404.html', 'build.js', 'tools/build-web.js'];
+const DIRS = [['js', /\.js$/], ['css', /\.css$/], ['fonts', /\.(woff2|json|txt)$/], ['engine', /\.js$/], ['img', /\.png$/]];
 
 function walk(dir, re, list) {
   if (!fs.existsSync(dir)) return;

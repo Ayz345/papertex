@@ -4,12 +4,17 @@
      node tools/build-web.js --with-texlive       … and TeX Live served from the site itself
      node tools/build-web.js --engine=https://assets.example.com/tl2025
                                                   … TeX Live from your own asset host
+     … --site=https://papertex.example            the site's own address: canonical
+                                                  links, link-preview picture, sitemap
 
    The public CDN is a fallback, not a plan: a site that relies on it stops
    compiling the day it goes away. See DEPLOY.md.
 
    Output:
      index.html            the home page (index.html), with the files it uses
+     404.html              the page for addresses that do not exist (hosts find
+                           it by that name)
+     robots.txt            and, with --site, sitemap.xml
      app.html              the editor: the single-file build (papertex.html),
                            engine location and Content-Security-Policy set for
                            this deployment; hosts serve it at /app
@@ -27,12 +32,38 @@ const out = path.join(root, 'dist', 'web');
 const args = process.argv.slice(2);
 const withTexlive = args.includes('--with-texlive');
 const engineArg = (args.find((a) => a.startsWith('--engine=')) || '').slice(9).replace(/\/+$/, '');
+const siteArg = (args.find((a) => a.startsWith('--site=')) || '').slice(7).replace(/\/+$/, '');
 const CDN_ORIGIN = 'https://cdn.siglum.org';
 /* the smallest per-file limit among common static hosts (Cloudflare Pages) */
 const FILE_LIMIT = 25 * 1024 * 1024;
 
 if (withTexlive && engineArg) fail('Use --with-texlive or --engine, not both.');
 if (engineArg && !/^https:\/\/[^/]+/.test(engineArg)) fail('--engine must be an https:// URL.');
+if (siteArg && !/^https:\/\/[^/]+/.test(siteArg)) fail('--site must be an https:// URL.');
+/* where the site lives: "/" at a domain's root, "/papertex/" on a project page */
+const sitePath = siteArg ? new URL(siteArg + '/').pathname : '/';
+
+/* With the site's address known, each page says where it lives and which
+   picture a shared link shows. Crawlers need absolute URLs for both, so
+   without --site these tags are left out rather than guessed. */
+const PREVIEW = 'img/og-card.png';     /* made by tools/make-og.js */
+function pageMeta(page, clean) {
+  if (!siteArg) return page;
+  const url = siteArg + '/' + clean;
+  const title = (/<title>([^<]*)<\/title>/.exec(page) || [])[1] || 'PaperTeX';
+  const desc = (/<meta name="description" content="([^"]*)"/.exec(page) || [])[1] || '';
+  const tags = ['<link rel="canonical" href="' + url + '">', '<meta property="og:url" content="' + url + '">'];
+  if (!/property="og:title"/.test(page)) tags.push('<meta property="og:title" content="' + title + '">');
+  if (desc && !/property="og:description"/.test(page)) tags.push('<meta property="og:description" content="' + desc + '">');
+  if (!/property="og:type"/.test(page)) tags.push('<meta property="og:type" content="website">');
+  tags.push('<meta property="og:site_name" content="PaperTeX">',
+    '<meta property="og:image" content="' + siteArg + '/' + PREVIEW + '">',
+    '<meta property="og:image:width" content="1200">', '<meta property="og:image:height" content="630">',
+    '<meta property="og:image:alt" content="PaperTeX: a page with a typeset equation, and the LaTeX it writes">',
+    '<meta name="twitter:card" content="summary_large_image">');
+  if (!page.includes('</head>')) fail('a page has no </head>');
+  return page.replace('</head>', tags.join('\n') + '\n</head>');
+}
 
 function fail(msg) { console.error('build-web: ' + msg); process.exit(1); }
 function copyDir(from, to) {
@@ -73,7 +104,7 @@ const cspMatch = cspRe.exec(html);
 if (!cspMatch) fail('papertex.html has no Content-Security-Policy meta tag');
 const csp = cspMatch[2].replace(/connect-src [^;]*/, 'connect-src \'self\'' + (engineOrigin ? ' ' + engineOrigin : ''));
 html = html.replace(cspRe, (_, a, b, c) => a + csp + c);
-fs.writeFileSync(path.join(out, 'app.html'), html);
+fs.writeFileSync(path.join(out, 'app.html'), pageMeta(html, 'app'));
 
 /* 3. the compiler, and TeX Live if it is to be served from here */
 for (const f of ['siglum.js', 'siglum.worker.js']) {
@@ -111,14 +142,31 @@ function copyAsset(rel, fromDir) {
     for (const m of css.matchAll(/@import\s+['"]([^'"]+)['"]/g)) copyAsset(m[1], path.dirname(abs));
   }
 }
-for (const page of ['index.html', 'about.html']) {
+for (const [page, clean] of [['index.html', ''], ['about.html', 'about']]) {
   const src = fs.readFileSync(path.join(root, page), 'utf8');
-  fs.writeFileSync(path.join(out, page), src);
+  fs.writeFileSync(path.join(out, page), pageMeta(src, clean));
   for (const m of src.matchAll(/\s(?:src|href|poster)="([^"]+)"/g)) copyAsset(m[1], root);
   for (const m of src.matchAll(/\ssrcset="([^"]+)"/g)) {
     m[1].split(',').forEach((c) => copyAsset(c.trim().split(/\s+/)[0], root));
   }
 }
+/* 404.html is served at whatever address was asked for, so its links start
+   at the site root — moved under the site's path when there is one */
+{
+  let nf = fs.readFileSync(path.join(root, '404.html'), 'utf8');
+  for (const m of nf.matchAll(/\s(?:src|href)="\/([^"]+)"/g)) copyAsset(m[1], root);
+  if (sitePath !== '/') nf = nf.replace(/(\s(?:src|href)=")\//g, '$1' + sitePath);
+  fs.writeFileSync(path.join(out, '404.html'), nf);
+}
+copyAsset(PREVIEW, root);
+fs.writeFileSync(path.join(out, 'robots.txt'), 'User-agent: *\nAllow: /\n' +
+  (siteArg ? '\nSitemap: ' + siteArg + '/sitemap.xml\n' : ''));
+if (siteArg) {
+  fs.writeFileSync(path.join(out, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+    ['', 'app', 'about'].map((p) => '  <url><loc>' + siteArg + '/' + p + '</loc></url>\n').join('') + '</urlset>\n');
+}
+
 if (/class="todo"/.test(fs.readFileSync(path.join(out, 'about.html'), 'utf8'))) {
   console.log('\n  NOTE: about.html still has parts for you to write (the dashed boxes).');
 }
@@ -151,7 +199,7 @@ const headers = [
   '  Cross-Origin-Opener-Policy: same-origin',
   '',
   /* pages and their unversioned files: always ask whether they changed */
-  ...['/', '/index.html', '/app', '/app.html', '/about', '/about.html', '/css/*', '/js/*', '/desktop/*']
+  ...['/', '/index.html', '/app', '/app.html', '/about', '/about.html', '/404.html', '/css/*', '/js/*', '/desktop/*', '/img/*']
     .flatMap((p) => [p, '  Cache-Control: no-cache', '']),
   '/engine/*',
   '  Cache-Control: public, max-age=86400',
@@ -177,5 +225,7 @@ if (big.length) {
   big.forEach((f) => console.log('    ' + path.relative(out, f.p).replace(/\\/g, '/') + '  ' + mb(f.size)));
   console.log('  On such a host, put engine/texlive/ on object storage and build with --engine=<its URL>.');
 }
+console.log('  Address:  ' + (siteArg || 'not given — no canonical links, link previews or sitemap (add --site=https://…)'));
+console.log('\nBefore uploading for real, run  npm run check:launch');
 console.log('\nUpload the contents of dist/web/ to any static host. Test it locally with:');
 console.log('  python -m http.server 8790 --directory dist/web');

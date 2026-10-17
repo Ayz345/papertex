@@ -10,6 +10,8 @@
     "build": "node build.js",
     "build:web": "node tools/build-web.js",
     "check:dist": "node tools/check-dist.js",
+    "check:launch": "node tools/check-launch.js",
+    "og-image": "electron tools/make-og.js",
     "build:engine": "node tools/bundle-engine.js",
     "build:texmf": "node tools/bundle-texmf.js",
     "fonts": "node tools/genfonts.js",
