@@ -116,8 +116,9 @@
 <div class="help" id="help" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
   <div class="helpbox">
     <h2 id="helpTitle">You edit the page. PaperTeX writes the LaTeX.</h2>
-    <div class="sub">There is no source to type — headings, equations, figures and tables are all
-      edited directly on the sheet, and the <b>.tex</b> file on the right updates as you go.</div>
+    <div class="sub">Headings, equations, figures and tables are all edited directly on the sheet, and
+      the <b>.tex</b> file on the right updates as you go. If you would rather write LaTeX, type it in
+      that pane: the page follows.</div>
 
     <h3>Getting around</h3>
     <div class="helpgrid">
@@ -175,13 +176,20 @@
     <div class="helpgrid">
       <kbd>Select</kbd><span>Highlighting text pops up bold, italic, code, cross-reference and “make this a formula”</span>
       <kbd>Ctrl</kbd><span>+ <kbd>V</kbd> an image anywhere on the page drops in a figure — dragging one in works too</span>
-      <kbd>Paste</kbd><span>Pasting LaTeX into a formula converts it into editable maths</span>
+      <kbd>Paste</kbd><span>LaTeX pasted onto the page is read, not pasted as source: a sentence goes in at the cursor
+        with its formulas and citations, sections and equations come in as blocks, a whole document can open on its own.
+        Pasted into a formula, LaTeX becomes editable maths</span>
       <kbd>References</kbd><span>To refer to an equation, table, figure or section, or to cite a work:
         <kbd data-key="view.palette.cmd">Ctrl+K</kbd> → “reference” or “cite”, or the ↪ button on selected text.
         Numbers keep up as things move</span>
       <kbd>Footnote</kbd><span><kbd data-key="view.palette.cmd">Ctrl+K</kbd> → “footnote” puts one at the caret; click its number to change it</span>
       <kbd>Proofs</kbd><span><kbd data-key="block.eq">Ctrl+Enter</kbd> in a theorem or proof puts the equation inside it, before the □</span>
       <kbd data-key="doc.export">Ctrl+S</kbd><span>Downloads the .tex — images come with it, keep them in the same folder</span>
+      <kbd data-key="doc.open">Ctrl+O</kbd><span>Opens a <b>.tex</b> file — or a whole Overleaf project: its “Download source” .zip, or the
+        .tex with its .bib and images picked together. Sections, equations, references and images become editable;
+        anything PaperTeX does not edit on the page stays as LaTeX code, still in the PDF</span>
+      <kbd>LaTeX pane</kbd><span>Type in the LaTeX on the right; when you pause, the page follows. A half-typed
+        <code>\begin{…}</code> waits for its <code>\end</code>. <kbd>Esc</kbd> gives the keys back to the page</span>
       <kbd>Your keys</kbd><span>Every command, block and symbol can have a shortcut of your own, and so can any
         LaTeX snippet — <button class="helplink" id="helpKeys">customize keyboard shortcuts</button></span>
       <kbd>Compile</kbd><span>Typesets it with real LaTeX in your browser — nothing is uploaded. First run downloads the engine</span>
