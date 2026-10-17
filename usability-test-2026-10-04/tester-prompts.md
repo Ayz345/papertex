@@ -11,6 +11,31 @@ Round 3 (5 October 2026) made these changes, all to fix test problems found in r
 - **Window.** Step 2 became: "… once so the page is laid out like a laptop screen, and work at that size the whole time. Screenshots then come back in an 800x500 coordinate frame — always click using that frame's coordinates. If a screenshot ever comes back in a different frame, call resize_window with 1280x800 again before carrying on." In round 2 the pane had shrunk and testers worked at three different sizes. With the pane hidden, 1280×800 renders reliably into an 800×500 frame.
 - **File rule.** "Except the PDF below" became "except the handout below".
 
+Round 4 (8 October 2026) kept round 3's prompts, with these changes:
+
+- **Testers and models.** Six testers on four models, so most personas have two runs, on different models:
+
+  | Port | Persona | Model |
+  |---|---|---|
+  | 8831 | A, LaTeX veteran | Opus |
+  | 8832 | A2, LaTeX veteran | Fable |
+  | 8833 | B, Word user | Sonnet |
+  | 8834 | B2, Word user | Haiku (latest) |
+  | 8835 | C, keyboard-first | Sonnet |
+  | 8836 | D, ordinary user (round 1–2 wording) | Haiku (latest) |
+
+- **Budget.** Raised from about 200 to about 300 browser actions.
+- **Tab ID rule.** Step 1 adds: "including inside browser_batch — a call without it acts on someone else's tab".
+- **New report section 7, "How it felt".** Answered in character:
+  - a. the 10-item System Usability Scale, each item 1–5;
+  - b. intuitiveness from 1 to 10;
+  - c. the first five minutes;
+  - d. the moment most lost and the moment most pleased;
+  - e. a comparison with the tester's usual tool;
+  - f. whether they would use it again and recommend it;
+  - g. the one change they would make.
+- **Snapshot.** Testers used commit `ce45ae0`, extracted to a snapshot folder and served on ports 8831–8836 (`serve.py --only-snapshot --org-port 8830 --snapshot …`). Another session had uncommitted changes in progress in `math.js`.
+
 The four prompts share one template. `{…}` marks the parts that differed; the differences are listed after the template.
 
 ## Shared template

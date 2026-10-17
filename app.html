@@ -47,12 +47,12 @@
   <span class="spacer"></span>
   <button class="tb ghost" id="btnPalette" title="Search every command, block and symbol">⌕ Commands</button>
   <button class="tb ghost" id="btnHelp" title="Keyboard shortcuts and tips">? Shortcuts</button>
-  <button class="tb ghost" id="btnPrint" title="Print the page as it looks here — a quick copy. Compile PDF makes the real typeset PDF.">Print</button>
+  <button class="tb ghost" id="btnPrint" title="Print the page as it looks here — a quick copy. Make PDF makes the real typeset PDF.">Quick print</button>
   <button class="tb ghost" id="btnCopy" title="Copy the generated LaTeX">Copy LaTeX</button>
-  <button class="tb ghost" id="btnTex" title="Download the .tex file (Ctrl+S)">Export .tex</button>
+  <button class="tb ghost" id="btnTex" title="Download the .tex file (Ctrl+S)">Download .tex</button>
   <!-- on a phone the buttons above fold into this menu (css/app.css shows it) -->
   <button class="tb ghost tb-more" id="btnMore" title="More: commands, print, copy, export, panels" aria-haspopup="menu" aria-expanded="false">⋯</button>
-  <button class="tb primary" id="btnCompile" title="Typeset the document with LaTeX into the finished PDF, here in your browser">Compile PDF</button>
+  <button class="tb primary" id="btnCompile" title="Typeset the document with LaTeX into the finished PDF, here in your browser">Make PDF</button>
 </header>
 <!-- saving problems, backup reminders: shown by app.js, never silently -->
 <div class="savebar" id="savebar" role="alert"></div>
@@ -124,7 +124,7 @@
       <kbd data-key="block.eq">Ctrl+Enter</kbd><span>Drops a display equation below the current block</span>
       <kbd>Enter</kbd><span>New paragraph · in a list, a new item · in an equation, a new aligned line —
         on an empty last line, back to the text</span>
-      <kbd>Tab</kbd><span>Indents a list item, moves to the next table cell, steps to the next slot of a formula</span>
+      <kbd>Tab</kbd><span>Indents a list item, moves to the next table cell, steps to the next box of a formula</span>
       <kbd>⋮</kbd><span>The dots beside a block: change its level, numbering, label, or move it</span>
     </div>
 
@@ -139,7 +139,7 @@
       <kbd>↑ ↓</kbd><span>Go to what is drawn above or below: from the line, ↑ enters the exponent, upper limit or
         numerator beside the caret and ↓ the index, lower limit or denominator; from an exponent,
         ↓ comes back down to the line</span>
-      <kbd>Tab</kbd><span>Steps through every slot in turn, empty ones included. <kbd>Shift</kbd>+<kbd>Tab</kbd> goes back</span>
+      <kbd>Tab</kbd><span>Steps through every box in turn, empty ones included. <kbd>Shift</kbd>+<kbd>Tab</kbd> goes back</span>
       <kbd>^</kbd><span>From inside a lower limit, jumps up to the upper one — <kbd>_</kbd> jumps back down</span>
       <kbd>alpha</kbd><span>Becomes α — every Greek letter, plus <code>inf</code> → ∞, <code>partial</code> → ∂,
         <code>nabla</code> → ∇, <code>in</code> → ∈, <code>cdot</code> → ⋅</span>
@@ -156,9 +156,14 @@
       <kbd>(</kbd><span>Brackets that grow with their contents — <kbd>|</kbd> gives absolute value</span>
       <kbd>→</kbd><span>Out of an index, exponent, numerator or root, on along the line (<kbd>Space</kbd> too).
         The part you are typing in is shaded</span>
-      <kbd>Enter</kbd><span>In the last cell of a matrix or cases display, adds a row; the ⋮ menu adds columns</span>
+      <kbd>matrix</kbd><span>Typing <code>matrix</code> or <code>cases</code> asks how big, on a small grid. <kbd>Tab</kbd> goes on to the next
+        cell. Double-click a matrix to edit it large, with buttons for rows, columns and brackets</span>
+      <kbd>. , ;</kbd><span>Typed at the end of an exponent, index or root, they go after it: <code>x^2.</code> is x² followed by a full stop</span>
+      <kbd>Home</kbd><span>The start of the whole formula — in front of a matrix or cases brace too. <kbd>End</kbd> its end</span>
       <kbd>Ctrl+B</kbd><span>Bold letters, for vectors — or type <code>bold</code></span>
-      <kbd>\</kbd><span>The long way round, if you prefer: <code>\varepsilon</code>, <code>\ddot{x}</code>, <code>\frac{a}{b}</code>, anything</span>
+      <kbd>\</kbd><span>The long way round, if you know LaTeX: it is read as LaTeX reads it — <code>\frac12</code>, <code>\left( … \right)</code>,
+        <code>\begin{cases} … &amp; … \\ … \end{cases}</code>, <code>\,</code> for a thin space. A command PaperTeX does not know is shown
+        in red and written to the LaTeX as typed</span>
       <kbd>Esc</kbd><span>Leaves the formula: back to the text, or on to a new line below an equation</span>
     </div>
 

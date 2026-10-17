@@ -11,7 +11,7 @@
      are data: URLs; the compiled PDF is a blob:. connect-src names the
      engine host — tools/build-web.js narrows it to this site alone when
      TeX Live is deployed beside the page. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-9xHH1h7a6w6mP11frUSnyGGlGyL8nUNzW7svl7WkV1g=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-hAuaqd1w+2ru5tsmMx8lU8IOYffZa7NhjBJgblMOJEQ=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-Ll7WGP0OrXzUsU3t8cAn5j1VVyt1J6xOfTjoK6xvQvY=' 'sha256-2dvVcEk9bI2YmCIuMEaEETA6p2GH6iTcqXEoo3pF3+8=' 'sha256-D0PwX60kNigrEgaM3+M8I5WSw61qBNCI+c9MBnI7dhA=' 'sha256-3tH4ovyHSRUP7JGGe5dPgB0BgqrWqJy4H9bTtn1kek0=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-bYVf8Rqe53jzO/mJAbQfQcjEpA4gWKqPMOkhiKfr1dM=' 'sha256-v9D3DmY6r3BudpbNH9xaWupUKkZdpKYJaUe9Zp/Whfw=' 'sha256-QbY5UNbnKw7jAkZ7SguVpF036qqL5b5681YzrHII7B4=' 'sha256-2+HUQvMH7+Rq6xDgetTD/Q+klTxkQwdN7jOwq6z6k8s='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-hfOfR8PDYQKfSyZseVQAn/84OT4AhIEDL63/4K5V2Y0=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-q2CUmW3hO7fSHEfrhz6HjeEaB4nDR6AcW9URr/R8x2c=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-Ef4OnvuifZJoJDaTiPnDDMwdCbQCFjTCRmzkWKWhbvU=' 'sha256-BbEfGPO2VILKxr7l1tQMs4t5ewczjFKmK8jUMluLJ+k=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-bYVf8Rqe53jzO/mJAbQfQcjEpA4gWKqPMOkhiKfr1dM=' 'sha256-a3y1woSD5+kkclCBe1CxjAR7tZ1IesUlzCOV9xbhSms=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-89T2eA9o1kgOeg7e+dTCgdkKW2QiiKPsUvX0bfV3STw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <!-- Where the compiler's wasm and TeX Live live, if not beside this page
      (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
 <meta name="papertex-engine" content="">
@@ -513,7 +513,11 @@ body.nopanel .side { margin-right: calc(-1 * var(--sidew)); }
 .g-btn:active, .sbtn:active, .dlg-btn:active, .seltools button:active,
 .kb-add:active, .kb-reset:active, .kb-x:active, .kb-rm:active, .docdel:active { transform: scale(.94); transition-duration: .06s; }
 .popitem:active, .cp-row:active { transform: scale(.985); transition-duration: .06s; }
-.pt-tail { margin-top: 10px; text-align: center; }
+.pt-tail { margin-top: 10px; text-align: center; transition: margin-top .18s ease-out; }
+/* while the last block's formula shows its hint chip (.mf-hintbar, which
+   floats below it), the end-of-document button steps down out of its way */
+.blk:has(.mf-hintbar) + .pt-tail { margin-top: 38px; }
+@media (prefers-reduced-motion: reduce) { .pt-tail { transition: none; } }
 
 /* ------------------------------------------------------------------- popups */
 .popmenu {
@@ -741,9 +745,12 @@ body.nopanel .side { margin-right: calc(-1 * var(--sidew)); }
    both layers: the band (::before) and the button face (::after) are drawn
    as layers instead, band first */
 .helpclose::before, .helpclose::after { content: ''; position: absolute; pointer-events: none; }
+/* the band fades in over the text scrolling under it, rather than cutting a
+   line in half with a hard edge (testers read a half-hidden row as text that
+   was cut off) */
 .helpclose::before {
-  z-index: -2; left: -32px; right: -100vw; top: -15px; bottom: -18px;
-  background: var(--panel); border-top: 1px solid var(--line-2);
+  z-index: -2; left: -32px; right: -100vw; top: -44px; bottom: -18px;
+  background: linear-gradient(to bottom, transparent, var(--panel) 30px);
 }
 .helpclose::after { z-index: -1; inset: 0; border-radius: inherit; background: var(--accent-ink); }
 .helpclose:hover::after { background: #8b5a11; }
@@ -1348,6 +1355,38 @@ body.nopanel .side { margin-right: calc(-1 * var(--sidew)); }
   .sf select, .sf input[type=text], .popsearch, .poplab input, .dlg-i, .kb-search, .kb-snipin, .cp-in { font-size: 16px; }
   .docdel { opacity: .75; }
 }
+
+/* ---------------------------------------------------- new matrix: its size
+   (backend session's block, see math.js askMatrix / openMatrix) */
+.popmenu.mx-pick { width: auto; padding: 8px 10px 9px; overflow: visible; max-height: none; z-index: 330; }
+.mx-pick-h { padding: 0 0 6px; font-variant-numeric: tabular-nums; }
+.mx-pick-grid { display: grid; gap: 3px; width: max-content; }
+.mx-pick-c {
+  width: 16px; height: 16px; border: 1px solid var(--line); border-radius: 3px; background: var(--panel); cursor: pointer;
+}
+.mx-pick-c.on { background: var(--accent-soft, #f6e9d2); border-color: var(--accent); }
+.mx-pick-k { display: flex; gap: 3px; margin-top: 8px; }
+.mx-pick-b {
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); border-radius: 5px;
+  padding: 2px 6px; font-size: 12px; cursor: pointer; font-family: "PaperTeX", serif;
+}
+.mx-pick-b.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft, #f6e9d2); }
+.mx-pick-f { margin-top: 7px; font-size: 11px; color: var(--muted); }
+
+/* a matrix on a sheet of its own */
+.dlg.mx-sheet { max-width: min(900px, 94vw); }
+.mx-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; align-items: center; }
+.mx-kinds { display: inline-flex; gap: 3px; margin-left: auto; }
+.mx-tool.mx-kind { padding: 5px 9px; font-family: "PaperTeX", serif; }
+.mx-tool.on { border-color: var(--accent); color: var(--accent); }
+.mx-paper {
+  margin-top: 14px; padding: 40px 32px; background: #fffdf8; border: 1px solid var(--line); border-radius: 8px;
+  display: flex; justify-content: center; align-items: center; min-height: 220px; max-height: 70vh; overflow: auto;
+  box-shadow: inset 0 1px 3px rgba(20, 25, 35, .06);
+}
+.mx-field { font-family: "PaperTeX", serif; font-size: 34px; color: #1d1b17; outline: none; }
+.mx-field .mmat .mph { min-width: 1em; min-height: 1.1em; }
+@media (max-width: 600px) { .mx-field { font-size: 24px; } .mx-paper { padding: 24px 12px; } }
 </style>
 <style>
 /* css/paper.css */
@@ -1785,7 +1824,7 @@ blockquote.pt-quote {
 /* in a matrix or cases display (.mf-inmat, math.js): how to get another row */
 .pt-eqw:has(.pt-eqf.mf-inmat) { position: relative; }
 .pt-eqw:has(.pt-eqf.mf-inmat)::after {
-  content: 'Enter in the last row adds a row \00B7  \22EE  for columns';
+  content: 'Double-click to edit it large \00B7  \22EE  for rows and columns';
   position: absolute; right: 0; top: 100%; margin-top: 1px;
   font: 400 10.5px/1.3 ui-sans-serif, system-ui, sans-serif; color: #a08a6c; font-style: normal;
   white-space: nowrap; pointer-events: none;
@@ -1875,6 +1914,8 @@ blockquote.pt-quote {
 .m-var { font-style: italic; font-family: "PaperTeX Math", "PaperTeX", serif; }
 .m-f-bb  { font-family: "PaperTeX AMS", "PaperTeX", serif; font-style: normal; }
 .m-f-cal { font-family: "PaperTeX Cal", "PaperTeX", serif; font-style: normal; }
+/* fraktur: Unicode letters (math.js m-frak); no bundled face, so the system maths fonts draw them */
+.m-frak { font-style: normal; font-family: "Cambria Math", "STIX Two Math", "Latin Modern Math", "Segoe UI Symbol", serif; }
 .m-num, .m-upr, .m-punct { font-style: normal; }
 /* Space between atoms is not styled here: the renderer applies TeX's
    spacing table, which depends on both neighbours and on the style. */
@@ -1902,7 +1943,7 @@ blockquote.pt-quote {
    ringed, so it is plain where the next key lands. Paint only — no padding
    or border, which would move what the layout pass measured. */
 .mfield:focus .mslot-on, .mfield.mf-on .mslot-on, .imath.editing .mslot-on {
-  background: rgba(236, 178, 72, .26); box-shadow: 0 0 0 1px rgba(201, 146, 54, .7); border-radius: 2px;
+  background: rgba(236, 178, 72, .3); box-shadow: 0 0 0 1.5px #c99236; border-radius: 2px;
 }
 /* the slots around it — the denominator a subscript sits in — keep a
    fainter ring, so Right arrow leaving only the inner one is visible */
@@ -1998,6 +2039,29 @@ blockquote.pt-quote {
 /* \mathbf: bold and upright — letters in the text face's bold, since the
    maths italic has no bold to draw them with (\boldsymbol keeps them slanted) */
 .mbf .m-var { font-style: normal; font-family: "PaperTeX", serif; }
+/* Commands typed with an argument that change the face rather than add a
+   mark (math.js: .macc-KIND with no .maccm). Sans and typewriter faces are
+   not bundled, so the nearest system faces stand in on screen; the PDF uses
+   the real ones. Letters inside go upright, as in LaTeX. */
+.macc-mathsf > .maccb, .macc-textsf > .maccb { font-family: "CMU Sans Serif", "Latin Modern Sans", "Segoe UI", Helvetica, Arial, sans-serif; }
+.macc-mathtt > .maccb, .macc-texttt > .maccb { font-family: "CMU Typewriter Text", "Latin Modern Mono", Consolas, "Courier New", monospace; font-size: .95em; }
+.macc-mathsf .m-var, .macc-textsf .m-var, .macc-mathtt .m-var, .macc-texttt .m-var { font-family: inherit; font-style: normal; }
+.macc-textbf > .maccb { font-weight: 700; }
+.macc-textit > .maccb, .macc-emph > .maccb { font-style: italic; }
+.macc-textit .mtext, .macc-emph .mtext, .macc-textit .m-upr, .macc-emph .m-upr { font-style: italic; }
+/* their letters are words, not variables: the text face, upright unless the command slants it */
+.macc-textbf .m-var, .macc-operatorname .m-var { font-family: "PaperTeX", serif; font-style: normal; }
+.macc-textit .m-var, .macc-emph .m-var { font-family: "PaperTeX", serif; font-style: italic; }
+/* \boxed: a thin rule round it, \fboxsep (3pt) inside */
+.macc-boxed > .maccb { border: max(.04em, 1px) solid currentColor; padding: .25em .3em; }
+/* an unknown command with an argument (its reason in the title): the body
+   underlined in red, like an unknown bare command (.mraw-unknown) */
+.macc-unknown { cursor: help; }
+.macc-unknown > .maccb {
+  background: #fdeeea; border-radius: 2px;
+  text-decoration: underline wavy #e07a66; text-decoration-thickness: 1px; text-underline-offset: .22em;
+}
+@media print { .macc-unknown > .maccb { text-decoration: none; background: none; } }
 
 /* matrices */
 .mmat { display: inline-block; }
@@ -2019,9 +2083,46 @@ blockquote.pt-quote {
   font: .85em/1.2 Consolas, monospace; background: #fdf1dd; border-radius: 3px;
   padding: 0 .2em; color: #8a5a10;
 }
+/* ...and one it does not understand at all (.mraw-unknown, with the reason
+   in its title): red, with a wavy underline, so it reads "not understood",
+   not "fine, just shown as code" */
+.mraw.mraw-unknown {
+  color: #b4290f; background: #fdeeea; cursor: help;
+  text-decoration: underline wavy #e07a66; text-decoration-thickness: 1px; text-underline-offset: .18em;
+}
+@media print { .mraw.mraw-unknown { text-decoration: none; background: none; } }
 .mci { font-family: Consolas, monospace; font-size: .92em; color: #9a5b06; background: #fdf1dd; border-radius: 3px; padding: 0 .12em; }
 .mcibs { opacity: .55; }
 .mcis { text-decoration: underline; text-decoration-style: dotted; }
+
+/* The formula hint bar (.mf-hintbar, math.js): one quiet line of what the
+   keys do where the caret is — "Space leave the power · Esc back to text".
+   It floats, so the page never moves when it appears or changes: under an
+   inline formula as a small chip over the next line, under a display
+   equation at the right, where the matrix hint used to be. */
+.imath.editing { position: relative; }
+.pt-eqw:has(.mf-hintbar) { position: relative; }
+.pt-eqw:has(.mf-hintbar)::after { content: none; }
+.mf-hintbar {
+  position: absolute; left: -.2em; top: calc(100% + 5px); z-index: 30;
+  display: flex; align-items: baseline; white-space: nowrap;
+  font: 400 11px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-style: normal; letter-spacing: 0; text-indent: 0; text-align: left; color: #6f604f;
+  background: #fffdf8; border: 1px solid #eadcc4; border-radius: 6px; padding: 2px 9px;
+  box-shadow: 0 8px 18px -12px rgba(70, 45, 10, .45);
+  pointer-events: none; user-select: none; -webkit-user-select: none;
+  animation: mf-hint-in .18s ease-out both;
+}
+.pt-eqw > .mf-hintbar, .pt-eqw .mf-hintbar { left: auto; right: 0; top: calc(100% + 2px); }
+.mf-hintbar > span + span::before { content: '\00B7'; margin: 0 8px; color: #c9b48e; }
+.mf-hintbar kbd {
+  font: 10px/1.35 Consolas, ui-monospace, monospace; color: #5a4b3a;
+  background: #f6efe3; border: 1px solid #e3d5bd; border-bottom-width: 2px; border-radius: 3px;
+  padding: 0 4px; margin-right: 4px;
+}
+@keyframes mf-hint-in { from { opacity: 0; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .mf-hintbar { animation: none; } }
+@media print { .mf-hintbar { display: none !important; } }
 
 
 /* charts (chart.js); their settings are in the studio (studio.js, app.css) */
@@ -2105,12 +2206,12 @@ blockquote.pt-quote {
   <span class="spacer"></span>
   <button class="tb ghost" id="btnPalette" title="Search every command, block and symbol">⌕ Commands</button>
   <button class="tb ghost" id="btnHelp" title="Keyboard shortcuts and tips">? Shortcuts</button>
-  <button class="tb ghost" id="btnPrint" title="Print the page as it looks here — a quick copy. Compile PDF makes the real typeset PDF.">Print</button>
+  <button class="tb ghost" id="btnPrint" title="Print the page as it looks here — a quick copy. Make PDF makes the real typeset PDF.">Quick print</button>
   <button class="tb ghost" id="btnCopy" title="Copy the generated LaTeX">Copy LaTeX</button>
-  <button class="tb ghost" id="btnTex" title="Download the .tex file (Ctrl+S)">Export .tex</button>
+  <button class="tb ghost" id="btnTex" title="Download the .tex file (Ctrl+S)">Download .tex</button>
   <!-- on a phone the buttons above fold into this menu (css/app.css shows it) -->
   <button class="tb ghost tb-more" id="btnMore" title="More: commands, print, copy, export, panels" aria-haspopup="menu" aria-expanded="false">⋯</button>
-  <button class="tb primary" id="btnCompile" title="Typeset the document with LaTeX into the finished PDF, here in your browser">Compile PDF</button>
+  <button class="tb primary" id="btnCompile" title="Typeset the document with LaTeX into the finished PDF, here in your browser">Make PDF</button>
 </header>
 <!-- saving problems, backup reminders: shown by app.js, never silently -->
 <div class="savebar" id="savebar" role="alert"></div>
@@ -2182,7 +2283,7 @@ blockquote.pt-quote {
       <kbd data-key="block.eq">Ctrl+Enter</kbd><span>Drops a display equation below the current block</span>
       <kbd>Enter</kbd><span>New paragraph · in a list, a new item · in an equation, a new aligned line —
         on an empty last line, back to the text</span>
-      <kbd>Tab</kbd><span>Indents a list item, moves to the next table cell, steps to the next slot of a formula</span>
+      <kbd>Tab</kbd><span>Indents a list item, moves to the next table cell, steps to the next box of a formula</span>
       <kbd>⋮</kbd><span>The dots beside a block: change its level, numbering, label, or move it</span>
     </div>
 
@@ -2197,7 +2298,7 @@ blockquote.pt-quote {
       <kbd>↑ ↓</kbd><span>Go to what is drawn above or below: from the line, ↑ enters the exponent, upper limit or
         numerator beside the caret and ↓ the index, lower limit or denominator; from an exponent,
         ↓ comes back down to the line</span>
-      <kbd>Tab</kbd><span>Steps through every slot in turn, empty ones included. <kbd>Shift</kbd>+<kbd>Tab</kbd> goes back</span>
+      <kbd>Tab</kbd><span>Steps through every box in turn, empty ones included. <kbd>Shift</kbd>+<kbd>Tab</kbd> goes back</span>
       <kbd>^</kbd><span>From inside a lower limit, jumps up to the upper one — <kbd>_</kbd> jumps back down</span>
       <kbd>alpha</kbd><span>Becomes α — every Greek letter, plus <code>inf</code> → ∞, <code>partial</code> → ∂,
         <code>nabla</code> → ∇, <code>in</code> → ∈, <code>cdot</code> → ⋅</span>
@@ -2214,9 +2315,14 @@ blockquote.pt-quote {
       <kbd>(</kbd><span>Brackets that grow with their contents — <kbd>|</kbd> gives absolute value</span>
       <kbd>→</kbd><span>Out of an index, exponent, numerator or root, on along the line (<kbd>Space</kbd> too).
         The part you are typing in is shaded</span>
-      <kbd>Enter</kbd><span>In the last cell of a matrix or cases display, adds a row; the ⋮ menu adds columns</span>
+      <kbd>matrix</kbd><span>Typing <code>matrix</code> or <code>cases</code> asks how big, on a small grid. <kbd>Tab</kbd> goes on to the next
+        cell. Double-click a matrix to edit it large, with buttons for rows, columns and brackets</span>
+      <kbd>. , ;</kbd><span>Typed at the end of an exponent, index or root, they go after it: <code>x^2.</code> is x² followed by a full stop</span>
+      <kbd>Home</kbd><span>The start of the whole formula — in front of a matrix or cases brace too. <kbd>End</kbd> its end</span>
       <kbd>Ctrl+B</kbd><span>Bold letters, for vectors — or type <code>bold</code></span>
-      <kbd>\</kbd><span>The long way round, if you prefer: <code>\varepsilon</code>, <code>\ddot{x}</code>, <code>\frac{a}{b}</code>, anything</span>
+      <kbd>\</kbd><span>The long way round, if you know LaTeX: it is read as LaTeX reads it — <code>\frac12</code>, <code>\left( … \right)</code>,
+        <code>\begin{cases} … &amp; … \\ … \end{cases}</code>, <code>\,</code> for a thin space. A command PaperTeX does not know is shown
+        in red and written to the LaTeX as typed</span>
       <kbd>Esc</kbd><span>Leaves the formula: back to the text, or on to a new line below an equation</span>
     </div>
 
@@ -2400,7 +2506,7 @@ blockquote.pt-quote {
     frac: 'frac', dfrac: 'frac', sqrt: 'sqrt', root: 'nthroot', sum: 'sum', prod: 'prod',
     int: 'int', iint: 'iint', oint: 'oint', lim: 'lim', bigcup: 'bigcup', bigcap: 'bigcap',
     text: 'text', binom: 'binom', cases: 'cases', matrix: 'matrix2', pmatrix: 'matrix2',
-    bmatrix: 'matrix2', hat: 'hat', bar: 'bar', vec: 'vec', tilde: 'tilde', dot: 'dot',
+    bmatrix: 'matrix2', Bmatrix: 'matrix2', vmatrix: 'matrix2', Vmatrix: 'matrix2', hat: 'hat', bar: 'bar', vec: 'vec', tilde: 'tilde', dot: 'dot',
     ddot: 'ddot', widehat: 'widehat', overline: 'overline', underline: 'underline',
     boldsymbol: 'boldsym', left: 'paren', abs: 'abs', norm: 'norm',
     mathbf: 'mathbf', bm: 'boldsym', mathrm: 'text', textrm: 'text', tfrac: 'frac'
@@ -2507,7 +2613,26 @@ blockquote.pt-quote {
   };
   /* accent glyphs — the accent forms in cmr, not the ASCII look-alikes;
      \overline and \underline are rules, drawn by the layout pass */
-  var ACC = { hat: '^', widehat: '^', bar: 'ˉ', vec: '→', tilde: '˜', dot: '˙', ddot: '¨', overline: null, underline: null, boldsym: null, mathbf: null };
+  var ACC = { hat: '^', widehat: '^', bar: 'ˉ', vec: '→', tilde: '˜', dot: '˙', ddot: '¨', overline: null, underline: null, boldsym: null, mathbf: null,
+    overrightarrow: '→', overleftarrow: '←', overleftrightarrow: '↔', widetilde: '˜', check: 'ˇ', breve: '˘',
+    acute: 'ˊ', grave: 'ˋ', mathring: '˚' };
+  /* commands that set their argument in another style: drawn as the
+     argument, written back as the command (WRAP_TXT: upright words, like
+     \text) */
+  var WRAP = { operatorname: 1, mathsf: 1, mathtt: 1, mathit: 1, mathnormal: 1, textbf: 1, textit: 1,
+    texttt: 1, textsf: 1, emph: 1, boxed: 1 };
+  var WRAP_TXT = { operatorname: 1, mathsf: 1, mathtt: 1, textbf: 1, textit: 1, texttt: 1, textsf: 1, emph: 1 };
+  /* spacing commands, by name */
+  var SPACE_CMD = { quad: 1, qquad: 1, enspace: 1, thinspace: 1, medspace: 1, thickspace: 1, negthinspace: 1 };
+  /* \mathbb R, \mathcal{C}: the letter in another face */
+  var FACE = { mathbb: 'bb', mathcal: 'cal', mathfrak: '', mathscr: 'cal' };
+  /* what \left and \right take, as typed after them */
+  var DELIM_KEY = { '(': '(', ')': ')', '[': '[', ']': ']', '|': '|', '.': '.', '<': '\\langle', '>': '\\rangle', '/': '/' };
+  var DELIM_NAME = { langle: '\\langle', rangle: '\\rangle', lvert: '|', rvert: '|', vert: '|', lVert: '\\|', rVert: '\\|',
+    Vert: '\\|', lfloor: '\\lfloor', rfloor: '\\rfloor', lceil: '\\lceil', rceil: '\\rceil', lbrace: '\\{', rbrace: '\\}',
+    lbrack: '[', rbrack: ']' };
+  var DELIM_CLOSE = { '(': ')', '[': ']', '\\{': '\\}', '|': '|', '\\|': '\\|', '\\langle': '\\rangle',
+    '\\lfloor': '\\rfloor', '\\lceil': '\\rceil', '.': '.', '/': '/', ')': '(', ']': '[' };
   /* cmmi skew: how far right of centre an accent sits over a slanted letter */
   var SKEW = {
     A: .13889, B: .08334, C: .08334, D: .05556, E: .08334, F: .08334, G: .08334, H: .05556,
@@ -2623,6 +2748,7 @@ blockquote.pt-quote {
         if (c === ')' || c === ']' || c === '⟩' || c === '⌉' || c === '⌋') return K_CLOSE;
         return K_ORD;
       case 'fn': case 'big': return K_OP;
+      case 'acc': return n.kind === 'operatorname' ? K_OP : K_ORD;   /* \operatorname{rank} A, spaced as \sin x */
       case 'frac': case 'paren': return K_INNER;
       case 'mat': return n.env === 'matrix' ? K_ORD : K_INNER;
       case 'scr': return undefined;                 /* belongs to the atom before it */
@@ -2669,11 +2795,18 @@ blockquote.pt-quote {
     f: .10764, g: .03588, j: .05724, l: .01968, q: .03588, r: .02778, v: .03588, w: .02691,
     y: .03588, z: .04398, '∂': .05556
   };
-  var SPACES = { '\\,': 3 / 18, '\\:': 4 / 18, '\\;': 5 / 18, '\\!': -3 / 18, '\\quad': 1, '\\qquad': 2 };
+  var SPACES = { '\\,': 3 / 18, '\\:': 4 / 18, '\\;': 5 / 18, '\\!': -3 / 18, '\\quad': 1, '\\qquad': 2,
+    '\\ ': 6 / 18, '\\enspace': 0.5, '\\thinspace': 3 / 18, '\\medspace': 4 / 18, '\\thickspace': 5 / 18, '\\negthinspace': -3 / 18 };
   function spaceWidth(e, tex) {
     var w = SPACES[tex] != null ? SPACES[tex] : 3 / 18;
     if (w < 0) { e.style.width = '0'; e.style.marginRight = +w.toFixed(4) + 'em'; }
     else e.style.width = +w.toFixed(4) + 'em';
+  }
+
+  function frak(L) {
+    var odd = { C: 0x212D, H: 0x210C, I: 0x2111, R: 0x211C, Z: 0x2128 };
+    var cp = odd[L] || (/[A-Z]/.test(L) ? 0x1D504 + L.charCodeAt(0) - 65 : 0x1D51E + L.charCodeAt(0) - 97);
+    return String.fromCodePoint(cp);
   }
 
   function renderNode(n, ctx, st) {
@@ -2694,6 +2827,10 @@ blockquote.pt-quote {
           (n.f ? ' m-f-' + n.f : ''), n.d);
         if (ITALIC[n.d] && !st.txt) { e.__it = ITALIC[n.d]; e.style.marginRight = ITALIC[n.d] + 'em'; }
         if (n.cls === 'spc') { e.textContent = ' '; e.classList.add('mspc'); spaceWidth(e, n.tex); }
+        /* \mathfrak{g}: the maths fonts have no fraktur, Unicode does (the
+           PDF sets it with LaTeX's own) */
+        var fk = /^\\mathfrak\{([A-Za-z])\}$/.exec(n.tex || '');
+        if (fk) { e.textContent = frak(fk[1]); e.classList.add('m-frak'); }
         return e;
       case 'fn':
         return el('span', 'mi m-fn', n.name);
@@ -2773,6 +2910,19 @@ blockquote.pt-quote {
       }
       case 'acc': {
         e = el('span', 'macc macc-' + n.kind);
+        if (!ACC.hasOwnProperty(n.kind)) {
+          /* \operatorname, \mathsf, \boxed … — and a command PaperTeX does
+             not know, typed with a "{": the argument as it is, the command
+             kept for the LaTeX */
+          var wb = el('span', 'maccb');
+          wb.appendChild(renderRow(n.k, ctx, WRAP_TXT[n.kind] ? { z: st.z, c: st.c, txt: true } : st));
+          e.appendChild(wb);
+          if (!WRAP[n.kind]) {
+            e.classList.add('macc-unknown');
+            e.title = '\\' + n.kind + ' is not a command PaperTeX knows: it goes into the LaTeX as typed, and may not compile';
+          }
+          return e;
+        }
         var body = el('span', 'maccb'); body.appendChild(renderRow(n.k, ctx, sty(st.z, true)));
         e.__st = st;
         /* \boldsymbol: bold as they are; \mathbf: bold and upright (mbf) */
@@ -2799,6 +2949,7 @@ blockquote.pt-quote {
       }
       case 'mat': {
         e = el('span', 'mmat mmat-' + n.env);
+        e.__mat = n;
         var d = matDelims(n.env);
         if (d[0]) e.appendChild(delimEl(d[0]));
         var grid = el('span', 'mgrid');
@@ -2811,8 +2962,15 @@ blockquote.pt-quote {
         if (d[1]) e.appendChild(delimEl(d[1]));
         return e;
       }
-      case 'raw':
-        return el('span', 'mraw', n.tex);
+      case 'raw': {
+        e = el('span', 'mraw', n.tex);
+        var um = /^\\([A-Za-z]+)$/.exec(n.tex || '');
+        if (um && !knownName(um[1])) {
+          e.classList.add('mraw-unknown');
+          e.title = '\\' + um[1] + ' is not a command PaperTeX knows: it goes into the LaTeX as typed, and may not compile';
+        }
+        return e;
+      }
       case 'ci':
         e = el('span', 'mci');
         e.appendChild(el('span', 'mcibs', '\\'));
@@ -3309,14 +3467,36 @@ blockquote.pt-quote {
     var f = fpx(mk);
     mk.style.top = '0'; mk.style.transform = '';
     mk.style.marginLeft = e.__skew ? em(2 * e.__skew * fs, f) : '';
+    /* \widehat and \widetilde over more than a letter: drawn to the width of
+       what they cover (a stretched glyph's ink sits off-centre in its box) */
+    var wide = /\bmacc-(widehat|widetilde)\b/.exec(e.className);
+    if (wide && body.getBoundingClientRect().width > 0.9 * fs) {
+      var bw = body.getBoundingClientRect().width, H = 0.26 * fs, NS = 'http://www.w3.org/2000/svg';
+      mk.textContent = '';
+      var svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('viewBox', '0 0 100 20');
+      svg.setAttribute('preserveAspectRatio', 'none');
+      svg.style.cssText = 'display:block;margin:0 auto;overflow:visible;width:' + em(bw * 0.94, f) + ';height:' + em(H, f);
+      var pth = document.createElementNS(NS, 'path');
+      pth.setAttribute('d', wide[1] === 'widehat' ? 'M0 20 L50 1 L100 20' : 'M0 16 C18 1 34 1 50 10 S82 19 100 4');
+      pth.setAttribute('fill', 'none');
+      pth.setAttribute('stroke', 'currentColor');
+      pth.setAttribute('stroke-width', String(Math.max(1, 0.045 * fs)));
+      pth.setAttribute('vector-effect', 'non-scaling-stroke');
+      svg.appendChild(pth);
+      mk.appendChild(svg);
+      var top2 = y - (Math.max(h, sig('xh', z) * fs) + ACCENT_GAP * fs) - H;
+      mk.style.top = em(top2 - er.top, f);
+      return;
+    }
     var g = inkBox(mk);
     if (!g) return;
     var target = y - (Math.max(h, sig('xh', z) * fs) + ACCENT_GAP * fs);
     mk.style.top = em(target - g.bottom, f);
-    if (e.classList.contains('macc-widehat')) {
+    if (/\bmacc-(widehat|widetilde|overrightarrow|overleftarrow|overleftrightarrow)\b/.test(e.className)) {
       var w = body.getBoundingClientRect().width, mw = mk.firstChild ? mk.getBoundingClientRect().width : 0;
       var gw = (function () { var rg = document.createRange(); rg.selectNodeContents(mk); return rg.getBoundingClientRect().width; })();
-      if (gw && w > gw) mk.style.transform = 'scaleX(' + Math.min(4, w * 0.9 / gw).toFixed(3) + ')';
+      if (gw && w > gw) mk.style.transform = 'scaleX(' + Math.min(12, w * 0.9 / gw).toFixed(3) + ')';
     }
   }
 
@@ -3482,7 +3662,8 @@ blockquote.pt-quote {
       case 'acc': {
         var m = { hat: '\\hat', bar: '\\bar', vec: '\\vec', tilde: '\\tilde', dot: '\\dot',
           ddot: '\\ddot', widehat: '\\widehat', overline: '\\overline',
-          underline: '\\underline', boldsym: '\\boldsymbol', mathbf: '\\mathbf' }[n.kind] || '\\hat';
+          underline: '\\underline', boldsym: '\\boldsymbol', mathbf: '\\mathbf' }[n.kind] ||
+          (/^[A-Za-z]+$/.test(n.kind || '') ? '\\' + n.kind : '\\hat');
         return m + '{' + texRow(n.k) + '}';
       }
       case 'txt': return '\\text{' + texRow(n.k, 'text') + '}';
@@ -3492,8 +3673,10 @@ blockquote.pt-quote {
         }).join(' \\\\\n');
         return '\\begin{' + n.env + '}\n' + body + '\n\\end{' + n.env + '}';
       }
-      case 'raw': return n.tex;
-      case 'ci': return n.s ? '\\' + n.s : '';
+      /* a \left, \right, \begin or \end on its own can only break the
+         compile: the structures they make are written by their nodes */
+      case 'raw': return /^\\(left|right|middle|begin|end)(?![A-Za-z])/.test(n.tex || '') ? '' : n.tex;
+      case 'ci': return n.s && !/^(left|right|middle|begin|end)$/.test(n.s) ? '\\' + n.s : '';
       default: return '';
     }
   }
@@ -3606,7 +3789,7 @@ blockquote.pt-quote {
         return sqrtn(group(), idx);
       }
       if (name === 'text' || name === 'textrm' || name === 'mathrm') return txt(textGroup());
-      if (ACC.hasOwnProperty(name) || name === 'boldsymbol') {
+      if (ACC.hasOwnProperty(name) || WRAP[name] || name === 'boldsymbol') {
         return acc(name === 'boldsymbol' ? 'boldsym' : name, group());
       }
       if (name === 'left') {
@@ -3647,9 +3830,13 @@ blockquote.pt-quote {
       if (TEX_EXTRA[name]) return sym('\\' + name, TEX_EXTRA[name][0], TEX_EXTRA[name][1]);
       if (DELIM['\\' + name]) return sym('\\' + name, DELIM['\\' + name], 'upr');
       if (name === '\\') return { t: 'nl' };
-      if (name === ',' || name === ';' || name === ':' || name === '!' || name === 'quad' || name === 'qquad')
+      if (name === ',' || name === ';' || name === ':' || name === '!' || SPACE_CMD[name])
         return sym('\\' + name, ' ', 'spc');
-      return sym('\\' + name, name, 'fn');
+      /* a command PaperTeX does not know: kept as written, and marked —
+         with its argument, if it has one (\overbrace{x+y}) */
+      ws();
+      if (s[i] === '{') return acc(name, group());
+      return raw('\\' + name);
     }
     function readDelim() {
       ws();
@@ -3705,7 +3892,7 @@ blockquote.pt-quote {
       while (i < s.length) {
         ws();
         if (stop && s[i] === stop) break;
-        if (s.slice(i, i + 6) === '\\right') break;
+        if (leftDepth && s.slice(i, i + 6) === '\\right') break;
         if (s[i] === '&' || s.slice(i, i + 2) === '\\\\') break;
         if (s[i] === '^') { i++; pushAtom(r, { t: 'scrmark', kind: 'sup', k: group() }); continue; }
         if (s[i] === '_') { i++; pushAtom(r, { t: 'scrmark', kind: 'sub', k: group() }); continue; }
@@ -3715,8 +3902,12 @@ blockquote.pt-quote {
       }
       return r;
     }
+    /* a \right ends only a \left's contents; a stray one is just its bracket */
+    var leftDepth = 0;
     function seqUntilRight() {
+      leftDepth++;
       var r = seq(null);
+      leftDepth--;
       if (s.slice(i, i + 6) === '\\right') i += 6;
       return r;
     }
@@ -3838,6 +4029,7 @@ blockquote.pt-quote {
     this.host.__mf = this;
     var self = this;
     this.host.addEventListener('mousedown', function (e) { self.onMouse(e); });
+
     this.host.addEventListener('keydown', function (e) { self.onKey(e); });
     this.host.addEventListener('focus', function () { self.gotFocus(); });
     this.host.addEventListener('blur', function (e) {
@@ -3866,6 +4058,8 @@ blockquote.pt-quote {
     if (this.opts.onFocus && !was) this.opts.onFocus(this);
   };
   MathField.prototype.lostFocus = function () {
+    /* a matrix being sized when the focus goes: it goes in as it stands */
+    if (this.picker) this.placeMatrix();
     this.autoWord(true);
     this.resolveCI(true);
     this.focused = false; this.sel = null; this.render();
@@ -4071,6 +4265,7 @@ blockquote.pt-quote {
       inMat = !!this.matrixAt();
     }
     this.host.classList.toggle('mf-inmat', inMat);
+    this.hintBar();
     if (this.sel && this.focused) this.drawSel();
     if (kb && this.focused) {
       /* at the caret, so an input method's word list opens beside it */
@@ -4083,6 +4278,51 @@ blockquote.pt-quote {
     }
     if (this.opts.onRender) this.opts.onRender(this);
   };
+  /* One line under the formula saying what the keys do where the caret is
+     — "Space leaves the power", "Tab: next cell" — so the rules of the box
+     can be seen instead of guessed. Shown while the formula has the caret
+     (styled in paper.css: .mf-hintbar, items as <kbd>key</kbd> text). */
+  MathField.prototype.hintBar = function () {
+    var box = this.host.closest && this.host.closest('.imath, .pt-eqw');
+    if (!box) return;
+    var bar = box.querySelector(':scope > .mf-hintbar');
+    var items = this.focused && !this.picker ? this.hints() : [];
+    if (!items.length) { if (bar) bar.remove(); return; }
+    if (!bar) { bar = document.createElement('div'); bar.className = 'mf-hintbar'; box.appendChild(bar); }
+    var html = items.map(function (it) {
+      return '<span>' + it[0].map(function (k) { return '<kbd>' + k + '</kbd>'; }).join('') + ' ' + it[1] + '</span>';
+    }).join('');
+    if (bar.innerHTML !== html) bar.innerHTML = html;
+  };
+  MathField.prototype.hints = function () {
+    var H = [], r = this.cur.row, p = this.parentOf(r), inline = !!this.opts.onExit;
+    if (this.pending && this.pending.kind === 'delim') return [[['(', '[', '|', '\\{'], 'the bracket']];
+    if (this.activeCI()) return [[['Space'], 'finish the name'], [['alpha'], 'names work without \\ too']];
+    var mt = this.matrixAt();
+    if (p) {
+      var n = p.node, t = n.t, brace = braced.has(r);
+      if (brace) H.push([['}'], 'close the brace']);
+      else if (t === 'scr') H.push([['Space'], n.sup === r ? 'leave the power' : 'leave the index']);
+      else if (t === 'frac') H.push([['Space'], p.slot === 0 ? 'on to the denominator' : 'leave the fraction']);
+      else if (t === 'sqrt') H.push([['Space'], n.k === r ? 'leave the root' : 'on to the root']);
+      else if (t === 'acc') H.push([['Space'], 'leave it']);
+      else if (t === 'big') H.push([['Space'], p.slot === 0 && n.hi ? 'on to the upper limit' : 'leave the limits']);
+      else if (t === 'paren') H.push([[(DELIM[n.r] || n.r || ')')], 'close the bracket']);
+      else if (t === 'txt') H.push([['→'], 'leave the words']);
+    }
+    if (mt) {
+      H.push([['Tab'], 'next cell']);
+      if (!this.opts.noMatrixSheet) H.push([['Double-click'], 'edit it large']);
+      if (!inline && !this.opts.noMatrixSheet) H.push([['⋮'], 'rows and columns']);
+    } else if (!p) {
+      if (isEmptyRow(this.root)) {
+        H.push([['alpha', 'sqrt', 'sum'], 'type a name'], [['/'], 'fraction'], [['^'], 'power']);
+      } else if (inline) H.push([['Esc'], 'back to the text']);
+      else H.push([['Enter'], 'new line'], [['Esc'], 'done']);
+    }
+    return H;
+  };
+
   /* A selection is one band over the run, from the first atom to the last
      and as tall as the tallest — not a patch per atom with the spacing
      showing through between them. */
@@ -4125,6 +4365,10 @@ blockquote.pt-quote {
         hit = { row: rowEl.__row, i: idx };
       }
     }
+    /* a double click on a matrix opens it large, on a sheet of its own —
+       counted here, as the formula is redrawn between the two clicks and
+       the browser's own dblclick never comes */
+    var dm = e.detail === 2 && e.target.closest ? e.target.closest('.mmat') : null;
     var hr = this.host.getBoundingClientRect();
     this.host.focus();
     e.preventDefault();
@@ -4141,6 +4385,7 @@ blockquote.pt-quote {
       this.cur = { row: this.root, i: e.clientX < hr.left + hr.width / 2 ? 0 : this.root.k.length };
     }
     this.render();
+    if (dm && dm.__mat && !this.opts.noMatrixSheet) this.openMatrix(dm.__mat);
   };
 
   /* ---- caret motion */
@@ -4325,9 +4570,13 @@ blockquote.pt-quote {
     return null;
   }
 
-  MathField.prototype.insertBuild = function (name) {
+  var ASK = { matrix2: [2, 2], matrix3: [3, 3], cases: [2, 2] };
+  /* `env`: for a matrix, which brackets (\bmatrix …) */
+  MathField.prototype.insertBuild = function (name, env) {
     var f = BUILDS[name];
     if (!f) return;
+    /* a matrix or cases display: how big, first (askMatrix) */
+    if (ASK[name]) { this.askMatrix(name === 'cases' ? 'cases' : env || 'pmatrix', ASK[name][0], ASK[name][1]); return; }
     var n = f();
     /* wrap the selection or the trailing operand where it makes sense */
     var grab = null;
@@ -4414,6 +4663,16 @@ blockquote.pt-quote {
     /* a fraction taken apart from its denominator is set on the line:
        a/b */
     var at = outer.k.indexOf(n);
+    /* a matrix or cases display is never taken apart: Backspace at the
+       start of a cell goes to the end of the cell before, and from the
+       first cell out in front of the display; one with nothing in it goes */
+    if (n.t === 'mat') {
+      var cells = slots(n);
+      if (cells.every(isEmptyRow)) { outer.k.splice(at, 1); this.cur = { row: outer, i: at }; this.changed(); return; }
+      if (p.slot > 0) { var pc = cells[p.slot - 1]; this.cur = { row: pc, i: pc.k.length }; }
+      else this.cur = { row: outer, i: at };
+      this.render(); return;
+    }
     if (n.t === 'frac' && n.style === 'frac' && p.slot === 1) { this.unFrac(n); this.cur = { row: outer, i: at + n.n.k.length + 1 }; this.changed(); return; }
     var contents = [];
     slots(n).forEach(function (s) { contents = contents.concat(s.k); });
@@ -4428,10 +4687,12 @@ blockquote.pt-quote {
      treats them differently (keepsSpaces, typeChar, autoWord). Kept
      beside the tree, not in it, so the document never stores them. */
   var braced = new WeakSet(), softDen = new WeakSet();
-  /* Space stays put inside typed braces and inside brackets */
+  /* Space stays put inside typed braces, inside brackets and in the cells of
+     a matrix (x & \text{if } x > 0 is typed with spaces; Tab, Enter and &
+     go on to the next cell) */
   MathField.prototype.keepsSpaces = function () {
     var p = this.parentOf(this.cur.row);
-    return braced.has(this.cur.row) || !!(p && p.node.t === 'paren');
+    return braced.has(this.cur.row) || !!(p && (p.node.t === 'paren' || p.node.t === 'mat'));
   };
 
   MathField.prototype.del = function () {
@@ -4465,6 +4726,8 @@ blockquote.pt-quote {
     this.cur = { row: c.row, i: at };
     if (!name) { if (!silent) this.changed(); else this.render(); return true; }
     if (name === 'slash') { this.insertNode(ch('/', 'upr')); return true; }
+    /* sizes and a \right with nothing to close: the brackets size themselves */
+    if (name === 'right' || name === 'middle' || /^(big|Big|bigg|Bigg)[lrm]?$/.test(name)) { this.changed(); return true; }
     if (!knownName(name)) {
       /* two commands run together, "\pmsqrt": \pm then \sqrt */
       var parts = splitNames(name);
@@ -4479,8 +4742,12 @@ blockquote.pt-quote {
         return true;
       }
     }
+    if (SPACE_CMD[name]) { this.insertNode(sym('\\' + name, ' ', 'spc')); return true; }
+    if ((ACC.hasOwnProperty(name) && !PT.symbols.buildCmds[name]) || WRAP[name]) {
+      this.insertNode(acc(name)); this.markOneTok(); return true;
+    }
     var bld = PT.symbols.buildCmds[name];
-    if (bld) { this.insertBuild(bld); return true; }
+    if (bld) { this.insertBuild(bld, /.matrix$/i.test(name) ? name : null); this.markOneTok(); return true; }
     var it = PT.symbols.byCmd[name];
     if (it) { this.insertNode(sym(it.tex, it.d, it.cls, it.f)); return true; }
     if (/^(sin|cos|tan|log|ln|exp|min|max|det|dim|ker|arg|sup|inf|gcd)$/.test(name)) {
@@ -4491,7 +4758,126 @@ blockquote.pt-quote {
   };
 
   var FNS = /^(sin|cos|tan|log|ln|exp|min|max|det|dim|ker|arg|sup|inf|gcd)$/;
-  function knownName(n) { return !!(n === 'slash' || PT.symbols.buildCmds[n] || PT.symbols.byCmd[n] || FNS.test(n)); }
+  function knownName(n) {
+    return !!(n === 'slash' || PT.symbols.buildCmds[n] || PT.symbols.byCmd[n] || FNS.test(n) ||
+      ACC.hasOwnProperty(n) || WRAP[n] || SPACE_CMD[n] || FACE.hasOwnProperty(n) || n === 'right' ||
+      /^(big|Big|bigg|Bigg)[lrm]?$/.test(n));
+  }
+  /* A structure made by a typed command with no "{" after it takes one
+     thing, as in LaTeX: \frac12 is ½, \sqrt2x is √2·x, \dot\mathbf{y} = …
+     dots only the y. Its parts are marked here (typeChar steps on once one
+     holds something); a "{" typed instead opens the part as usual. */
+  var oneTok = new WeakSet();
+  MathField.prototype.markOneTok = function () {
+    var p = this.parentOf(this.cur.row);
+    if (!p || !/^(frac|sqrt|acc)$/.test(p.node.t) || !isEmptyRow(this.cur.row)) return;
+    slots(p.node).forEach(function (s) { oneTok.add(s); });
+  };
+  var SPACE_KEY = { ',': '\\,', ';': '\\;', ':': '\\:', '!': '\\!', ' ': '\\ ' };
+  /* The key after \left or \right (a bracket), or after \mathbb (a letter,
+     or a "{" and letters up to "}"). True when it was used up. `given`: the
+     bracket, already read from a command (\langle, \{). */
+  MathField.prototype.pendingKey = function (k, given) {
+    var p = this.pending;
+    if (!p) return false;
+    if (p.kind === 'delim') {
+      if (!given && k === '\\') return false;       /* \left\{ — the name comes next */
+      if (!given && k === ' ') return true;
+      var d = given ? k : DELIM_KEY[k];
+      this.pending = null;
+      if (!d) return false;
+      if (p.side === 'l') {
+        this.insertNode(paren(d, DELIM_CLOSE[d] || d));
+        return true;
+      }
+      /* \right: closes the bracket the caret is in, with this one */
+      var r = this.cur.row, o = this.parentOf(r);
+      while (o && o.node.t !== 'paren') { r = rowOf.get(o.node); o = r ? this.parentOf(r) : null; }
+      if (o) {
+        o.node.r = d;
+        var outer = rowOf.get(o.node);
+        this.cur = { row: outer, i: outer.k.indexOf(o.node) + 1 };
+      }
+      this.changed();
+      return true;
+    }
+    if (p.kind === 'face') {
+      if (/^[A-Za-z]$/.test(k)) {
+        this.insertNode(sym('\\' + p.name + '{' + k + '}', k, 'upr', p.f || undefined));
+        if (!p.open) this.pending = null;
+        return true;
+      }
+      if (k === '{' && !p.open) { p.open = true; return true; }
+      if (k === ' ' && !p.open) return true;
+      this.pending = null;
+      return k === '}' && p.open;
+    }
+    this.pending = null;
+    return false;
+  };
+
+  /* \begin{…} and \end{…} typed out: a matrix or cases display is made at
+     once (no size asked: & and \\ grow it, as they fill it in LaTeX), and
+     \end leaves it. Others — aligned, split — the equation already is. */
+  MathField.prototype.environment = function (cmd, env) {
+    var base = String(env || '').replace(/\*$/, '');
+    var MATS = /^(matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|smallmatrix|cases)$/;
+    if (cmd === 'begin') {
+      if (MATS.test(base)) {
+        var m = mat(base === 'smallmatrix' ? 'matrix' : base, 1, base === 'cases' ? 2 : 1);
+        this.insertNode(m);
+        this.texMat = m;
+        return;
+      }
+      this.changed();
+      return;
+    }
+    var at = this.matrixAt();
+    if (at) {
+      var m2 = at.m, last = m2.r[m2.r.length - 1];
+      /* "… \\ \end{cases}": the empty row the last \\ opened goes */
+      if (m2.r.length > 1 && last.every(isEmptyRow)) m2.r.pop();
+      var mo = rowOf.get(m2);
+      this.cur = { row: mo, i: mo.k.indexOf(m2) + 1 };
+      if (this.texMat === m2) this.texMat = null;
+    }
+    this.sel = null;
+    this.changed();
+  };
+  /* \\ in a matrix or cases display: on to the next row, made if need be */
+  MathField.prototype.lineBreak = function () {
+    var at = this.matrixAt();
+    if (!at) { this.changed(); return; }
+    if (at.ri < at.m.r.length - 1) {
+      var cell = at.m.r[at.ri + 1][0];
+      this.sel = null;
+      this.cur = { row: cell, i: 0 };
+      this.changed();
+      return;
+    }
+    this.matrixOp('addrow');
+    var a2 = this.matrixAt();
+    if (a2) { var c0 = a2.m.r[a2.ri][0]; this.cur = { row: c0, i: 0 }; this.render(); }
+  };
+  /* & in a matrix or cases display: on to the next cell of the row — made,
+     in a matrix being typed out with \begin, while its first row grows */
+  MathField.prototype.ampersand = function () {
+    var at = this.matrixAt();
+    if (!at) return false;
+    var cols = at.m.r[0].length, cell;
+    if (at.ci < cols - 1) cell = at.m.r[at.ri][at.ci + 1];
+    else if (this.texMat === at.m && at.ri === 0 && this.matrixOp('addcol')) return true;
+    else if (at.ri < at.m.r.length - 1) cell = at.m.r[at.ri + 1][0];
+    if (cell) { this.sel = null; this.cur = { row: cell, i: 0 }; }
+    this.render();
+    return true;
+  };
+  MathField.prototype.dropCI = function (node) {
+    var at = this.cur.row.k.indexOf(node);
+    if (at < 0) return;
+    this.cur.row.k.splice(at, 1);
+    this.cur = { row: this.cur.row, i: at };
+  };
   /* a run of command names written together, split into names that all
      exist (the longest first): "pmsqrt" → pm, sqrt. Null if it cannot be. */
   function splitNames(n) {
@@ -4508,6 +4894,8 @@ blockquote.pt-quote {
     var k = e.key;
     /* an input method is composing a word: it arrives when done (deskFocus) */
     if (e.isComposing || k === 'Process') return;
+    /* the size picker for a new matrix has the keys while it is up */
+    if (this.picker && this.pickerKey(e) !== 'pass') return;
     var ciNode = this.activeCI();
     if (k === 'Backspace' && this.undoAuto()) { e.preventDefault(); return; }
     if (k !== 'Backspace') this.autoUndo = null;
@@ -4516,6 +4904,7 @@ blockquote.pt-quote {
     if (/^(Arrow|Home|End|Tab)/.test(k)) this.wordBreak = null;
 
     if (k === 'Escape') {
+      this.pending = null;
       /* Esc is "done": a command being typed is finished first (\top
          stays ⊤) — one that names nothing is dropped — and then the
          formula is left, as without one */
@@ -4526,14 +4915,91 @@ blockquote.pt-quote {
       if (this.opts.onEscape) this.opts.onEscape(this);
       e.preventDefault(); return;
     }
-    if (ciNode) {
+    var MOD = /^(Shift|Control|Alt|AltGraph|Meta|CapsLock|OS)$/.test(k);
+    /* \left, \right, \mathbb …: waiting for the bracket or letter they apply to */
+    if (this.pending && !MOD && !(ciNode && this.pending.kind === 'delim')) {
+      if (this.pendingKey(k)) { e.preventDefault(); return; }
+    }
+    if (ciNode && !MOD) {
+      var s0 = ciNode.s;
+      /* \begin{cases}, \end{cases}: the environment's name belongs to the command */
+      if (ciNode.arg != null) {
+        if (/^[A-Za-z*]$/.test(k)) { ciNode.arg += k; e.preventDefault(); this.changed(); return; }
+        if (k === 'Backspace') {
+          if (ciNode.arg) ciNode.arg = ciNode.arg.slice(0, -1); else delete ciNode.arg;
+          e.preventDefault(); this.changed(); return;
+        }
+        var envName = ciNode.arg;
+        this.dropCI(ciNode);
+        this.environment(s0, envName);
+        if (k === '}' || k === ' ' || k === 'Enter' || k === 'Tab') { e.preventDefault(); return; }
+        ciNode = null;
+      }
+    }
+    if (ciNode && !MOD) {
       if (/^[A-Za-z]$/.test(k)) { ciNode.s += k; e.preventDefault(); this.changed(); return; }
-      if (k === 'Enter' || k === ' ' || k === 'Tab') { this.resolveCI(); e.preventDefault(); return; }
       if (k === 'Backspace') { this.backspace(); e.preventDefault(); return; }
+      if ((s0 === 'begin' || s0 === 'end') && k === '{') { ciNode.arg = ''; e.preventDefault(); this.changed(); return; }
+      var waiting = this.pending && this.pending.kind === 'delim';
+      /* the bracket after \left or \right, given by name: \left\langle, \right\} */
+      if (waiting && ((!s0 && '{}|'.indexOf(k) >= 0) || DELIM_NAME[s0])) {
+        this.dropCI(ciNode);
+        this.pendingKey(!s0 ? (k === '|' ? '\\|' : '\\' + k) : DELIM_NAME[s0], true);
+        if (!s0 || k === ' ') { e.preventDefault(); return; }
+        ciNode = null;
+      } else if (waiting) this.pending = null;
+    }
+    if (ciNode && !MOD) {
+      if (s0 === 'left' || s0 === 'right') {
+        /* the bracket comes next — now, or after a space or a "\" */
+        this.dropCI(ciNode);
+        this.pending = { kind: 'delim', side: s0 === 'left' ? 'l' : 'r' };
+        this.render();
+        if (k === ' ' || k === 'Enter' || k === 'Tab') { e.preventDefault(); return; }
+        if (k !== '\\' && this.pendingKey(k)) { e.preventDefault(); return; }
+        ciNode = null;
+      } else if (/^(big|Big|bigg|Bigg)[lrm]?$/.test(s0) || s0 === 'middle') {
+        /* sizes: the brackets size themselves; the bracket typed next is just that */
+        this.dropCI(ciNode); this.render();
+        if (k === ' ' || k === 'Enter' || k === 'Tab') { e.preventDefault(); return; }
+        ciNode = null;
+      } else if (FACE.hasOwnProperty(s0)) {
+        /* \mathbb R, \mathbb{R}: the letter that follows, in that face */
+        this.dropCI(ciNode);
+        this.pending = { kind: 'face', name: s0 === 'mathscr' ? 'mathcal' : s0, f: FACE[s0], open: k === '{' };
+        this.render();
+        if (k === '{' || k === ' ' || k === 'Enter' || k === 'Tab') { e.preventDefault(); return; }
+        this.pending = null; ciNode = null;
+      } else if (s0 === 'sqrt' && k === '[') {
+        /* \sqrt[3]{x}: the index first, "]" on to the root */
+        this.dropCI(ciNode);
+        this.insertNode(sqrtn(row(), row()));
+        e.preventDefault(); return;
+      } else if (!s0 && SPACE_KEY[k]) {
+        /* \, \; \: \! and "\ ": the spaces LaTeX has, as spaces */
+        this.dropCI(ciNode);
+        this.insertNode(sym(SPACE_KEY[k], ' ', 'spc'));
+        e.preventDefault(); return;
+      } else if (!s0 && k === '\\') {
+        /* \\ : the next row of a matrix or cases display */
+        this.dropCI(ciNode);
+        this.lineBreak();
+        e.preventDefault(); return;
+      }
+    }
+    if (ciNode && !MOD) {
+      if (k === 'Enter' || k === ' ' || k === 'Tab') { this.resolveCI(); e.preventDefault(); return; }
       /* "\/" is a slash as written, not a fraction */
-      if (k === '/' && !ciNode.s) { this.resolveCI(true); this.insertNode(ch('/', 'upr')); e.preventDefault(); return; }
-      /* "\frac{", "\sqrt{", "\ddot{": the brace opens what the command made */
-      if (k === '{' && ciNode.s) { this.resolveCI(); if (this.cur.row !== this.root) braced.add(this.cur.row); e.preventDefault(); return; }
+      if (k === '/' && !s0) { this.resolveCI(true); this.insertNode(ch('/', 'upr')); e.preventDefault(); return; }
+      /* "\frac{", "\sqrt{", "\ddot{": the brace opens what the command made;
+         after a command PaperTeX does not know, it opens that command's
+         argument, written back as typed (\overbrace{…}, \cancel{…}) */
+      if (k === '{' && s0) {
+        if (!knownName(s0) && !splitNames(s0)) { this.dropCI(ciNode); this.insertNode(acc(s0), true); }
+        else this.resolveCI(true);
+        if (this.cur.row !== this.root) braced.add(this.cur.row);
+        e.preventDefault(); this.changed(); return;
+      }
       if (k.length === 1) { this.resolveCI(); }
     }
 
@@ -4569,7 +5035,8 @@ blockquote.pt-quote {
        equation goes away, as an empty paragraph does). Only then — after
        Ctrl+A, the first Backspace empties it and the block stays. */
     if (k === 'Backspace' && !this.sel && isEmptyRow(this.root) && this.opts.onDeleteEmpty) {
-      e.preventDefault(); this.opts.onDeleteEmpty(this); return;
+      /* (not by a held key's repeats: those stop at the empty formula) */
+      e.preventDefault(); if (!e.repeat) this.opts.onDeleteEmpty(this); return;
     }
 
     /* A formula set in a line of text (opts.onExit) is left the way it was
@@ -4598,32 +5065,24 @@ blockquote.pt-quote {
       case 'ArrowDown':
         if (!this.vert(1) && this.opts.onLeave) { this.opts.onLeave(this, 'down'); }
         e.preventDefault(); this.render(); return;
-      case 'Home': this.cur = { row: this.cur.row, i: 0 }; e.preventDefault(); this.render(); return;
-      case 'End': this.cur = { row: this.cur.row, i: this.cur.row.k.length }; e.preventDefault(); this.render(); return;
+      /* Home and End: the start and end of the whole line, as in text — so
+         "f(x) =" can go in front of a matrix or cases brace (the start of
+         a cell is ← away) */
+      case 'Home': this.sel = null; this.cur = { row: this.root, i: 0 }; e.preventDefault(); this.render(); return;
+      case 'End': this.sel = null; this.cur = { row: this.root, i: this.root.k.length }; e.preventDefault(); this.render(); return;
       case 'Backspace': this.backspace(); e.preventDefault(); return;
       case 'Delete': this.del(); e.preventDefault(); return;
       case 'Enter':
         /* inside a construct: on to its next part; on the line itself the
            field decides (a new equation line, closing the inline editor).
            Shift+Enter always goes to the field. */
-        /* in the last cell of a matrix or cases display: a new row, as in a
-           list; Enter on that row while it is still empty takes it away
-           again and leaves the display */
-        if (!e.shiftKey && this.matrixEnter()) { e.preventDefault(); return; }
-        /* just out of a cases display at the end of the line (Tab or →
-           from its last cell): another case, not another line */
-        var cb = this.cur.row.k[this.cur.i - 1];
-        if (!e.shiftKey && !this.sel && cb && cb.t === 'mat' && cb.env === 'cases' && this.cur.i === this.cur.row.k.length) {
-          var lr = cb.r[cb.r.length - 1], lc = lr[lr.length - 1];
-          reparent(this.root);
-          this.cur = { row: lc, i: lc.k.length };
-          if (this.matrixEnter()) { e.preventDefault(); return; }
-        }
+        /* (a matrix's size is asked for when it is made, and changed in its
+           large editor: Enter in a cell just goes on to the next one) */
         if (!e.shiftKey && this.advance()) { e.preventDefault(); this.render(); return; }
         if (this.opts.onEnter) { this.opts.onEnter(this, e); e.preventDefault(); }
         return;
       case 'Tab':
-        if (this.opts.onTab) { this.opts.onTab(this, e); e.preventDefault(); return; }
+        if (this.opts.onTab && this.opts.onTab(this, e) !== false) { e.preventDefault(); return; }
         /* in a cell of a matrix or cases display, inside something there
            (words, an index): Tab is still "next cell", as from the cell */
         var mt = this.matrixAt(), stepped = this.nextSlot(e.shiftKey);
@@ -4732,7 +5191,7 @@ blockquote.pt-quote {
       }
     }
     var made = null;
-    if (hit.b) this.insertBuild(hit.b);
+    if (hit.b) this.insertBuild(hit.b, /.matrix$/i.test(at.w) ? at.w : null);
     else if (hit.fn) this.insertNode(made = fnode(hit.fn));
     else this.insertNode(sym(hit.s.tex, hit.s.d, hit.s.cls, hit.s.f));
     this.autoUndo = { fn: function () {
@@ -4810,6 +5269,22 @@ blockquote.pt-quote {
        else is made of it: a digit after "π" selected with Ctrl+A is that
        digit, not an index to the π (only / and brackets wrap a selection) */
     if (this.sel && '/([{|'.indexOf(c) < 0) { this.deleteSel(); reparent(this.root); }
+    /* a "." that stepped out of an exponent (x^2.) and is followed by a
+       digit was a decimal point: it goes back in, x^{2.5} */
+    var sd = this.softDot;
+    this.softDot = null;
+    if (sd && /[0-9]/.test(c) && this.cur.row === sd.row && this.cur.i === sd.i && sd.row.k[sd.i - 1] === sd.dot) {
+      sd.row.k.splice(sd.i - 1, 1);
+      sd.into.k.push(sd.dot);
+      reparent(this.root);
+      this.cur = { row: sd.into, i: sd.into.k.length };
+    }
+    /* in a part of \frac12, \sqrt2, \dot x — typed without "{" — the one
+       thing it takes is there: on to the next part, or out */
+    var ot = this.cur.row;
+    if (oneTok.has(ot) && !braced.has(ot) && !this.sel && ot.k.length && this.cur.i === ot.k.length && c !== '}') {
+      this.advance(); reparent(this.root);
+    }
     var pr = this.parentOf(this.cur.row);
     /* Braces as in LaTeX: "{" where a part begins only opens it, and "}"
        closes it — on to the next part, or out — so x^{2}, \frac{a}{b} and
@@ -4843,7 +5318,7 @@ blockquote.pt-quote {
       var one = this.cur.row.k.length === 1 && (this.cur.row.k[0].t === 'ch' || this.cur.row.k[0].t === 'sym');
       var isSub = pr.node.sub === this.cur.row;
       if ('=<>'.indexOf(c) >= 0 || (one && '+-*,;:'.indexOf(c) >= 0) ||
-          (digits && (isSub ? !/[0-9.^_]/.test(c) : '+-*,;:)]|(['.indexOf(c) >= 0))) {
+          (digits && (isSub ? !/[0-9.^_]/.test(c) : ('+-*,;:)]|(['.indexOf(c) >= 0 || /[A-Za-z\\]/.test(c))))) {
         this.outOf(); reparent(this.root);
       }
     }
@@ -4853,6 +5328,31 @@ blockquote.pt-quote {
     if (softDen.has(this.cur.row) && !this.sel && this.cur.i === this.cur.row.k.length && this.cur.row.k.length &&
         '+-*=<>,;:'.indexOf(c) >= 0) {
       this.outOf(); reparent(this.root);
+    }
+
+    /* A full stop, comma or semicolon at the very end of an exponent, an
+       index, a root, an accent or a "/" fraction ends the sentence, not the
+       box: it goes after the whole thing — x^2. is x², and ω_0, is ω₀ , —
+       through as many boxes as end there. (Not in braces the user typed;
+       a "." followed by a digit goes back in, see softDot.) */
+    if ('.,;'.indexOf(c) >= 0 && !this.sel && this.cur.row !== this.soft) {
+      this.autoWord(true);
+      var into = null;
+      for (;;) {
+        var pr2 = this.parentOf(this.cur.row), cr = this.cur.row;
+        if (!pr2 || braced.has(cr) || !cr.k.length || this.cur.i !== cr.k.length) break;
+        var t2 = pr2.node.t;
+        if (!(t2 === 'scr' || t2 === 'acc' || (t2 === 'sqrt' && pr2.node.k === cr) || softDen.has(cr))) break;
+        if (!this.outOf()) break;
+        reparent(this.root);
+        if (!into) into = cr;
+      }
+      if (into) {
+        var pn = ch(c);
+        this.insertNode(pn);
+        if (c === '.') this.softDot = { dot: pn, into: into, row: this.cur.row, i: this.cur.i };
+        return;
+      }
     }
 
     /* in a soft index (made by typing x1), at its end: digits join it, ^
@@ -4906,6 +5406,10 @@ blockquote.pt-quote {
     if (c === '_') { this.applyScript('sub'); return; }
     if (/[0-9]/.test(c) && this.autoSubscript(c)) return;
     if (OPEN[c]) { this.insertBuild(c === '(' ? 'paren' : (c === '[' ? 'brack' : 'brace')); return; }
+    if (c === ']') {
+      var pi = this.parentOf(this.cur.row);
+      if (pi && pi.node.t === 'sqrt' && pi.node.idx === this.cur.row) { this.cur = { row: pi.node.k, i: 0 }; this.render(); return; }
+    }
     if (c === ')' || c === ']' || c === '}') {
       var pp = this.parentOf(this.cur.row);
       if (pp && pp.node.t === 'paren') { this.outOf(); this.render(); return; }
@@ -4918,6 +5422,8 @@ blockquote.pt-quote {
     }
     if (c === '*') { this.insertNode(sym('\\cdot', '⋅', 'bin')); return; }
     if (c === '-') { this.insertNode(ch('-', 'bin')); return; }
+    /* & : the next cell of a matrix; in a line of text it has nothing to align */
+    if (c === '&' && (this.ampersand() || this.opts.onExit)) return;
     /* a symbol typed as itself — from a Greek layout, the emoji and symbol
        panel, a paste of one character: α is \alpha, ≤ is \leq */
     var g = c.charCodeAt(0) > 127 ? byGlyph()[c] : null;
@@ -4982,24 +5488,209 @@ blockquote.pt-quote {
     this.cur = { row: outer, i: at + (n.d.k.length ? run.length : n.n.k.length + 1) };
   };
 
-  /* Last cell of a matrix or cases display, Enter: a new row below. On a
-     last row that is still empty it is taken away again and the caret
-     leaves the display, as Enter on an empty list item leaves the list. */
-  MathField.prototype.matrixEnter = function () {
-    var p = this.parentOf(this.cur.row);
-    if (!p || p.node.t !== 'mat' || this.sel) return false;
-    var m = p.node, cols = m.r[0].length;
-    if (p.slot !== m.r.length * cols - 1) return false;
-    var last = m.r[m.r.length - 1];
-    if (m.r.length > 1 && last.every(isEmptyRow)) {
-      m.r.pop();
-      reparent(this.root);
-      var outer = rowOf.get(m);
-      this.cur = { row: outer, i: outer.k.indexOf(m) + 1 };
-      this.changed();
-      return true;
+  /* ---- matrices: the size asked for when one is made ---------------------
+     Typing "matrix" (or \bmatrix, "cases", a palette button) does not drop
+     a 2 × 2 in at once: a small picker under the caret asks how big —
+     move over its grid, or use the arrow keys, and Enter or a click puts
+     it in; Esc or Backspace takes the typed name back. The field keeps the
+     focus throughout (the picker never takes it), so its keys come here
+     first (see onKey). */
+  var sheetOpen = false;
+  var BRACKETS = [['pmatrix', '( )'], ['bmatrix', '[ ]'], ['Bmatrix', '{ }'], ['vmatrix', '| |'], ['Vmatrix', '‖ ‖'], ['matrix', 'none']];
+  var MAXR = 10, MAXC = 10, GRID = 8;
+  MathField.prototype.askMatrix = function (env, r, c) {
+    this.closePicker();
+    var self = this, cases = env === 'cases';
+    var pk = { env: env, r: r, c: cases ? 2 : c, cases: cases };
+    var box = el('div', 'popmenu mx-pick');
+    box.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    var head = el('div', 'popg mx-pick-h');
+    box.appendChild(head);
+    var grid = el('div', 'mx-pick-grid');
+    var cols = cases ? 2 : GRID;
+    grid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+    for (var i = 1; i <= GRID; i++) {
+      for (var j = 1; j <= cols; j++) {
+        (function (ri, ci) {
+          var cell = el('span', 'mx-pick-c');
+          cell.addEventListener('mouseenter', function () { pk.r = ri; if (!cases) pk.c = ci; show(); });
+          cell.addEventListener('click', function () { pk.r = ri; if (!cases) pk.c = ci; self.placeMatrix(); });
+          grid.appendChild(cell);
+        })(i, j);
+      }
     }
-    return this.matrixOp('addrow');
+    box.appendChild(grid);
+    if (!cases) {
+      var kinds = el('div', 'mx-pick-k');
+      BRACKETS.forEach(function (b) {
+        var bt = el('button', 'mx-pick-b', b[1]);
+        bt.type = 'button';
+        bt.title = b[0] === 'matrix' ? 'No brackets' : 'Brackets ' + b[1];
+        bt.addEventListener('click', function () { pk.env = b[0]; show(); });
+        bt.__env = b[0];
+        kinds.appendChild(bt);
+      });
+      box.appendChild(kinds);
+    }
+    box.appendChild(el('div', 'mx-pick-f', 'Arrow keys or the mouse · Enter to put it in · Esc to cancel'));
+    function show() {
+      head.textContent = cases ? (pk.r + (pk.r === 1 ? ' case' : ' cases')) : (pk.r + ' × ' + pk.c + ' matrix');
+      [].forEach.call(grid.children, function (cell, k) {
+        var ri = Math.floor(k / cols) + 1, ci = k % cols + 1;
+        cell.classList.toggle('on', ri <= pk.r && ci <= pk.c);
+      });
+      [].forEach.call(box.querySelectorAll('.mx-pick-b'), function (bt) { bt.classList.toggle('on', bt.__env === pk.env); });
+    }
+    pk.el = box;
+    pk.show = show;
+    this.picker = pk;
+    document.body.appendChild(box);
+    show();
+    /* under the caret */
+    var at = this.host.querySelector('.mcaret') || this.host, rr = at.getBoundingClientRect();
+    var left = Math.max(8, Math.min(window.innerWidth - box.offsetWidth - 8, rr.left - 12));
+    var top = rr.bottom + 8 + box.offsetHeight < window.innerHeight ? rr.bottom + 8 : Math.max(8, rr.top - box.offsetHeight - 8);
+    box.style.left = left + window.scrollX + 'px';
+    box.style.top = top + window.scrollY + 'px';
+  };
+  MathField.prototype.closePicker = function () {
+    if (!this.picker) return;
+    this.picker.el.remove();
+    this.picker = null;
+  };
+  MathField.prototype.placeMatrix = function () {
+    var pk = this.picker;
+    if (!pk) return;
+    this.closePicker();
+    this.insertNode(mat(pk.env, pk.r, pk.c));
+  };
+  /* keys while the picker is up: they size it, put it in, or cancel it */
+  MathField.prototype.pickerKey = function (e) {
+    var pk = this.picker, k = e.key;
+    e.preventDefault();
+    if (k === 'ArrowDown') pk.r = Math.min(MAXR, pk.r + 1);
+    else if (k === 'ArrowUp') pk.r = Math.max(1, pk.r - 1);
+    else if (k === 'ArrowRight' && !pk.cases) pk.c = Math.min(MAXC, pk.c + 1);
+    else if (k === 'ArrowLeft' && !pk.cases) pk.c = Math.max(1, pk.c - 1);
+    else if (k === 'Enter' || k === 'Tab' || k === ' ') { this.placeMatrix(); return; }
+    else if (k === 'Escape') {
+      /* nothing made, and the name typed is gone too */
+      this.closePicker();
+      this.autoUndo = null;
+      this.render();
+      return;
+    } else if (k === 'Backspace') {
+      /* nothing made: the name typed comes back as it was */
+      this.closePicker();
+      if (!this.undoAuto()) this.render();
+      return;
+    } else if (k.length === 1 && !e.ctrlKey && !e.metaKey) {
+      /* typing on: the matrix goes in as it stands, and what was typed
+         goes into its first cell */
+      this.placeMatrix();
+      return 'pass';
+    } else return;
+    pk.show();
+  };
+
+  /* ---- a matrix on a sheet of its own -------------------------------------
+     Double-clicking a matrix (or "Edit large…") opens it large, alone on a
+     page, with buttons for its rows, columns and brackets. It is the same
+     matrix, edited where it stands: closing puts the caret back after it. */
+  MathField.prototype.matrixNodeAt = function () {
+    var at = this.matrixAt();
+    if (at) return at.m;
+    var prev = this.cur.row.k[this.cur.i - 1], next = this.cur.row.k[this.cur.i];
+    if (prev && prev.t === 'mat') return prev;
+    if (next && next.t === 'mat') return next;
+    return firstMat(this.root);
+  };
+  MathField.prototype.openMatrix = function (m) {
+    m = m || this.matrixNodeAt();
+    if (!m) return false;
+    var outer = this, cases = m.env === 'cases';
+    this.closePicker();
+    var back = el('div', 'dlg-back mx-back');
+    var box = el('div', 'dlg mx-sheet');
+    box.appendChild(el('div', 'dlg-t', cases ? 'Cases' : 'Matrix'));
+    var tools = el('div', 'mx-tools');
+    var paper = el('div', 'mx-paper');
+    var host = el('div', 'mx-field');
+    paper.appendChild(host);
+    box.appendChild(tools);
+    box.appendChild(paper);
+    var foot = el('div', 'dlg-r');
+    var done = el('button', 'dlg-btn primary', 'Done');
+    done.type = 'button';
+    foot.appendChild(done);
+    box.appendChild(foot);
+    back.appendChild(box);
+    document.body.appendChild(back);
+
+    var big = new MathField(host, {
+      root: row([m]),
+      noMatrixSheet: true,   /* already on its sheet */
+      onEscape: function () { close(); },
+      /* saved as it changes — without redrawing the formula underneath,
+         which would take the matrix's place in it back */
+      onChange: function () { if (outer.opts.onChange) outer.opts.onChange(outer); }
+    });
+    sheetOpen = true;
+    var b0 = m.r[0][0];
+    big.cur = { row: b0, i: b0.k.length };
+    function btn(label, title, fn) {
+      var b = el('button', 'dlg-btn mx-tool', label);
+      b.type = 'button';
+      b.title = title;
+      b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      b.addEventListener('click', function () { fn(); big.host.focus(); });
+      tools.appendChild(b);
+      return b;
+    }
+    /* on the cell the caret is in; with the caret elsewhere, the last one */
+    function op(name) {
+      if (!big.matrixAt()) { var lr = m.r[m.r.length - 1], lc = lr[lr.length - 1]; reparent(big.root); big.cur = { row: lc, i: lc.k.length }; }
+      big.matrixOp(name);
+    }
+    btn('+ Row', 'Add a row below the caret', function () { op('addrow'); });
+    btn('− Row', 'Remove the caret’s row', function () { op('delrow'); });
+    if (!cases) {
+      btn('+ Column', 'Add a column right of the caret', function () { op('addcol'); });
+      btn('− Column', 'Remove the caret’s column', function () { op('delcol'); });
+      var kinds = el('span', 'mx-kinds');
+      BRACKETS.forEach(function (b) {
+        var bt = el('button', 'dlg-btn mx-tool mx-kind' + (m.env === b[0] ? ' on' : ''), b[1]);
+        bt.type = 'button';
+        bt.title = b[0] === 'matrix' ? 'No brackets' : 'Brackets ' + b[1];
+        bt.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        bt.addEventListener('click', function () {
+          m.env = b[0];
+          [].forEach.call(kinds.children, function (x) { x.classList.toggle('on', x === bt); });
+          big.changed();
+          big.host.focus();
+        });
+        kinds.appendChild(bt);
+      });
+      tools.appendChild(kinds);
+    }
+    var closed = false;
+    function close() {
+      if (closed) return;
+      closed = true;
+      sheetOpen = false;
+      back.remove();
+      /* the formula takes its matrix back, and the caret goes after it */
+      reparent(outer.root);
+      var r = rowOf.get(m);
+      if (r) outer.cur = { row: r, i: r.k.indexOf(m) + 1 };
+      outer.sel = null;
+      outer.host.focus();
+      outer.changed();
+    }
+    done.addEventListener('click', close);
+    back.addEventListener('mousedown', function (e) { if (e.target === back) { e.preventDefault(); close(); } });
+    host.focus();
+    return true;
   };
 
   /* Ctrl+B: the selection in bold; with none, what is typed next — or, in
@@ -5133,6 +5824,8 @@ blockquote.pt-quote {
     texRow: texRow, parseTex: parseTex, scanRow: scanRow,
     renderStatic: renderStatic, renderInline: renderInline, layout: layout, plainOf: plainOf,
     /* the command for a symbol given as its character: '≥' → '\geq' */
+    /* a matrix is open on its own sheet (openMatrix): its formula is still being edited */
+    matrixSheetOpen: function () { return sheetOpen; },
     glyphTex: function (c) { var g = byGlyph()[c]; return g ? g.tex : null; },
     touchTyping: function (on) { touchTyping = !!on; },
     MathField: MathField, BUILDS: BUILDS,
@@ -7783,7 +8476,7 @@ blockquote.pt-quote {
       : m.kind === 'surface' ? texSurface(b, m, use, inline)
       : texCartesian(b, m, use, inline);
     var t = '\\begin{figure}[' + (b.placement || 'htbp') + ']\n  \\centering\n' + body;
-    if (b.caption) t += '  \\caption{' + inline(b.caption, use).trim() + '}\n';
+    if (b.caption) t += '  \\caption{' + inline(PT.latex.capClean(b.caption), use).trim() + '}\n';
     if (b.label) t += '  \\label{' + PT.sanitize.label(b.label) + '}\n';
     return t + '\\end{figure}\n';
   }
@@ -8203,9 +8896,21 @@ blockquote.pt-quote {
     catch (e) { return M.row(); }
   }
 
+  /* an & typed on the line, where there is nothing to align: dropped (in
+     an equation it would stop the compile) */
+  function noAmp(k) { return k.filter(function (n) { return !(n.t === 'ch' && n.c === '&'); }); }
+  function noAmpRow(r) { return { t: 'row', k: noAmp(r.k) }; }
+
   /* ---- alignment marker for multi-line equations ---- */
   function alignedLine(r) {
     var i, k = r.k;
+    /* an & the writer typed is the alignment point, not a second one */
+    for (i = 0; i < k.length; i++) {
+      if (k[i].t === 'ch' && k[i].c === '&') {
+        return M.texRow({ t: 'row', k: k.slice(0, i) }).trim() + ' &' +
+               M.texRow({ t: 'row', k: noAmp(k.slice(i + 1)) }).trim();
+      }
+    }
     for (i = 0; i < k.length; i++) {
       var n = k[i];
       if ((n.t === 'ch' || n.t === 'sym') && n.cls === 'rel') {
@@ -8249,12 +8954,12 @@ blockquote.pt-quote {
         var lines = b.lines.map(function (r) { M.scanRow(r, use); return r; });
         var star = b.numbered === false ? '*' : '';
         if (lines.length === 1) {
-          return '\\begin{equation' + star + '}\n  ' + M.texRow(lines[0]).trim() + QH +
+          return '\\begin{equation' + star + '}\n  ' + M.texRow(noAmpRow(lines[0])).trim() + QH +
             (b.label ? '\n  ' + L(b.label) : '') + '\n\\end{equation' + star + '}\n';
         }
         var env = (b.env === 'gather' ? 'gather' : 'align') + star;
         var body = lines.map(function (r, i) {
-          var t = (b.env === 'gather' ? M.texRow(r).trim() : alignedLine(r));
+          var t = (b.env === 'gather' ? M.texRow(noAmpRow(r)).trim() : alignedLine(r));
           /* the equation's own label names its first line */
           var lab = (b.labels && b.labels[i]) || (i === 0 ? b.label : '');
           if (lab) t += ' \\label{' + PT.sanitize.label(lab) + '}';
@@ -8286,7 +8991,7 @@ blockquote.pt-quote {
           (hasImage
             ? '  \\includegraphics[width=' + w + '\\linewidth]{' + String(b.filename).replace(/[{}\\%#]/g, '') + '}\n'
             : '  \\fbox{\\parbox[c][' + (w * 0.6).toFixed(2) + '\\linewidth][c]{' + w + '\\linewidth}{\\centering\\small\\itshape Image not chosen yet}}\n') +
-          (b.caption ? '  \\caption{' + inline(b.caption, use).trim() + '}\n' : '') +
+          (b.caption ? '  \\caption{' + inline(capClean(b.caption), use).trim() + '}\n' : '') +
           (b.label ? '  \\label{' + PT.sanitize.label(b.label) + '}\n' : '') +
           '\\end{figure}\n';
       }
@@ -8301,7 +9006,7 @@ blockquote.pt-quote {
         /* striped rows: every other body row shaded (xcolor's table option) */
         /* the 2nd, 4th … body row; xcolor counts rows from the header */
         if (b.zebra) { use.colortbl = true; t += '  \\rowcolors{2}' + (b.header ? '{ptzebra}{}' : '{}{ptzebra}') + '\n'; }
-        var capLab = (b.caption ? '  \\caption{' + inline(b.caption, use).trim() + '}\n' : '') +
+        var capLab = (b.caption ? '  \\caption{' + inline(capClean(b.caption), use).trim() + '}\n' : '') +
           (b.label ? '  \\label{' + PT.sanitize.label(b.label) + '}\n' : '');
         if (!b.capBelow) t += capLab;
         t += '  \\begin{tabular}{' + cols + '}\n';
@@ -8507,7 +9212,13 @@ blockquote.pt-quote {
   /* one block's LaTeX on its own, to find which block a TeX error is in */
   function texOf(b, doc) { try { return blockTex(b, {}, doc, b.t === 'theorem' ? [] : null); } catch (e) { return ''; } }
 
-  window.PT.latex = { build: build, inline: inline, esc: esc, plainText: plainText, texOf: texOf };
+  /* "Table 1: Results" typed into a caption: LaTeX (and the page) number
+     it already, so the hand-written label goes */
+  function capClean(html) {
+    return String(html || '').replace(/^(\s|&nbsp;| )*(Table|Figure|Fig\.|Chart)\s*(\d+(\.\d+)*)?\s*[:.—–-]\s*(&nbsp;| )?/i, '');
+  }
+
+  window.PT.latex = { build: build, inline: inline, esc: esc, plainText: plainText, texOf: texOf, capClean: capClean };
 })();
 </script>
 <script>
@@ -8520,6 +9231,16 @@ blockquote.pt-quote {
 
   var uidN = 0;
   function uid() { return 'b' + (++uidN) + Math.random().toString(36).slice(2, 6); }
+
+  /* After Backspace has taken a block away, the repeats of that same held
+     key are swallowed until it is let go (see removeBlock). */
+  var bsHeld = false;
+  function holdBackspace() { bsHeld = true; }
+  document.addEventListener('keydown', function (e) {
+    if (bsHeld && e.key === 'Backspace' && e.repeat) { e.preventDefault(); e.stopPropagation(); }
+    else if (e.key !== 'Backspace' || !e.repeat) bsHeld = false;
+  }, true);
+  document.addEventListener('keyup', function (e) { if (e.key === 'Backspace') bsHeld = false; }, true);
 
   /* ------------------------------------------------------------- new document */
   /* Build inline-formula markup without hand-escaping an attribute. */
@@ -9099,6 +9820,7 @@ blockquote.pt-quote {
       if (ev.isComposing) { onChange(e.innerHTML); return; }
       if (dollar(ev.inputType === 'insertText' ? ev.data : null)) return;
       if (self.texCommand(e, onChange)) return;
+      if (opts.listStart && ev.inputType === 'insertText' && ev.data && /[  ]/.test(ev.data) && opts.listStart(ev.data)) return;
       /* a footnote mark deleted with the text around it */
       if (self.paper.querySelector(':scope > .pt-fnotes') || /ftnote/.test(e.innerHTML)) self.refreshFootnotes();
       /* emptied, Firefox and Safari leave a lone <br> behind: that is empty
@@ -9220,7 +9942,7 @@ blockquote.pt-quote {
     var r = document.createRange();
     r.setStart(node, at); r.collapse(true);
     s.removeAllRanges(); s.addRange(r);
-    var made = [];
+    var made = [], self = this, addedBib = [];
     if (cmd === 'cite' || cmd === 'ref' || cmd === 'eqref' || cmd === 'autoref' || cmd === 'cref') {
       arg.split(',').map(function (x) { return x.trim(); }).filter(Boolean).forEach(function (key) {
         var x = document.createElement('span');
@@ -9229,7 +9951,27 @@ blockquote.pt-quote {
         x.dataset.kind = cmd === 'cite' ? 'cite' : cmd === 'eqref' ? 'eqref' : 'ref';
         x.dataset.label = PT.sanitize.label(key);
         made.push(x);
+        /* a work not in the reference list yet: an empty entry for it, to
+           fill in — not a silent "[?]" in the PDF */
+        var bkey = x.dataset.label;
+        if (cmd === 'cite' && !self.doc.bib.some(function (w) { return w.key === bkey; })) {
+          self.doc.bib.push({ key: bkey, author: '', title: '', journal: '', year: '' });
+          if (!self.doc.blocks.some(function (b) { return b.t === 'bib'; })) self.doc.blocks.push(blockFactory('bib'));
+          addedBib.push(bkey);
+        }
       });
+      /* the list on the page shows the new entry at once (a list made just
+         now appears with the next redraw) */
+      var oldBib = addedBib.length && this.paper.querySelector('.pt-bib');
+      var bibBlock = this.doc.blocks.filter(function (b) { return b.t === 'bib'; })[0];
+      if (oldBib && bibBlock) {
+        var tmpBox = document.createElement('div');
+        this.renderBib(bibBlock, tmpBox);
+        if (tmpBox.firstChild) oldBib.replaceWith(tmpBox.firstChild);
+      }
+      if (addedBib.length && this.hooks.toast) {
+        this.hooks.toast('“' + addedBib.join('”, “') + '” added to the reference list, empty — fill in the author and title there.');
+      }
     } else if (cmd === 'footnote') {
       var f = document.createElement('span');
       f.className = 'ftnote';
@@ -9319,12 +10061,20 @@ blockquote.pt-quote {
       onExit: function (fl, dir) { leave(dir); },
       onEscape: function () { leave('right'); },
       onEnter: function () { leave('right'); },
+      /* in a table cell, Tab goes on to the next cell from anywhere in the
+         formula, as it does from the cell's text (in a matrix, to the
+         matrix's next cell) */
+      onTab: function (fl, ev) {
+        if (!(host.closest && host.closest('.st-grid, .pt-cell')) || fl.matrixAt()) return false;
+        leave(ev.shiftKey ? 'left' : 'right');
+        host.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: ev.shiftKey, bubbles: true, cancelable: true }));
+      },
       onLeave: function (fl, dir) {
         if (dir !== 'next' && dir !== 'prev') return;
         leave(dir === 'next' ? 'right' : 'left');
         /* in a table cell, Tab goes on to the next cell, as it does from
            the cell's text */
-        if (host.closest && host.closest('.st-grid')) {
+        if (host.closest && host.closest('.st-grid, .pt-cell')) {
           host.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: dir === 'prev', bubbles: true, cancelable: true }));
         }
       },
@@ -9332,7 +10082,7 @@ blockquote.pt-quote {
         /* gone to another window: still being edited when it comes back;
            gone to the command palette: still being edited when it puts the
            caret back here */
-        if (PT.palette && PT.palette.isOpen()) { setTimeout(later, 150); return; }
+        if ((PT.palette && PT.palette.isOpen()) || M.matrixSheetOpen()) { setTimeout(later, 150); return; }
         setTimeout(function () { if (!f.hasFocus()) finish(); }, 0);
       },
       onRender: function (fl) { span.classList.toggle('pt-inmat', fl.host.classList.contains('mf-inmat')); }
@@ -9564,7 +10314,7 @@ blockquote.pt-quote {
        between its text and its derivation */
     plus.onclick = function (e) { self.openMenu(e.currentTarget, groupAt(self.doc, idx)[1] + 1); };
     var more = h('button', 'g-btn g-more', '⋮');
-    more.title = 'Block options';
+    more.title = 'Options for this part';
     more.onclick = function (e) { self.blockMenu(e.currentTarget, b, idx); };
     gut.appendChild(plus); gut.appendChild(more);
     wrap.appendChild(gut);
@@ -9596,7 +10346,24 @@ blockquote.pt-quote {
       case 'para': {
         var p = this.richEditable('p', 'pt-para', b.html, function (v) { b.html = v; self.change(); }, {
           onKey: function (ev) { self.textKeys(ev, b, idx, 'html'); },
-          slashMenu: function () { self.openMenu(p, idx, true); }
+          slashMenu: function () { self.openMenu(p, idx, true); },
+          /* "1. " or "- " typed at the start of a paragraph starts a list,
+             as in a word processor; Ctrl+Z gives the characters back */
+          listStart: function (data) {
+            if (/imath|xref|ftnote/.test(p.innerHTML)) return false;
+            /* the space that ends the mark must be in what was just typed,
+               at the very start of the paragraph */
+            var text = p.textContent.replace(/[​ ]/g, ' ');
+            if (text.slice(-data.length) !== data.replace(/ /g, ' ')) return false;
+            var mk = /^\s*(1[.)]|[-*•]) /.exec(text);
+            if (!mk || mk[0].length <= text.length - data.length) return false;
+            var lst = blockFactory(/^\s*1/.test(mk[1]) ? 'enumerate' : 'itemize');
+            lst.items[0].html = text.slice(mk[0].length).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; });
+            self.doc.blocks.splice(self.doc.blocks.indexOf(b), 1, lst);
+            self.focusBlock(lst.id, 'item0');
+            self.change(true); self.render();
+            return true;
+          }
         });
         p.dataset.part = 'main';
         p.dataset.ph = 'Type “/” for blocks, “$” for a formula…';
@@ -9980,7 +10747,7 @@ blockquote.pt-quote {
     var cl = h('span', 'pt-capl', 'Figure ' + (b.__num || '1') + ': ');
     cl.contentEditable = 'false';
     cap.appendChild(cl);
-    var ce = this.richEditable('span', 'pt-capt', b.caption, function (v) { b.caption = v; self.change(); }, {
+    var ce = this.richEditable('span', 'pt-capt', PT.latex.capClean(b.caption), function (v) { b.caption = v; self.change(); }, {
       onKey: function (ev) { self.textKeys(ev, b, idx, 'caption'); }
     });
     ce.dataset.part = 'main';
@@ -10101,7 +10868,7 @@ blockquote.pt-quote {
     var cl = h('span', 'pt-capl', 'Table ' + (b.__num || '1') + ': ');
     cl.contentEditable = 'false';
     cap.appendChild(cl);
-    var ce = this.richEditable('span', 'pt-capt', b.caption, function (v) { b.caption = v; self.change(); }, {
+    var ce = this.richEditable('span', 'pt-capt', PT.latex.capClean(b.caption), function (v) { b.caption = v; self.change(); }, {
       onKey: function (ev) { self.textKeys(ev, b, idx, 'caption'); }
     });
     ce.dataset.ph = 'Caption…';
@@ -10240,7 +11007,7 @@ blockquote.pt-quote {
     var cl = h('span', 'pt-capl', 'Figure ' + (b.__num || '1') + ': ');
     cl.contentEditable = 'false';
     cap.appendChild(cl);
-    var ce = this.richEditable('span', 'pt-capt', b.caption, function (v) { b.caption = v; self.change(); }, {
+    var ce = this.richEditable('span', 'pt-capt', PT.latex.capClean(b.caption), function (v) { b.caption = v; self.change(); }, {
       onKey: function (ev) { self.textKeys(ev, b, idx, 'caption'); }
     });
     ce.dataset.part = 'main';
@@ -10429,6 +11196,14 @@ blockquote.pt-quote {
       if (isBlank(el.innerHTML) && this.doc.blocks.length > 1) {
         ev.preventDefault(); this.removeBlock(idx); return;
       }
+      /* a paragraph is not pulled up into the heading above it: the caret
+         goes to the heading's end, and the text stays a paragraph */
+      if (prev && prev.t === 'section' && b.t === 'para') {
+        ev.preventDefault();
+        this.focusBlock(prev.id, 'main');
+        this.render();
+        return;
+      }
       if (prev && (prev.t === 'para' || prev.t === 'section')) {
         ev.preventDefault();
         prev.html = (prev.html || '') + (b[field] || '');
@@ -10465,6 +11240,9 @@ blockquote.pt-quote {
   };
 
   Editor.prototype.removeBlock = function (idx) {
+    /* Backspace held down: the block it emptied goes, and the repeats
+       stop there instead of eating into the block above */
+    holdBackspace();
     var prev = this.doc.blocks[idx - 1];
     this.doc.blocks.splice(idx, 1);
     if (!this.doc.blocks.length) this.doc.blocks.push(blockFactory('para'));
@@ -10629,6 +11407,7 @@ blockquote.pt-quote {
       var ff = mf.filter(function (f) { return f === self.activeField; })[0] || mf[0];
       if (ff) {
         m.appendChild(h('div', 'popg', 'Matrix or cases'));
+        item('Edit it large…', function () { ff.openMatrix(); });
         var at = ff.matrixAt(), isCases = at ? at.m.env === 'cases' : false;
         [['addrow', 'Add a row below'], ['addcol', 'Add a column to the right'], ['delrow', 'Remove this row'], ['delcol', 'Remove this column']].forEach(function (o) {
           if (isCases && /col/.test(o[0])) return;   /* cases: a value and a condition, always */
@@ -10667,7 +11446,7 @@ blockquote.pt-quote {
       item('Make a chart from this table', function () { self.chartFromTable(b, idx); });
     }
     if (b.t === 'figure' || b.t === 'chart' || b.t === 'table' || b.t === 'eq' || b.t === 'section' || b.t === 'theorem') {
-      m.appendChild(h('div', 'popg', 'Label'));
+      m.appendChild(h('div', 'popg', 'Name, for referring to it'));
       var lw = h('div', 'poplab');
       var inp = h('input');
       inp.value = b.label || '';
@@ -10677,7 +11456,7 @@ blockquote.pt-quote {
       lw.appendChild(inp);
       m.appendChild(lw);
     }
-    m.appendChild(h('div', 'popg', 'Block'));
+    m.appendChild(h('div', 'popg', 'This part'));
     /* a theorem or proof moves, copies and goes with its parts */
     var grp = groupAt(this.doc, idx), bl = this.doc.blocks;
     item('Move up', function () {
@@ -10697,16 +11476,45 @@ blockquote.pt-quote {
       Array.prototype.splice.apply(bl, [to, 0].concat(moved));
       self.change(true); self.render();
     });
+    item('Add a paragraph above', function () {
+      var np = blockFactory('para');
+      bl.splice(grp[0], 0, np);
+      self.focusBlock(np.id, 'main');
+      self.change(true); self.render();
+    });
     item('Duplicate', function () {
       var copies = bl.slice(grp[0], grp[1] + 1).map(function (x) { var c = JSON.parse(JSON.stringify(x)); c.id = uid(); return c; });
       Array.prototype.splice.apply(bl, [grp[1] + 1, 0].concat(copies));
       self.change(true); self.render();
     });
+    /* references in the text to what is deleted print "??": say so */
+    function warnRefs(gone) {
+      var labs = [];
+      gone.forEach(function (x) { if (x.label) labs.push(x.label); (x.labels || []).forEach(function (l) { if (l) labs.push(l); }); });
+      if (!labs.length || !self.hooks.toast) return;
+      var all = JSON.stringify(self.doc.blocks), n = 0;
+      labs.forEach(function (l) { n += all.split('data-label=\\"' + l + '\\"').length - 1; });
+      if (n) self.hooks.toast(n + (n === 1 ? ' reference' : ' references') + ' in the text pointed to it and now show “??” — Ctrl+Z brings it back.');
+    }
     item('Delete', function () {
       /* its parts stay, as ordinary blocks */
       for (var j = grp[0] + 1; j <= grp[1]; j++) delete bl[j].inEnv;
+      var gone = [bl[idx]];
       self.removeBlock(idx);
+      warnRefs(gone);
     }, 'danger');
+    /* a heading with everything under it, up to the next heading of its
+       level or higher */
+    if (b.t === 'section') {
+      item('Delete the section, with its text', function () {
+        var end = idx + 1;
+        while (end < bl.length && bl[end].t !== 'bib' && !(bl[end].t === 'section' && bl[end].level <= b.level)) end++;
+        var gone = bl.slice(idx, end);
+        bl.splice(idx + 1, end - idx - 1);
+        self.removeBlock(idx);
+        warnRefs(gone);
+      }, 'danger');
+    }
     document.body.appendChild(m);
     posPop(m, anchor);
     armOutside(m);
@@ -11508,7 +12316,7 @@ blockquote.pt-quote {
 
       var s9 = section(P, 'Caption and label');
       captionEditor(st, row(s9, null, 'full'), function () { st.draw(); });
-      input(row(s9, 'Label'), b.label, 'fig:name — to refer to it with \\ref', function (v) {
+      input(row(s9, 'Name, for referring to it'), b.label, 'e.g. fig:growth — a reference to the figure uses it', function (v) {
         b.label = v.replace(/[^A-Za-z0-9:_-]/g, ''); editor.change();
       }, 'wide');
       select(row(s9, 'In the PDF'), PLACEMENT, b.placement || 'htbp', function (v) { b.placement = v; editor.change(); });
@@ -12189,7 +12997,7 @@ blockquote.pt-quote {
       seg(row(s5, 'Caption'), [[false, 'Above the table'], [true, 'Below it']], !!b.capBelow, function (v) {
         b.capBelow = v === true || v === 'true'; st.touch(true);
       });
-      input(row(s5, 'Label'), b.label, 'tab:name — to refer to it with \\ref', function (v) {
+      input(row(s5, 'Name, for referring to it'), b.label, 'e.g. tab:results — a reference to the table uses it', function (v) {
         b.label = v.replace(/[^A-Za-z0-9:_-]/g, ''); editor.change();
       }, 'wide');
       select(row(s5, 'In the PDF'), PLACEMENT, b.placement || 'htbp', function (v) { b.placement = v; editor.change(); });
@@ -13174,7 +13982,7 @@ blockquote.pt-quote {
       add.onclick = go;
       inp.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); go(); } };
       f.appendChild(prev); f.appendChild(inp); f.appendChild(add);
-      f.appendChild(h('div', 'kb-sniphint', 'An empty {} becomes a slot: the caret lands in the first one, so \\frac{}{} or x^{} work as templates.'));
+      f.appendChild(h('div', 'kb-sniphint', 'An empty {} becomes a box: the caret lands in the first one, so \\frac{}{} or x^{} work as templates.'));
       return f;
     }
 
@@ -13448,17 +14256,19 @@ blockquote.pt-quote {
         row.appendChild(lab);
         var k = PT.keys.first(a.id);
         if (k) row.appendChild(h('kbd', 'cp-k', k));
-        row.onmousemove = function () { if (sel !== i) { sel = i; mark(); } };
-        row.onmousedown = function (e) { e.preventDefault(); };
-        row.onclick = function () { choose(i); };
+        /* the pointer marks a row without scrolling the list (scrolling it
+           under the pointer moved the row away between press and release,
+           and the click went nowhere), and the press itself chooses */
+        row.onmousemove = function () { if (sel !== i) { sel = i; mark(true); } };
+        row.onmousedown = function (e) { e.preventDefault(); if (e.button === 0) choose(i); };
         listEl.appendChild(row);
       });
       mark();
     }
-    function mark() {
+    function mark(byMouse) {
       [].forEach.call(listEl.querySelectorAll('.cp-row'), function (r, i) { r.classList.toggle('on', i === sel); });
       var on = listEl.querySelectorAll('.cp-row')[sel];
-      if (on) on.scrollIntoView({ block: 'nearest' });
+      if (on && !byMouse) on.scrollIntoView({ block: 'nearest' });
     }
     function choose(i) {
       var it = items[i];
@@ -14163,12 +14973,12 @@ blockquote.pt-quote {
 
     var targets = refTargets();
     var cites = state.doc.bib.map(function (e, i) {
-      return { cite: e, kind: 'cite', group: 'Works cited', name: '[' + (i + 1) + ']',
+      return { cite: e, kind: 'cite', group: 'Reference list', name: '[' + (i + 1) + ']',
         text: [L.plainText(e.author), L.plainText(e.title)].filter(Boolean).join(' — ') || e.key };
     });
     /* a work not in the list yet: added to it (and the list to the end of
        the document, if there is none), cited, and its entry opened to fill in */
-    var fresh = { fresh: true, kind: 'cite', group: 'Works cited', name: '+ New work…', text: 'add it to the reference list and cite it' };
+    var fresh = { fresh: true, kind: 'cite', group: 'Reference list', name: '+ New work…', text: 'add it to the reference list and cite it' };
     var all = want === 'cite' ? cites.concat([fresh], targets) : targets.concat(cites, [fresh]);
 
     var m = h('div', 'popmenu pt-refpop');
@@ -14284,6 +15094,17 @@ blockquote.pt-quote {
     var s = window.getSelection();
     if (!s.rangeCount) return;
     var r = s.getRangeAt(0);
+    /* a selected reference written by hand ("Figure 3", "[2]", "(1)") is
+       replaced by the live one; any other selected words stay, and the
+       reference goes after them */
+    var seltext = r.toString();
+    if (!r.collapsed && !/^\s*(\[[\d,\s]*\]|\(\d+\)|[A-Za-z.]*\s*\d+(\.\d+)*)\s*$/.test(seltext)) {
+      r.collapse(false);
+      if (!/\s$/.test(seltext)) {
+        var gap = document.createTextNode(' ');
+        r.insertNode(gap); r.setStartAfter(gap); r.collapse(true);
+      }
+    }
     var keepSpace = !r.collapsed && /\s$/.test(r.toString());
     r.deleteContents();
     if (word && host && host.contains(r.startContainer)) {
@@ -14291,6 +15112,19 @@ blockquote.pt-quote {
       pre.selectNodeContents(host);
       pre.setEnd(r.startContainer, r.startOffset);
       var before = pre.toString().replace(/[​ ]/g, ' ');
+      /* "Figure 1" already typed by hand before the caret: its number goes,
+         the live one takes its place, and the word is not doubled */
+      var typed = new RegExp(word + '(\\s*)(\\d+(?:\\.\\d+)*\\s*)$', 'i').exec(before);
+      if (typed && r.startContainer.nodeType === 3 && r.startOffset >= typed[2].length) {
+        var num = document.createRange();
+        num.setStart(r.startContainer, r.startOffset - typed[2].length);
+        num.setEnd(r.startContainer, r.startOffset);
+        num.deleteContents();
+        r = num; r.collapse(true);
+        before = before.slice(0, before.length - typed[2].length);
+        if (!typed[1]) { var sp1 = document.createTextNode(' '); r.insertNode(sp1); r.setStartAfter(sp1); r.collapse(true); before += ' '; }
+        s.removeAllRanges(); s.addRange(r);
+      }
       if (!new RegExp(word + '\\s*$', 'i').test(before)) {
         var w = document.createTextNode((/(^|\s)$/.test(before) ? '' : ' ') + word + ' ');
         r.insertNode(w);
@@ -14374,7 +15208,7 @@ blockquote.pt-quote {
     field('Separate title page', chk(S.titlepage, function (v) { S.titlepage = v; apply(); }));
 
     group('Formulas');
-    field('Recognise typed names', chk(S.autoMath !== false, function (v) {
+    field('Turn typed names into symbols (alpha → α)', chk(S.autoMath !== false, function (v) {
       S.autoMath = v;
       M.setAutoWords(v);
       state.editor.change(true);
@@ -14635,7 +15469,7 @@ blockquote.pt-quote {
     var paper = $('#paper').cloneNode(true);
     ['.gutter', '.pt-tailadd', '.pt-addauth', '.pt-xauth', '.pt-figctl', '.pt-tabctl', '.pt-chedit', '.pt-cherr',
       '.pt-codebar', '.pt-rawl', '.pt-bibx', '.pt-bibup', '.pt-bibdn', '.pt-bibadd', '.pt-bibkey', '.mcaret', '.pt-drop',
-      '.mf-kb', '.mselbox']
+      '.mf-kb', '.mselbox', '.mf-hintbar']
       .forEach(function (sel) {
         [].forEach.call(paper.querySelectorAll(sel), function (e) { e.remove(); });
       });
@@ -14818,7 +15652,7 @@ blockquote.pt-quote {
         err.appendChild(h('div', 'pdf-errn',
           'This copy cannot reach engine/siglum.js — the published preview is sandboxed ' +
           'and blocks it. Open papertex.html from the folder that contains engine/, ' +
-          'where compiling works. Copy LaTeX and Export .tex work everywhere.'));
+          'where compiling works. Copy LaTeX and Download .tex work everywhere.'));
       } else {
         err.appendChild(h('div', 'pdf-errh', 'The engine could not start'));
         err.appendChild(h('pre', 'pdf-errm', msg));
@@ -14848,7 +15682,7 @@ blockquote.pt-quote {
       note = 'PaperTeX knows no LaTeX command for it. Delete it, or say it in words or as a formula.';
     } else if (file) {
       head = 'The engine here does not have ' + file[1];
-      note = 'That package is outside the set bundled with PaperTeX. Export .tex and compile it with a full TeX installation, or leave the package out.';
+      note = 'That package is outside the set bundled with PaperTeX. Download .tex and compile it with a full TeX installation, or leave the package out.';
     } else {
       at = blockAtLine(log, tex);
       note = at ? 'Check that part, or remove it, and compile again.' : 'Copy LaTeX shows the whole source, if you want to look for it.';
@@ -15047,11 +15881,11 @@ blockquote.pt-quote {
        is not bound is shown nowhere — not in a tooltip, not in the help. */
     add('Document', 'edit.undo', 'Undo', ['Ctrl+Z'], doUndo, { menu: 'undo', fieldsNative: true, glyph: '↶' });
     add('Document', 'edit.redo', 'Redo', ['Ctrl+Y', 'Ctrl+Shift+Z'], doRedo, { menu: 'redo', fieldsNative: true, glyph: '↷' });
-    add('Document', 'doc.export', 'Export .tex', ['Ctrl+S'], exportTex, { menu: 'export', glyph: '⤓' });
+    add('Document', 'doc.export', 'Download .tex', ['Ctrl+S'], exportTex, { menu: 'export', glyph: '⤓' });
     add('Document', 'doc.save', 'Save project', ['Ctrl+Shift+S'], click('#btnSave'), { menu: 'save', glyph: '💾' });
     add('Document', 'doc.open', 'Open project', ['Ctrl+O'], openProject, { menu: 'open', glyph: '📂' });
     add('Document', 'doc.new', 'New document', desk ? ['Ctrl+N'] : [], click('#btnNew'), { menu: 'new', glyph: '＋' });
-    add('Document', 'doc.compile', 'Compile PDF', desk ? ['Ctrl+R'] : [], compilePDF, { menu: 'compile', glyph: '▶' });
+    add('Document', 'doc.compile', 'Make PDF', desk ? ['Ctrl+R'] : [], compilePDF, { menu: 'compile', glyph: '▶' });
     add('Document', 'doc.print', 'Print the page as it looks', ['Ctrl+P'], printDoc, { menu: 'print', glyph: '⎙' });
     add('Document', 'doc.copy', 'Copy LaTeX', [], copyTex, { glyph: '⧉' });
     add('Document', 'view.palette', 'Show or hide the symbol palette', [], click('#btnPal'), { glyph: '▤' });
@@ -15106,6 +15940,11 @@ blockquote.pt-quote {
         return true;
       }, { glyph: '⊞', words: 'matrix cases row column pmatrix' });
     });
+    add('Maths — Matrix', 'math.mat.open', 'Matrix or cases: edit it large', [], function () {
+      var f = activeMathField();
+      if (!f || !f.openMatrix()) toast('Put the caret in a formula with a matrix or cases display first.');
+      return true;
+    }, { glyph: '⤢', words: 'matrix cases zoom bigger large edit' });
 
     PT.symbols.groups.forEach(function (g) {
       g.items.forEach(function (it) {
@@ -15246,9 +16085,9 @@ blockquote.pt-quote {
   var MORE = [
     ['btnPalette', '⌕', 'Commands', 'Search every command, block and symbol'],
     ['btnHelp', '?', 'Shortcuts and tips', ''],
-    ['btnPrint', '⎙', 'Print', 'The page as it looks here — a quick copy'],
+    ['btnPrint', '⎙', 'Quick print', 'The page as it looks here — a quick copy'],
     ['btnCopy', '⧉', 'Copy LaTeX', ''],
-    ['btnTex', '⤓', 'Export .tex', ''],
+    ['btnTex', '⤓', 'Download .tex', ''],
     ['btnPal', '▤', 'Symbol palette', 'Show or hide'],
     ['btnPanel', '▥', 'LaTeX panel', 'Show or hide']
   ];
@@ -15416,7 +16255,7 @@ blockquote.pt-quote {
       },
       onRendered: function () { pageGuides(); },
       onImage: function (b) {
-        toast('Image added as ' + b.filename + ' — Export .tex sends the file with it.');
+        toast('Image added as ' + b.filename + ' — Download .tex sends the file with it.');
       },
       onFieldFocus: function (f) { state.editor.activeField = f; },
       onSettings: function () { buildSettings(); },
@@ -15598,18 +16437,10 @@ blockquote.pt-quote {
     /* a phone gets one line, not a page of keyboard shortcuts it cannot use */
     var phone = window.innerWidth < 760 || (window.matchMedia && matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches);
     if (!seen && !phone) {
-      /* the tips, unless writing has already begun: then they would land
-         over the first words, and keys typed meant for the page would go to
-         them — a line about where to find them instead */
-      var begun = false, mark = function () { begun = true; };
-      document.addEventListener('keydown', mark, true);
-      document.addEventListener('mousedown', mark, true);
-      setTimeout(function () {
-        document.removeEventListener('keydown', mark, true);
-        document.removeEventListener('mousedown', mark, true);
-        if (begun) toast('Tips and shortcuts are under “? Shortcuts” at the top whenever you want them.');
-        else openHelp();
-      }, 500);
+      /* never a dialog over the page at the start: it landed over the first
+         words, and keys meant for the page went to it. A line about where
+         the tips are; the formulas show their own (the hint under them) */
+      toast('New here? Type “/” for blocks and “$” for a formula — tips are under “? Shortcuts”.');
     } else if (phone) {
       toast('PaperTeX is made for a computer with a keyboard — on a phone you can read and make small edits.');
     }

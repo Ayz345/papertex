@@ -369,7 +369,11 @@ body.nopanel .side { margin-right: calc(-1 * var(--sidew)); }
 .g-btn:active, .sbtn:active, .dlg-btn:active, .seltools button:active,
 .kb-add:active, .kb-reset:active, .kb-x:active, .kb-rm:active, .docdel:active { transform: scale(.94); transition-duration: .06s; }
 .popitem:active, .cp-row:active { transform: scale(.985); transition-duration: .06s; }
-.pt-tail { margin-top: 10px; text-align: center; }
+.pt-tail { margin-top: 10px; text-align: center; transition: margin-top .18s ease-out; }
+/* while the last block's formula shows its hint chip (.mf-hintbar, which
+   floats below it), the end-of-document button steps down out of its way */
+.blk:has(.mf-hintbar) + .pt-tail { margin-top: 38px; }
+@media (prefers-reduced-motion: reduce) { .pt-tail { transition: none; } }
 
 /* ------------------------------------------------------------------- popups */
 .popmenu {
@@ -597,9 +601,12 @@ body.nopanel .side { margin-right: calc(-1 * var(--sidew)); }
    both layers: the band (::before) and the button face (::after) are drawn
    as layers instead, band first */
 .helpclose::before, .helpclose::after { content: ''; position: absolute; pointer-events: none; }
+/* the band fades in over the text scrolling under it, rather than cutting a
+   line in half with a hard edge (testers read a half-hidden row as text that
+   was cut off) */
 .helpclose::before {
-  z-index: -2; left: -32px; right: -100vw; top: -15px; bottom: -18px;
-  background: var(--panel); border-top: 1px solid var(--line-2);
+  z-index: -2; left: -32px; right: -100vw; top: -44px; bottom: -18px;
+  background: linear-gradient(to bottom, transparent, var(--panel) 30px);
 }
 .helpclose::after { z-index: -1; inset: 0; border-radius: inherit; background: var(--accent-ink); }
 .helpclose:hover::after { background: #8b5a11; }
@@ -1204,3 +1211,35 @@ body.nopanel .side { margin-right: calc(-1 * var(--sidew)); }
   .sf select, .sf input[type=text], .popsearch, .poplab input, .dlg-i, .kb-search, .kb-snipin, .cp-in { font-size: 16px; }
   .docdel { opacity: .75; }
 }
+
+/* ---------------------------------------------------- new matrix: its size
+   (backend session's block, see math.js askMatrix / openMatrix) */
+.popmenu.mx-pick { width: auto; padding: 8px 10px 9px; overflow: visible; max-height: none; z-index: 330; }
+.mx-pick-h { padding: 0 0 6px; font-variant-numeric: tabular-nums; }
+.mx-pick-grid { display: grid; gap: 3px; width: max-content; }
+.mx-pick-c {
+  width: 16px; height: 16px; border: 1px solid var(--line); border-radius: 3px; background: var(--panel); cursor: pointer;
+}
+.mx-pick-c.on { background: var(--accent-soft, #f6e9d2); border-color: var(--accent); }
+.mx-pick-k { display: flex; gap: 3px; margin-top: 8px; }
+.mx-pick-b {
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink-2); border-radius: 5px;
+  padding: 2px 6px; font-size: 12px; cursor: pointer; font-family: "PaperTeX", serif;
+}
+.mx-pick-b.on { border-color: var(--accent); color: var(--accent); background: var(--accent-soft, #f6e9d2); }
+.mx-pick-f { margin-top: 7px; font-size: 11px; color: var(--muted); }
+
+/* a matrix on a sheet of its own */
+.dlg.mx-sheet { max-width: min(900px, 94vw); }
+.mx-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; align-items: center; }
+.mx-kinds { display: inline-flex; gap: 3px; margin-left: auto; }
+.mx-tool.mx-kind { padding: 5px 9px; font-family: "PaperTeX", serif; }
+.mx-tool.on { border-color: var(--accent); color: var(--accent); }
+.mx-paper {
+  margin-top: 14px; padding: 40px 32px; background: #fffdf8; border: 1px solid var(--line); border-radius: 8px;
+  display: flex; justify-content: center; align-items: center; min-height: 220px; max-height: 70vh; overflow: auto;
+  box-shadow: inset 0 1px 3px rgba(20, 25, 35, .06);
+}
+.mx-field { font-family: "PaperTeX", serif; font-size: 34px; color: #1d1b17; outline: none; }
+.mx-field .mmat .mph { min-width: 1em; min-height: 1.1em; }
+@media (max-width: 600px) { .mx-field { font-size: 24px; } .mx-paper { padding: 24px 12px; } }

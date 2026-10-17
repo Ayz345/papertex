@@ -7,6 +7,16 @@
   var uidN = 0;
   function uid() { return 'b' + (++uidN) + Math.random().toString(36).slice(2, 6); }
 
+  /* After Backspace has taken a block away, the repeats of that same held
+     key are swallowed until it is let go (see removeBlock). */
+  var bsHeld = false;
+  function holdBackspace() { bsHeld = true; }
+  document.addEventListener('keydown', function (e) {
+    if (bsHeld && e.key === 'Backspace' && e.repeat) { e.preventDefault(); e.stopPropagation(); }
+    else if (e.key !== 'Backspace' || !e.repeat) bsHeld = false;
+  }, true);
+  document.addEventListener('keyup', function (e) { if (e.key === 'Backspace') bsHeld = false; }, true);
+
   /* ------------------------------------------------------------- new document */
   /* Build inline-formula markup without hand-escaping an attribute. */
   function imath(tex) {
@@ -585,6 +595,7 @@
       if (ev.isComposing) { onChange(e.innerHTML); return; }
       if (dollar(ev.inputType === 'insertText' ? ev.data : null)) return;
       if (self.texCommand(e, onChange)) return;
+      if (opts.listStart && ev.inputType === 'insertText' && ev.data && /[  ]/.test(ev.data) && opts.listStart(ev.data)) return;
       /* a footnote mark deleted with the text around it */
       if (self.paper.querySelector(':scope > .pt-fnotes') || /ftnote/.test(e.innerHTML)) self.refreshFootnotes();
       /* emptied, Firefox and Safari leave a lone <br> behind: that is empty
@@ -706,7 +717,7 @@
     var r = document.createRange();
     r.setStart(node, at); r.collapse(true);
     s.removeAllRanges(); s.addRange(r);
-    var made = [];
+    var made = [], self = this, addedBib = [];
     if (cmd === 'cite' || cmd === 'ref' || cmd === 'eqref' || cmd === 'autoref' || cmd === 'cref') {
       arg.split(',').map(function (x) { return x.trim(); }).filter(Boolean).forEach(function (key) {
         var x = document.createElement('span');
@@ -715,7 +726,27 @@
         x.dataset.kind = cmd === 'cite' ? 'cite' : cmd === 'eqref' ? 'eqref' : 'ref';
         x.dataset.label = PT.sanitize.label(key);
         made.push(x);
+        /* a work not in the reference list yet: an empty entry for it, to
+           fill in — not a silent "[?]" in the PDF */
+        var bkey = x.dataset.label;
+        if (cmd === 'cite' && !self.doc.bib.some(function (w) { return w.key === bkey; })) {
+          self.doc.bib.push({ key: bkey, author: '', title: '', journal: '', year: '' });
+          if (!self.doc.blocks.some(function (b) { return b.t === 'bib'; })) self.doc.blocks.push(blockFactory('bib'));
+          addedBib.push(bkey);
+        }
       });
+      /* the list on the page shows the new entry at once (a list made just
+         now appears with the next redraw) */
+      var oldBib = addedBib.length && this.paper.querySelector('.pt-bib');
+      var bibBlock = this.doc.blocks.filter(function (b) { return b.t === 'bib'; })[0];
+      if (oldBib && bibBlock) {
+        var tmpBox = document.createElement('div');
+        this.renderBib(bibBlock, tmpBox);
+        if (tmpBox.firstChild) oldBib.replaceWith(tmpBox.firstChild);
+      }
+      if (addedBib.length && this.hooks.toast) {
+        this.hooks.toast('“' + addedBib.join('”, “') + '” added to the reference list, empty — fill in the author and title there.');
+      }
     } else if (cmd === 'footnote') {
       var f = document.createElement('span');
       f.className = 'ftnote';
@@ -805,12 +836,20 @@
       onExit: function (fl, dir) { leave(dir); },
       onEscape: function () { leave('right'); },
       onEnter: function () { leave('right'); },
+      /* in a table cell, Tab goes on to the next cell from anywhere in the
+         formula, as it does from the cell's text (in a matrix, to the
+         matrix's next cell) */
+      onTab: function (fl, ev) {
+        if (!(host.closest && host.closest('.st-grid, .pt-cell')) || fl.matrixAt()) return false;
+        leave(ev.shiftKey ? 'left' : 'right');
+        host.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: ev.shiftKey, bubbles: true, cancelable: true }));
+      },
       onLeave: function (fl, dir) {
         if (dir !== 'next' && dir !== 'prev') return;
         leave(dir === 'next' ? 'right' : 'left');
         /* in a table cell, Tab goes on to the next cell, as it does from
            the cell's text */
-        if (host.closest && host.closest('.st-grid')) {
+        if (host.closest && host.closest('.st-grid, .pt-cell')) {
           host.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: dir === 'prev', bubbles: true, cancelable: true }));
         }
       },
@@ -818,7 +857,7 @@
         /* gone to another window: still being edited when it comes back;
            gone to the command palette: still being edited when it puts the
            caret back here */
-        if (PT.palette && PT.palette.isOpen()) { setTimeout(later, 150); return; }
+        if ((PT.palette && PT.palette.isOpen()) || M.matrixSheetOpen()) { setTimeout(later, 150); return; }
         setTimeout(function () { if (!f.hasFocus()) finish(); }, 0);
       },
       onRender: function (fl) { span.classList.toggle('pt-inmat', fl.host.classList.contains('mf-inmat')); }
@@ -1050,7 +1089,7 @@
        between its text and its derivation */
     plus.onclick = function (e) { self.openMenu(e.currentTarget, groupAt(self.doc, idx)[1] + 1); };
     var more = h('button', 'g-btn g-more', '⋮');
-    more.title = 'Block options';
+    more.title = 'Options for this part';
     more.onclick = function (e) { self.blockMenu(e.currentTarget, b, idx); };
     gut.appendChild(plus); gut.appendChild(more);
     wrap.appendChild(gut);
@@ -1082,7 +1121,24 @@
       case 'para': {
         var p = this.richEditable('p', 'pt-para', b.html, function (v) { b.html = v; self.change(); }, {
           onKey: function (ev) { self.textKeys(ev, b, idx, 'html'); },
-          slashMenu: function () { self.openMenu(p, idx, true); }
+          slashMenu: function () { self.openMenu(p, idx, true); },
+          /* "1. " or "- " typed at the start of a paragraph starts a list,
+             as in a word processor; Ctrl+Z gives the characters back */
+          listStart: function (data) {
+            if (/imath|xref|ftnote/.test(p.innerHTML)) return false;
+            /* the space that ends the mark must be in what was just typed,
+               at the very start of the paragraph */
+            var text = p.textContent.replace(/[​ ]/g, ' ');
+            if (text.slice(-data.length) !== data.replace(/ /g, ' ')) return false;
+            var mk = /^\s*(1[.)]|[-*•]) /.exec(text);
+            if (!mk || mk[0].length <= text.length - data.length) return false;
+            var lst = blockFactory(/^\s*1/.test(mk[1]) ? 'enumerate' : 'itemize');
+            lst.items[0].html = text.slice(mk[0].length).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; });
+            self.doc.blocks.splice(self.doc.blocks.indexOf(b), 1, lst);
+            self.focusBlock(lst.id, 'item0');
+            self.change(true); self.render();
+            return true;
+          }
         });
         p.dataset.part = 'main';
         p.dataset.ph = 'Type “/” for blocks, “$” for a formula…';
@@ -1466,7 +1522,7 @@
     var cl = h('span', 'pt-capl', 'Figure ' + (b.__num || '1') + ': ');
     cl.contentEditable = 'false';
     cap.appendChild(cl);
-    var ce = this.richEditable('span', 'pt-capt', b.caption, function (v) { b.caption = v; self.change(); }, {
+    var ce = this.richEditable('span', 'pt-capt', PT.latex.capClean(b.caption), function (v) { b.caption = v; self.change(); }, {
       onKey: function (ev) { self.textKeys(ev, b, idx, 'caption'); }
     });
     ce.dataset.part = 'main';
@@ -1587,7 +1643,7 @@
     var cl = h('span', 'pt-capl', 'Table ' + (b.__num || '1') + ': ');
     cl.contentEditable = 'false';
     cap.appendChild(cl);
-    var ce = this.richEditable('span', 'pt-capt', b.caption, function (v) { b.caption = v; self.change(); }, {
+    var ce = this.richEditable('span', 'pt-capt', PT.latex.capClean(b.caption), function (v) { b.caption = v; self.change(); }, {
       onKey: function (ev) { self.textKeys(ev, b, idx, 'caption'); }
     });
     ce.dataset.ph = 'Caption…';
@@ -1726,7 +1782,7 @@
     var cl = h('span', 'pt-capl', 'Figure ' + (b.__num || '1') + ': ');
     cl.contentEditable = 'false';
     cap.appendChild(cl);
-    var ce = this.richEditable('span', 'pt-capt', b.caption, function (v) { b.caption = v; self.change(); }, {
+    var ce = this.richEditable('span', 'pt-capt', PT.latex.capClean(b.caption), function (v) { b.caption = v; self.change(); }, {
       onKey: function (ev) { self.textKeys(ev, b, idx, 'caption'); }
     });
     ce.dataset.part = 'main';
@@ -1915,6 +1971,14 @@
       if (isBlank(el.innerHTML) && this.doc.blocks.length > 1) {
         ev.preventDefault(); this.removeBlock(idx); return;
       }
+      /* a paragraph is not pulled up into the heading above it: the caret
+         goes to the heading's end, and the text stays a paragraph */
+      if (prev && prev.t === 'section' && b.t === 'para') {
+        ev.preventDefault();
+        this.focusBlock(prev.id, 'main');
+        this.render();
+        return;
+      }
       if (prev && (prev.t === 'para' || prev.t === 'section')) {
         ev.preventDefault();
         prev.html = (prev.html || '') + (b[field] || '');
@@ -1951,6 +2015,9 @@
   };
 
   Editor.prototype.removeBlock = function (idx) {
+    /* Backspace held down: the block it emptied goes, and the repeats
+       stop there instead of eating into the block above */
+    holdBackspace();
     var prev = this.doc.blocks[idx - 1];
     this.doc.blocks.splice(idx, 1);
     if (!this.doc.blocks.length) this.doc.blocks.push(blockFactory('para'));
@@ -2115,6 +2182,7 @@
       var ff = mf.filter(function (f) { return f === self.activeField; })[0] || mf[0];
       if (ff) {
         m.appendChild(h('div', 'popg', 'Matrix or cases'));
+        item('Edit it large…', function () { ff.openMatrix(); });
         var at = ff.matrixAt(), isCases = at ? at.m.env === 'cases' : false;
         [['addrow', 'Add a row below'], ['addcol', 'Add a column to the right'], ['delrow', 'Remove this row'], ['delcol', 'Remove this column']].forEach(function (o) {
           if (isCases && /col/.test(o[0])) return;   /* cases: a value and a condition, always */
@@ -2153,7 +2221,7 @@
       item('Make a chart from this table', function () { self.chartFromTable(b, idx); });
     }
     if (b.t === 'figure' || b.t === 'chart' || b.t === 'table' || b.t === 'eq' || b.t === 'section' || b.t === 'theorem') {
-      m.appendChild(h('div', 'popg', 'Label'));
+      m.appendChild(h('div', 'popg', 'Name, for referring to it'));
       var lw = h('div', 'poplab');
       var inp = h('input');
       inp.value = b.label || '';
@@ -2163,7 +2231,7 @@
       lw.appendChild(inp);
       m.appendChild(lw);
     }
-    m.appendChild(h('div', 'popg', 'Block'));
+    m.appendChild(h('div', 'popg', 'This part'));
     /* a theorem or proof moves, copies and goes with its parts */
     var grp = groupAt(this.doc, idx), bl = this.doc.blocks;
     item('Move up', function () {
@@ -2183,16 +2251,45 @@
       Array.prototype.splice.apply(bl, [to, 0].concat(moved));
       self.change(true); self.render();
     });
+    item('Add a paragraph above', function () {
+      var np = blockFactory('para');
+      bl.splice(grp[0], 0, np);
+      self.focusBlock(np.id, 'main');
+      self.change(true); self.render();
+    });
     item('Duplicate', function () {
       var copies = bl.slice(grp[0], grp[1] + 1).map(function (x) { var c = JSON.parse(JSON.stringify(x)); c.id = uid(); return c; });
       Array.prototype.splice.apply(bl, [grp[1] + 1, 0].concat(copies));
       self.change(true); self.render();
     });
+    /* references in the text to what is deleted print "??": say so */
+    function warnRefs(gone) {
+      var labs = [];
+      gone.forEach(function (x) { if (x.label) labs.push(x.label); (x.labels || []).forEach(function (l) { if (l) labs.push(l); }); });
+      if (!labs.length || !self.hooks.toast) return;
+      var all = JSON.stringify(self.doc.blocks), n = 0;
+      labs.forEach(function (l) { n += all.split('data-label=\\"' + l + '\\"').length - 1; });
+      if (n) self.hooks.toast(n + (n === 1 ? ' reference' : ' references') + ' in the text pointed to it and now show “??” — Ctrl+Z brings it back.');
+    }
     item('Delete', function () {
       /* its parts stay, as ordinary blocks */
       for (var j = grp[0] + 1; j <= grp[1]; j++) delete bl[j].inEnv;
+      var gone = [bl[idx]];
       self.removeBlock(idx);
+      warnRefs(gone);
     }, 'danger');
+    /* a heading with everything under it, up to the next heading of its
+       level or higher */
+    if (b.t === 'section') {
+      item('Delete the section, with its text', function () {
+        var end = idx + 1;
+        while (end < bl.length && bl[end].t !== 'bib' && !(bl[end].t === 'section' && bl[end].level <= b.level)) end++;
+        var gone = bl.slice(idx, end);
+        bl.splice(idx + 1, end - idx - 1);
+        self.removeBlock(idx);
+        warnRefs(gone);
+      }, 'danger');
+    }
     document.body.appendChild(m);
     posPop(m, anchor);
     armOutside(m);

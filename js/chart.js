@@ -2274,7 +2274,7 @@
       : m.kind === 'surface' ? texSurface(b, m, use, inline)
       : texCartesian(b, m, use, inline);
     var t = '\\begin{figure}[' + (b.placement || 'htbp') + ']\n  \\centering\n' + body;
-    if (b.caption) t += '  \\caption{' + inline(b.caption, use).trim() + '}\n';
+    if (b.caption) t += '  \\caption{' + inline(PT.latex.capClean(b.caption), use).trim() + '}\n';
     if (b.label) t += '  \\label{' + PT.sanitize.label(b.label) + '}\n';
     return t + '\\end{figure}\n';
   }

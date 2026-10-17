@@ -19,7 +19,22 @@ SITE = os.path.dirname(LAB)                                          # the Paper
 # 1, 2 and 3 (kept for scoring) -- a tester must never reuse a port, or it
 # starts with another tester's documents and no intro.
 PORTS = [8800, 8801, 8802, 8803, 8804, 8811, 8812, 8813, 8814,
-         8821, 8822, 8823, 8824]
+         8821, 8822, 8823, 8824, 8831, 8832, 8833, 8834, 8835, 8836]
+# Round 4 tests a fixed snapshot (a commit extracted with git archive), so
+# another session's edits in progress don't leak into the run:
+#   serve.py --snapshot <folder>   serves <folder> on 8831-8836
+SNAPSHOT_PORTS = {8831, 8832, 8833, 8834, 8835, 8836}
+SNAPSHOT = None
+if '--snapshot' in sys.argv:
+    SNAPSHOT = os.path.abspath(sys.argv[sys.argv.index('--snapshot') + 1])
+# --only-snapshot: serve just the organiser port and the snapshot ports, for
+# when another instance already holds the older ones. --org-port N moves the
+# organiser port (the one that exposes /__lab/ and the answers).
+ORG = 8800
+if '--org-port' in sys.argv:
+    ORG = int(sys.argv[sys.argv.index('--org-port') + 1])
+if '--only-snapshot' in sys.argv:
+    PORTS = [ORG] + sorted(SNAPSHOT_PORTS)
 HIDDEN = '/' + os.path.basename(LAB) + '/'    # the answers, served on 8800 only
 
 
@@ -29,10 +44,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                       '.mjs': 'text/javascript', '.json': 'application/json'}
 
     def lab(self):
-        return self.server.server_port == 8800 and self.path.startswith('/__lab/')
+        return self.server.server_port == ORG and self.path.startswith('/__lab/')
 
     def send_head(self):
-        if self.server.server_port != 8800 and self.path.startswith(HIDDEN):
+        if self.server.server_port != ORG and self.path.startswith(HIDDEN):
             self.send_error(404); return None
         return super().send_head()
 
@@ -70,11 +85,14 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 
 def run(port):
-    h = functools.partial(Handler, directory=SITE)
+    # in --only-snapshot mode the organiser port shows the snapshot too
+    snap = SNAPSHOT and (port in SNAPSHOT_PORTS or ('--only-snapshot' in sys.argv and port == ORG))
+    root = SNAPSHOT if snap else SITE
+    h = functools.partial(Handler, directory=root)
     http.server.ThreadingHTTPServer(('127.0.0.1', port), h).serve_forever()
 
 
 for p in PORTS[1:]:
     threading.Thread(target=run, args=(p,), daemon=True).start()
-print('serving', SITE, 'on', PORTS, flush=True)
+print('serving', SITE, 'on', PORTS, '; snapshot', SNAPSHOT, 'on', sorted(SNAPSHOT_PORTS) if SNAPSHOT else '-', flush=True)
 run(PORTS[0])

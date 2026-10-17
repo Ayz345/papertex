@@ -1,6 +1,6 @@
 # Scoring sheet
 
-I scored all twelve final documents (four testers × three rounds) against the same 27-item checklist. Each score comes from the LaTeX the editor generated for that document; the documents were also compiled. The `.tex`, the raw saved document (`.json`) and the compiled PDF for each are in [results/](results/).
+I scored all eighteen final documents against the same 27-item checklist: four testers in each of rounds 1–3, and six in round 4. Each score comes from the LaTeX the editor generated for that document; the documents were also compiled. The `.tex`, the raw saved document (`.json`) and the compiled PDF for each are in [results/](results/).
 
 **Scale:**
 - **1:** the element is there and matches the original.
@@ -167,6 +167,90 @@ Round 3 used four Sonnet testers: A, B, C, and B2, a second Word user with B's p
 | 6 | 0.5 | The transpose ᵀ is missing. |
 | 14 | 0.5 | The derivation sits outside the proof, after a block was inserted next to it and moved away (ROUND-3 problem 1). |
 | 25 | 0.5 | Placeholder plus caption. |
+
+## Round 4 (ports 8831–8836, snapshot of commit `ce45ae0`)
+
+Round 4 used six testers on four models.
+
+| # | A Opus | A2 Fable | B Sonnet | C Sonnet | B2 Haiku | D Haiku |
+|---|---|---|---|---|---|---|
+| 1 Title | 1 | 1 | 1 | 1 | 1 | 1 |
+| 2 Author + affil. | 1 | 1 | 1 | 1 | 1 | 1 |
+| 3 Date | 1 | 1 | 1 | 1 | 1 | 1 |
+| 4 Abstract | 1 | 1 | 1 | 1 | 1 | 1 |
+| 5 Sections | 1 | 1 | 1 | 1 | 0.5 | 1 |
+| 6 Inline maths | 1 | 0.5 | 0.5 | 0.5 | 0.5 | 0.5 |
+| 7 Eq (1) | 1 | 1 | 1 | 1 | 0.5 | 1 |
+| 8 Eq (2) | 1 | 1 | 1 | 1 | 0.5 | 0.5 |
+| 9 Eq (3) | 1 | 1 | 1 | 0.5 | 1 | 1 |
+| 10 Eq (4) | 1 | 1 | 0.5 | 1 | 0 | 0 |
+| 11 Eq (5) matrix | 1 | 1 | 1 | 0.5 | 0 | 0 |
+| 12 Cases | 0.5 | 0.5 | 1 | 1 | 0.5 | 0 |
+| 13 Theorem | 1 | 1 | 1 | 1 | 0 | 0 |
+| 14 Proof | 1 | 1 | 1 | 1 | 0 | 0 |
+| 15 Aligned derivation | 0.5 | 0.5 | 1 | 0.5 | 0 | 0 |
+| 16 Footnote | 1 | 1 | 1 | 1 | 1 | 0 |
+| 17 Citations | 1 | 1 | 1 | 1 | 0.5 | 1 |
+| 18 Reference list | 1 | 1 | 1 | 1 | 0.5 | 1 |
+| 19 Equation refs | 1 | 1 | 1 | 1 | 0 | 0 |
+| 20 Table/Figure refs | 1 | 1 | 1 | 1 | 0 | 0 |
+| 21 Numbered list | 1 | 1 | 1 | 1 | 0 | 0.5 |
+| 22 Bulleted list | 1 | 1 | 1 | 1 | 0 | 0 |
+| 23 Italics | 1 | 1 | 1 | 1 | 1 | 0 |
+| 24 Table | 1 | 1 | 1 | 1 | 0 | 0 |
+| 25 Figure | 1 | 1 | 1 | 0.5 | 0 | 0 |
+| 26 ø, en dash | 1 | 1 | 1 | 1 | 0 | 1 |
+| 27 Clean | 1 | 1 | 0.5 | 1 | 0 | 0 |
+| **Total / 27** | **26** | **25.5** | **25.5** | **24.5** | **10.5** | **11.5** |
+| **Score** | **96%** | **94%** | **94%** | **91%** | **39%** | **43%** |
+| Own estimate | ~90% | 90–95% | 90–93% | 90–95% | ~50% | 45–50% |
+| SUS | 52.5 | 55 | 45 | 57.5 | 30 | 32.5 |
+| Compiles? | yes | yes | yes | yes | **no** (`\right`) | yes |
+
+**A + B + C together:** 76/81 = **94%**.
+
+### Notes on round 4
+
+**A, LaTeX veteran (Opus)**
+
+| Item | Score | Reason |
+|---|---|---|
+| 12 | 0.5 | `\omega_{0.}` |
+| 15 | 0.5 | Doubled `&` on line 1 (`\frac{dE}{dt}& &=`), which misaligns it. |
+
+**A2, LaTeX veteran (Fable)**
+
+| Item | Score | Reason |
+|---|---|---|
+| 6 | 0.5 | k/m, c/(2m) and 10/h are stacked fractions. |
+| 12 | 0.5 | `\omega_{0.}` |
+| 15 | 0.5 | `\dot{x}^{2.}` |
+
+**B, Word user (Sonnet)**
+
+| Item | Score | Reason |
+|---|---|---|
+| 6 | 0.5 | `x=e^{\lambda}t` |
+| 10 | 0.5 | `e^{-\gamma}t` |
+| 27 | 0.5 | Stray "Letter" in the table caption, from a dropdown mishap. |
+
+**C, keyboard-first (Sonnet)**
+
+| Item | Score | Reason |
+|---|---|---|
+| 6 | 0.5 | "equation$\lambda…$" has no space. |
+| 9 | 0.5 | The full stop is inside the root. |
+| 11 | 0.5 | The dot accent wraps the whole right-hand side. |
+| 15 | 0.5 | `\dot{x}^{2.}` |
+| 25 | 0.5 | Plot without the envelopes. |
+
+**B2, Word user (Haiku):** ran out of budget. The theorem, proof, Section 3, lists, table and figure are missing. Equations (1) and (2) are broken (`mx\ddot{}`, `\omega_0^{2x}`). Equation (4) has a doubled `\left(` and a stray `\right` (**doesn't compile**). The matrix is garbled. The cases display has no "regime =".
+
+**D, ordinary user (Haiku):** ran out of budget.
+- Equations (4) and (5), the theorem, proof, footnote, bullets and figure are missing.
+- The cases display is garbled into `align` with stray text.
+- The table is the template's, with the caption "Table 1: Table 1: …".
+- The list items are plain-text maths.
 
 ## Notes on every score below 1 (rounds 1 and 2)
 

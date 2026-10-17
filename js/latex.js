@@ -131,9 +131,21 @@
     catch (e) { return M.row(); }
   }
 
+  /* an & typed on the line, where there is nothing to align: dropped (in
+     an equation it would stop the compile) */
+  function noAmp(k) { return k.filter(function (n) { return !(n.t === 'ch' && n.c === '&'); }); }
+  function noAmpRow(r) { return { t: 'row', k: noAmp(r.k) }; }
+
   /* ---- alignment marker for multi-line equations ---- */
   function alignedLine(r) {
     var i, k = r.k;
+    /* an & the writer typed is the alignment point, not a second one */
+    for (i = 0; i < k.length; i++) {
+      if (k[i].t === 'ch' && k[i].c === '&') {
+        return M.texRow({ t: 'row', k: k.slice(0, i) }).trim() + ' &' +
+               M.texRow({ t: 'row', k: noAmp(k.slice(i + 1)) }).trim();
+      }
+    }
     for (i = 0; i < k.length; i++) {
       var n = k[i];
       if ((n.t === 'ch' || n.t === 'sym') && n.cls === 'rel') {
@@ -177,12 +189,12 @@
         var lines = b.lines.map(function (r) { M.scanRow(r, use); return r; });
         var star = b.numbered === false ? '*' : '';
         if (lines.length === 1) {
-          return '\\begin{equation' + star + '}\n  ' + M.texRow(lines[0]).trim() + QH +
+          return '\\begin{equation' + star + '}\n  ' + M.texRow(noAmpRow(lines[0])).trim() + QH +
             (b.label ? '\n  ' + L(b.label) : '') + '\n\\end{equation' + star + '}\n';
         }
         var env = (b.env === 'gather' ? 'gather' : 'align') + star;
         var body = lines.map(function (r, i) {
-          var t = (b.env === 'gather' ? M.texRow(r).trim() : alignedLine(r));
+          var t = (b.env === 'gather' ? M.texRow(noAmpRow(r)).trim() : alignedLine(r));
           /* the equation's own label names its first line */
           var lab = (b.labels && b.labels[i]) || (i === 0 ? b.label : '');
           if (lab) t += ' \\label{' + PT.sanitize.label(lab) + '}';
@@ -214,7 +226,7 @@
           (hasImage
             ? '  \\includegraphics[width=' + w + '\\linewidth]{' + String(b.filename).replace(/[{}\\%#]/g, '') + '}\n'
             : '  \\fbox{\\parbox[c][' + (w * 0.6).toFixed(2) + '\\linewidth][c]{' + w + '\\linewidth}{\\centering\\small\\itshape Image not chosen yet}}\n') +
-          (b.caption ? '  \\caption{' + inline(b.caption, use).trim() + '}\n' : '') +
+          (b.caption ? '  \\caption{' + inline(capClean(b.caption), use).trim() + '}\n' : '') +
           (b.label ? '  \\label{' + PT.sanitize.label(b.label) + '}\n' : '') +
           '\\end{figure}\n';
       }
@@ -229,7 +241,7 @@
         /* striped rows: every other body row shaded (xcolor's table option) */
         /* the 2nd, 4th … body row; xcolor counts rows from the header */
         if (b.zebra) { use.colortbl = true; t += '  \\rowcolors{2}' + (b.header ? '{ptzebra}{}' : '{}{ptzebra}') + '\n'; }
-        var capLab = (b.caption ? '  \\caption{' + inline(b.caption, use).trim() + '}\n' : '') +
+        var capLab = (b.caption ? '  \\caption{' + inline(capClean(b.caption), use).trim() + '}\n' : '') +
           (b.label ? '  \\label{' + PT.sanitize.label(b.label) + '}\n' : '');
         if (!b.capBelow) t += capLab;
         t += '  \\begin{tabular}{' + cols + '}\n';
@@ -435,5 +447,11 @@
   /* one block's LaTeX on its own, to find which block a TeX error is in */
   function texOf(b, doc) { try { return blockTex(b, {}, doc, b.t === 'theorem' ? [] : null); } catch (e) { return ''; } }
 
-  window.PT.latex = { build: build, inline: inline, esc: esc, plainText: plainText, texOf: texOf };
+  /* "Table 1: Results" typed into a caption: LaTeX (and the page) number
+     it already, so the hand-written label goes */
+  function capClean(html) {
+    return String(html || '').replace(/^(\s|&nbsp;| )*(Table|Figure|Fig\.|Chart)\s*(\d+(\.\d+)*)?\s*[:.—–-]\s*(&nbsp;| )?/i, '');
+  }
+
+  window.PT.latex = { build: build, inline: inline, esc: esc, plainText: plainText, texOf: texOf, capClean: capClean };
 })();

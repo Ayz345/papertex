@@ -157,17 +157,19 @@
         row.appendChild(lab);
         var k = PT.keys.first(a.id);
         if (k) row.appendChild(h('kbd', 'cp-k', k));
-        row.onmousemove = function () { if (sel !== i) { sel = i; mark(); } };
-        row.onmousedown = function (e) { e.preventDefault(); };
-        row.onclick = function () { choose(i); };
+        /* the pointer marks a row without scrolling the list (scrolling it
+           under the pointer moved the row away between press and release,
+           and the click went nowhere), and the press itself chooses */
+        row.onmousemove = function () { if (sel !== i) { sel = i; mark(true); } };
+        row.onmousedown = function (e) { e.preventDefault(); if (e.button === 0) choose(i); };
         listEl.appendChild(row);
       });
       mark();
     }
-    function mark() {
+    function mark(byMouse) {
       [].forEach.call(listEl.querySelectorAll('.cp-row'), function (r, i) { r.classList.toggle('on', i === sel); });
       var on = listEl.querySelectorAll('.cp-row')[sel];
-      if (on) on.scrollIntoView({ block: 'nearest' });
+      if (on && !byMouse) on.scrollIntoView({ block: 'nearest' });
     }
     function choose(i) {
       var it = items[i];

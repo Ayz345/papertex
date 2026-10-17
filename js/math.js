@@ -76,7 +76,26 @@
   };
   /* accent glyphs — the accent forms in cmr, not the ASCII look-alikes;
      \overline and \underline are rules, drawn by the layout pass */
-  var ACC = { hat: '^', widehat: '^', bar: 'ˉ', vec: '→', tilde: '˜', dot: '˙', ddot: '¨', overline: null, underline: null, boldsym: null, mathbf: null };
+  var ACC = { hat: '^', widehat: '^', bar: 'ˉ', vec: '→', tilde: '˜', dot: '˙', ddot: '¨', overline: null, underline: null, boldsym: null, mathbf: null,
+    overrightarrow: '→', overleftarrow: '←', overleftrightarrow: '↔', widetilde: '˜', check: 'ˇ', breve: '˘',
+    acute: 'ˊ', grave: 'ˋ', mathring: '˚' };
+  /* commands that set their argument in another style: drawn as the
+     argument, written back as the command (WRAP_TXT: upright words, like
+     \text) */
+  var WRAP = { operatorname: 1, mathsf: 1, mathtt: 1, mathit: 1, mathnormal: 1, textbf: 1, textit: 1,
+    texttt: 1, textsf: 1, emph: 1, boxed: 1 };
+  var WRAP_TXT = { operatorname: 1, mathsf: 1, mathtt: 1, textbf: 1, textit: 1, texttt: 1, textsf: 1, emph: 1 };
+  /* spacing commands, by name */
+  var SPACE_CMD = { quad: 1, qquad: 1, enspace: 1, thinspace: 1, medspace: 1, thickspace: 1, negthinspace: 1 };
+  /* \mathbb R, \mathcal{C}: the letter in another face */
+  var FACE = { mathbb: 'bb', mathcal: 'cal', mathfrak: '', mathscr: 'cal' };
+  /* what \left and \right take, as typed after them */
+  var DELIM_KEY = { '(': '(', ')': ')', '[': '[', ']': ']', '|': '|', '.': '.', '<': '\\langle', '>': '\\rangle', '/': '/' };
+  var DELIM_NAME = { langle: '\\langle', rangle: '\\rangle', lvert: '|', rvert: '|', vert: '|', lVert: '\\|', rVert: '\\|',
+    Vert: '\\|', lfloor: '\\lfloor', rfloor: '\\rfloor', lceil: '\\lceil', rceil: '\\rceil', lbrace: '\\{', rbrace: '\\}',
+    lbrack: '[', rbrack: ']' };
+  var DELIM_CLOSE = { '(': ')', '[': ']', '\\{': '\\}', '|': '|', '\\|': '\\|', '\\langle': '\\rangle',
+    '\\lfloor': '\\rfloor', '\\lceil': '\\rceil', '.': '.', '/': '/', ')': '(', ']': '[' };
   /* cmmi skew: how far right of centre an accent sits over a slanted letter */
   var SKEW = {
     A: .13889, B: .08334, C: .08334, D: .05556, E: .08334, F: .08334, G: .08334, H: .05556,
@@ -192,6 +211,7 @@
         if (c === ')' || c === ']' || c === '⟩' || c === '⌉' || c === '⌋') return K_CLOSE;
         return K_ORD;
       case 'fn': case 'big': return K_OP;
+      case 'acc': return n.kind === 'operatorname' ? K_OP : K_ORD;   /* \operatorname{rank} A, spaced as \sin x */
       case 'frac': case 'paren': return K_INNER;
       case 'mat': return n.env === 'matrix' ? K_ORD : K_INNER;
       case 'scr': return undefined;                 /* belongs to the atom before it */
@@ -238,11 +258,18 @@
     f: .10764, g: .03588, j: .05724, l: .01968, q: .03588, r: .02778, v: .03588, w: .02691,
     y: .03588, z: .04398, '∂': .05556
   };
-  var SPACES = { '\\,': 3 / 18, '\\:': 4 / 18, '\\;': 5 / 18, '\\!': -3 / 18, '\\quad': 1, '\\qquad': 2 };
+  var SPACES = { '\\,': 3 / 18, '\\:': 4 / 18, '\\;': 5 / 18, '\\!': -3 / 18, '\\quad': 1, '\\qquad': 2,
+    '\\ ': 6 / 18, '\\enspace': 0.5, '\\thinspace': 3 / 18, '\\medspace': 4 / 18, '\\thickspace': 5 / 18, '\\negthinspace': -3 / 18 };
   function spaceWidth(e, tex) {
     var w = SPACES[tex] != null ? SPACES[tex] : 3 / 18;
     if (w < 0) { e.style.width = '0'; e.style.marginRight = +w.toFixed(4) + 'em'; }
     else e.style.width = +w.toFixed(4) + 'em';
+  }
+
+  function frak(L) {
+    var odd = { C: 0x212D, H: 0x210C, I: 0x2111, R: 0x211C, Z: 0x2128 };
+    var cp = odd[L] || (/[A-Z]/.test(L) ? 0x1D504 + L.charCodeAt(0) - 65 : 0x1D51E + L.charCodeAt(0) - 97);
+    return String.fromCodePoint(cp);
   }
 
   function renderNode(n, ctx, st) {
@@ -263,6 +290,10 @@
           (n.f ? ' m-f-' + n.f : ''), n.d);
         if (ITALIC[n.d] && !st.txt) { e.__it = ITALIC[n.d]; e.style.marginRight = ITALIC[n.d] + 'em'; }
         if (n.cls === 'spc') { e.textContent = ' '; e.classList.add('mspc'); spaceWidth(e, n.tex); }
+        /* \mathfrak{g}: the maths fonts have no fraktur, Unicode does (the
+           PDF sets it with LaTeX's own) */
+        var fk = /^\\mathfrak\{([A-Za-z])\}$/.exec(n.tex || '');
+        if (fk) { e.textContent = frak(fk[1]); e.classList.add('m-frak'); }
         return e;
       case 'fn':
         return el('span', 'mi m-fn', n.name);
@@ -342,6 +373,19 @@
       }
       case 'acc': {
         e = el('span', 'macc macc-' + n.kind);
+        if (!ACC.hasOwnProperty(n.kind)) {
+          /* \operatorname, \mathsf, \boxed … — and a command PaperTeX does
+             not know, typed with a "{": the argument as it is, the command
+             kept for the LaTeX */
+          var wb = el('span', 'maccb');
+          wb.appendChild(renderRow(n.k, ctx, WRAP_TXT[n.kind] ? { z: st.z, c: st.c, txt: true } : st));
+          e.appendChild(wb);
+          if (!WRAP[n.kind]) {
+            e.classList.add('macc-unknown');
+            e.title = '\\' + n.kind + ' is not a command PaperTeX knows: it goes into the LaTeX as typed, and may not compile';
+          }
+          return e;
+        }
         var body = el('span', 'maccb'); body.appendChild(renderRow(n.k, ctx, sty(st.z, true)));
         e.__st = st;
         /* \boldsymbol: bold as they are; \mathbf: bold and upright (mbf) */
@@ -368,6 +412,7 @@
       }
       case 'mat': {
         e = el('span', 'mmat mmat-' + n.env);
+        e.__mat = n;
         var d = matDelims(n.env);
         if (d[0]) e.appendChild(delimEl(d[0]));
         var grid = el('span', 'mgrid');
@@ -380,8 +425,15 @@
         if (d[1]) e.appendChild(delimEl(d[1]));
         return e;
       }
-      case 'raw':
-        return el('span', 'mraw', n.tex);
+      case 'raw': {
+        e = el('span', 'mraw', n.tex);
+        var um = /^\\([A-Za-z]+)$/.exec(n.tex || '');
+        if (um && !knownName(um[1])) {
+          e.classList.add('mraw-unknown');
+          e.title = '\\' + um[1] + ' is not a command PaperTeX knows: it goes into the LaTeX as typed, and may not compile';
+        }
+        return e;
+      }
       case 'ci':
         e = el('span', 'mci');
         e.appendChild(el('span', 'mcibs', '\\'));
@@ -878,14 +930,36 @@
     var f = fpx(mk);
     mk.style.top = '0'; mk.style.transform = '';
     mk.style.marginLeft = e.__skew ? em(2 * e.__skew * fs, f) : '';
+    /* \widehat and \widetilde over more than a letter: drawn to the width of
+       what they cover (a stretched glyph's ink sits off-centre in its box) */
+    var wide = /\bmacc-(widehat|widetilde)\b/.exec(e.className);
+    if (wide && body.getBoundingClientRect().width > 0.9 * fs) {
+      var bw = body.getBoundingClientRect().width, H = 0.26 * fs, NS = 'http://www.w3.org/2000/svg';
+      mk.textContent = '';
+      var svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('viewBox', '0 0 100 20');
+      svg.setAttribute('preserveAspectRatio', 'none');
+      svg.style.cssText = 'display:block;margin:0 auto;overflow:visible;width:' + em(bw * 0.94, f) + ';height:' + em(H, f);
+      var pth = document.createElementNS(NS, 'path');
+      pth.setAttribute('d', wide[1] === 'widehat' ? 'M0 20 L50 1 L100 20' : 'M0 16 C18 1 34 1 50 10 S82 19 100 4');
+      pth.setAttribute('fill', 'none');
+      pth.setAttribute('stroke', 'currentColor');
+      pth.setAttribute('stroke-width', String(Math.max(1, 0.045 * fs)));
+      pth.setAttribute('vector-effect', 'non-scaling-stroke');
+      svg.appendChild(pth);
+      mk.appendChild(svg);
+      var top2 = y - (Math.max(h, sig('xh', z) * fs) + ACCENT_GAP * fs) - H;
+      mk.style.top = em(top2 - er.top, f);
+      return;
+    }
     var g = inkBox(mk);
     if (!g) return;
     var target = y - (Math.max(h, sig('xh', z) * fs) + ACCENT_GAP * fs);
     mk.style.top = em(target - g.bottom, f);
-    if (e.classList.contains('macc-widehat')) {
+    if (/\bmacc-(widehat|widetilde|overrightarrow|overleftarrow|overleftrightarrow)\b/.test(e.className)) {
       var w = body.getBoundingClientRect().width, mw = mk.firstChild ? mk.getBoundingClientRect().width : 0;
       var gw = (function () { var rg = document.createRange(); rg.selectNodeContents(mk); return rg.getBoundingClientRect().width; })();
-      if (gw && w > gw) mk.style.transform = 'scaleX(' + Math.min(4, w * 0.9 / gw).toFixed(3) + ')';
+      if (gw && w > gw) mk.style.transform = 'scaleX(' + Math.min(12, w * 0.9 / gw).toFixed(3) + ')';
     }
   }
 
@@ -1051,7 +1125,8 @@
       case 'acc': {
         var m = { hat: '\\hat', bar: '\\bar', vec: '\\vec', tilde: '\\tilde', dot: '\\dot',
           ddot: '\\ddot', widehat: '\\widehat', overline: '\\overline',
-          underline: '\\underline', boldsym: '\\boldsymbol', mathbf: '\\mathbf' }[n.kind] || '\\hat';
+          underline: '\\underline', boldsym: '\\boldsymbol', mathbf: '\\mathbf' }[n.kind] ||
+          (/^[A-Za-z]+$/.test(n.kind || '') ? '\\' + n.kind : '\\hat');
         return m + '{' + texRow(n.k) + '}';
       }
       case 'txt': return '\\text{' + texRow(n.k, 'text') + '}';
@@ -1061,8 +1136,10 @@
         }).join(' \\\\\n');
         return '\\begin{' + n.env + '}\n' + body + '\n\\end{' + n.env + '}';
       }
-      case 'raw': return n.tex;
-      case 'ci': return n.s ? '\\' + n.s : '';
+      /* a \left, \right, \begin or \end on its own can only break the
+         compile: the structures they make are written by their nodes */
+      case 'raw': return /^\\(left|right|middle|begin|end)(?![A-Za-z])/.test(n.tex || '') ? '' : n.tex;
+      case 'ci': return n.s && !/^(left|right|middle|begin|end)$/.test(n.s) ? '\\' + n.s : '';
       default: return '';
     }
   }
@@ -1175,7 +1252,7 @@
         return sqrtn(group(), idx);
       }
       if (name === 'text' || name === 'textrm' || name === 'mathrm') return txt(textGroup());
-      if (ACC.hasOwnProperty(name) || name === 'boldsymbol') {
+      if (ACC.hasOwnProperty(name) || WRAP[name] || name === 'boldsymbol') {
         return acc(name === 'boldsymbol' ? 'boldsym' : name, group());
       }
       if (name === 'left') {
@@ -1216,9 +1293,13 @@
       if (TEX_EXTRA[name]) return sym('\\' + name, TEX_EXTRA[name][0], TEX_EXTRA[name][1]);
       if (DELIM['\\' + name]) return sym('\\' + name, DELIM['\\' + name], 'upr');
       if (name === '\\') return { t: 'nl' };
-      if (name === ',' || name === ';' || name === ':' || name === '!' || name === 'quad' || name === 'qquad')
+      if (name === ',' || name === ';' || name === ':' || name === '!' || SPACE_CMD[name])
         return sym('\\' + name, ' ', 'spc');
-      return sym('\\' + name, name, 'fn');
+      /* a command PaperTeX does not know: kept as written, and marked —
+         with its argument, if it has one (\overbrace{x+y}) */
+      ws();
+      if (s[i] === '{') return acc(name, group());
+      return raw('\\' + name);
     }
     function readDelim() {
       ws();
@@ -1274,7 +1355,7 @@
       while (i < s.length) {
         ws();
         if (stop && s[i] === stop) break;
-        if (s.slice(i, i + 6) === '\\right') break;
+        if (leftDepth && s.slice(i, i + 6) === '\\right') break;
         if (s[i] === '&' || s.slice(i, i + 2) === '\\\\') break;
         if (s[i] === '^') { i++; pushAtom(r, { t: 'scrmark', kind: 'sup', k: group() }); continue; }
         if (s[i] === '_') { i++; pushAtom(r, { t: 'scrmark', kind: 'sub', k: group() }); continue; }
@@ -1284,8 +1365,12 @@
       }
       return r;
     }
+    /* a \right ends only a \left's contents; a stray one is just its bracket */
+    var leftDepth = 0;
     function seqUntilRight() {
+      leftDepth++;
       var r = seq(null);
+      leftDepth--;
       if (s.slice(i, i + 6) === '\\right') i += 6;
       return r;
     }
@@ -1407,6 +1492,7 @@
     this.host.__mf = this;
     var self = this;
     this.host.addEventListener('mousedown', function (e) { self.onMouse(e); });
+
     this.host.addEventListener('keydown', function (e) { self.onKey(e); });
     this.host.addEventListener('focus', function () { self.gotFocus(); });
     this.host.addEventListener('blur', function (e) {
@@ -1435,6 +1521,8 @@
     if (this.opts.onFocus && !was) this.opts.onFocus(this);
   };
   MathField.prototype.lostFocus = function () {
+    /* a matrix being sized when the focus goes: it goes in as it stands */
+    if (this.picker) this.placeMatrix();
     this.autoWord(true);
     this.resolveCI(true);
     this.focused = false; this.sel = null; this.render();
@@ -1640,6 +1728,7 @@
       inMat = !!this.matrixAt();
     }
     this.host.classList.toggle('mf-inmat', inMat);
+    this.hintBar();
     if (this.sel && this.focused) this.drawSel();
     if (kb && this.focused) {
       /* at the caret, so an input method's word list opens beside it */
@@ -1652,6 +1741,51 @@
     }
     if (this.opts.onRender) this.opts.onRender(this);
   };
+  /* One line under the formula saying what the keys do where the caret is
+     — "Space leaves the power", "Tab: next cell" — so the rules of the box
+     can be seen instead of guessed. Shown while the formula has the caret
+     (styled in paper.css: .mf-hintbar, items as <kbd>key</kbd> text). */
+  MathField.prototype.hintBar = function () {
+    var box = this.host.closest && this.host.closest('.imath, .pt-eqw');
+    if (!box) return;
+    var bar = box.querySelector(':scope > .mf-hintbar');
+    var items = this.focused && !this.picker ? this.hints() : [];
+    if (!items.length) { if (bar) bar.remove(); return; }
+    if (!bar) { bar = document.createElement('div'); bar.className = 'mf-hintbar'; box.appendChild(bar); }
+    var html = items.map(function (it) {
+      return '<span>' + it[0].map(function (k) { return '<kbd>' + k + '</kbd>'; }).join('') + ' ' + it[1] + '</span>';
+    }).join('');
+    if (bar.innerHTML !== html) bar.innerHTML = html;
+  };
+  MathField.prototype.hints = function () {
+    var H = [], r = this.cur.row, p = this.parentOf(r), inline = !!this.opts.onExit;
+    if (this.pending && this.pending.kind === 'delim') return [[['(', '[', '|', '\\{'], 'the bracket']];
+    if (this.activeCI()) return [[['Space'], 'finish the name'], [['alpha'], 'names work without \\ too']];
+    var mt = this.matrixAt();
+    if (p) {
+      var n = p.node, t = n.t, brace = braced.has(r);
+      if (brace) H.push([['}'], 'close the brace']);
+      else if (t === 'scr') H.push([['Space'], n.sup === r ? 'leave the power' : 'leave the index']);
+      else if (t === 'frac') H.push([['Space'], p.slot === 0 ? 'on to the denominator' : 'leave the fraction']);
+      else if (t === 'sqrt') H.push([['Space'], n.k === r ? 'leave the root' : 'on to the root']);
+      else if (t === 'acc') H.push([['Space'], 'leave it']);
+      else if (t === 'big') H.push([['Space'], p.slot === 0 && n.hi ? 'on to the upper limit' : 'leave the limits']);
+      else if (t === 'paren') H.push([[(DELIM[n.r] || n.r || ')')], 'close the bracket']);
+      else if (t === 'txt') H.push([['→'], 'leave the words']);
+    }
+    if (mt) {
+      H.push([['Tab'], 'next cell']);
+      if (!this.opts.noMatrixSheet) H.push([['Double-click'], 'edit it large']);
+      if (!inline && !this.opts.noMatrixSheet) H.push([['⋮'], 'rows and columns']);
+    } else if (!p) {
+      if (isEmptyRow(this.root)) {
+        H.push([['alpha', 'sqrt', 'sum'], 'type a name'], [['/'], 'fraction'], [['^'], 'power']);
+      } else if (inline) H.push([['Esc'], 'back to the text']);
+      else H.push([['Enter'], 'new line'], [['Esc'], 'done']);
+    }
+    return H;
+  };
+
   /* A selection is one band over the run, from the first atom to the last
      and as tall as the tallest — not a patch per atom with the spacing
      showing through between them. */
@@ -1694,6 +1828,10 @@
         hit = { row: rowEl.__row, i: idx };
       }
     }
+    /* a double click on a matrix opens it large, on a sheet of its own —
+       counted here, as the formula is redrawn between the two clicks and
+       the browser's own dblclick never comes */
+    var dm = e.detail === 2 && e.target.closest ? e.target.closest('.mmat') : null;
     var hr = this.host.getBoundingClientRect();
     this.host.focus();
     e.preventDefault();
@@ -1710,6 +1848,7 @@
       this.cur = { row: this.root, i: e.clientX < hr.left + hr.width / 2 ? 0 : this.root.k.length };
     }
     this.render();
+    if (dm && dm.__mat && !this.opts.noMatrixSheet) this.openMatrix(dm.__mat);
   };
 
   /* ---- caret motion */
@@ -1894,9 +2033,13 @@
     return null;
   }
 
-  MathField.prototype.insertBuild = function (name) {
+  var ASK = { matrix2: [2, 2], matrix3: [3, 3], cases: [2, 2] };
+  /* `env`: for a matrix, which brackets (\bmatrix …) */
+  MathField.prototype.insertBuild = function (name, env) {
     var f = BUILDS[name];
     if (!f) return;
+    /* a matrix or cases display: how big, first (askMatrix) */
+    if (ASK[name]) { this.askMatrix(name === 'cases' ? 'cases' : env || 'pmatrix', ASK[name][0], ASK[name][1]); return; }
     var n = f();
     /* wrap the selection or the trailing operand where it makes sense */
     var grab = null;
@@ -1983,6 +2126,16 @@
     /* a fraction taken apart from its denominator is set on the line:
        a/b */
     var at = outer.k.indexOf(n);
+    /* a matrix or cases display is never taken apart: Backspace at the
+       start of a cell goes to the end of the cell before, and from the
+       first cell out in front of the display; one with nothing in it goes */
+    if (n.t === 'mat') {
+      var cells = slots(n);
+      if (cells.every(isEmptyRow)) { outer.k.splice(at, 1); this.cur = { row: outer, i: at }; this.changed(); return; }
+      if (p.slot > 0) { var pc = cells[p.slot - 1]; this.cur = { row: pc, i: pc.k.length }; }
+      else this.cur = { row: outer, i: at };
+      this.render(); return;
+    }
     if (n.t === 'frac' && n.style === 'frac' && p.slot === 1) { this.unFrac(n); this.cur = { row: outer, i: at + n.n.k.length + 1 }; this.changed(); return; }
     var contents = [];
     slots(n).forEach(function (s) { contents = contents.concat(s.k); });
@@ -1997,10 +2150,12 @@
      treats them differently (keepsSpaces, typeChar, autoWord). Kept
      beside the tree, not in it, so the document never stores them. */
   var braced = new WeakSet(), softDen = new WeakSet();
-  /* Space stays put inside typed braces and inside brackets */
+  /* Space stays put inside typed braces, inside brackets and in the cells of
+     a matrix (x & \text{if } x > 0 is typed with spaces; Tab, Enter and &
+     go on to the next cell) */
   MathField.prototype.keepsSpaces = function () {
     var p = this.parentOf(this.cur.row);
-    return braced.has(this.cur.row) || !!(p && p.node.t === 'paren');
+    return braced.has(this.cur.row) || !!(p && (p.node.t === 'paren' || p.node.t === 'mat'));
   };
 
   MathField.prototype.del = function () {
@@ -2034,6 +2189,8 @@
     this.cur = { row: c.row, i: at };
     if (!name) { if (!silent) this.changed(); else this.render(); return true; }
     if (name === 'slash') { this.insertNode(ch('/', 'upr')); return true; }
+    /* sizes and a \right with nothing to close: the brackets size themselves */
+    if (name === 'right' || name === 'middle' || /^(big|Big|bigg|Bigg)[lrm]?$/.test(name)) { this.changed(); return true; }
     if (!knownName(name)) {
       /* two commands run together, "\pmsqrt": \pm then \sqrt */
       var parts = splitNames(name);
@@ -2048,8 +2205,12 @@
         return true;
       }
     }
+    if (SPACE_CMD[name]) { this.insertNode(sym('\\' + name, ' ', 'spc')); return true; }
+    if ((ACC.hasOwnProperty(name) && !PT.symbols.buildCmds[name]) || WRAP[name]) {
+      this.insertNode(acc(name)); this.markOneTok(); return true;
+    }
     var bld = PT.symbols.buildCmds[name];
-    if (bld) { this.insertBuild(bld); return true; }
+    if (bld) { this.insertBuild(bld, /.matrix$/i.test(name) ? name : null); this.markOneTok(); return true; }
     var it = PT.symbols.byCmd[name];
     if (it) { this.insertNode(sym(it.tex, it.d, it.cls, it.f)); return true; }
     if (/^(sin|cos|tan|log|ln|exp|min|max|det|dim|ker|arg|sup|inf|gcd)$/.test(name)) {
@@ -2060,7 +2221,126 @@
   };
 
   var FNS = /^(sin|cos|tan|log|ln|exp|min|max|det|dim|ker|arg|sup|inf|gcd)$/;
-  function knownName(n) { return !!(n === 'slash' || PT.symbols.buildCmds[n] || PT.symbols.byCmd[n] || FNS.test(n)); }
+  function knownName(n) {
+    return !!(n === 'slash' || PT.symbols.buildCmds[n] || PT.symbols.byCmd[n] || FNS.test(n) ||
+      ACC.hasOwnProperty(n) || WRAP[n] || SPACE_CMD[n] || FACE.hasOwnProperty(n) || n === 'right' ||
+      /^(big|Big|bigg|Bigg)[lrm]?$/.test(n));
+  }
+  /* A structure made by a typed command with no "{" after it takes one
+     thing, as in LaTeX: \frac12 is ½, \sqrt2x is √2·x, \dot\mathbf{y} = …
+     dots only the y. Its parts are marked here (typeChar steps on once one
+     holds something); a "{" typed instead opens the part as usual. */
+  var oneTok = new WeakSet();
+  MathField.prototype.markOneTok = function () {
+    var p = this.parentOf(this.cur.row);
+    if (!p || !/^(frac|sqrt|acc)$/.test(p.node.t) || !isEmptyRow(this.cur.row)) return;
+    slots(p.node).forEach(function (s) { oneTok.add(s); });
+  };
+  var SPACE_KEY = { ',': '\\,', ';': '\\;', ':': '\\:', '!': '\\!', ' ': '\\ ' };
+  /* The key after \left or \right (a bracket), or after \mathbb (a letter,
+     or a "{" and letters up to "}"). True when it was used up. `given`: the
+     bracket, already read from a command (\langle, \{). */
+  MathField.prototype.pendingKey = function (k, given) {
+    var p = this.pending;
+    if (!p) return false;
+    if (p.kind === 'delim') {
+      if (!given && k === '\\') return false;       /* \left\{ — the name comes next */
+      if (!given && k === ' ') return true;
+      var d = given ? k : DELIM_KEY[k];
+      this.pending = null;
+      if (!d) return false;
+      if (p.side === 'l') {
+        this.insertNode(paren(d, DELIM_CLOSE[d] || d));
+        return true;
+      }
+      /* \right: closes the bracket the caret is in, with this one */
+      var r = this.cur.row, o = this.parentOf(r);
+      while (o && o.node.t !== 'paren') { r = rowOf.get(o.node); o = r ? this.parentOf(r) : null; }
+      if (o) {
+        o.node.r = d;
+        var outer = rowOf.get(o.node);
+        this.cur = { row: outer, i: outer.k.indexOf(o.node) + 1 };
+      }
+      this.changed();
+      return true;
+    }
+    if (p.kind === 'face') {
+      if (/^[A-Za-z]$/.test(k)) {
+        this.insertNode(sym('\\' + p.name + '{' + k + '}', k, 'upr', p.f || undefined));
+        if (!p.open) this.pending = null;
+        return true;
+      }
+      if (k === '{' && !p.open) { p.open = true; return true; }
+      if (k === ' ' && !p.open) return true;
+      this.pending = null;
+      return k === '}' && p.open;
+    }
+    this.pending = null;
+    return false;
+  };
+
+  /* \begin{…} and \end{…} typed out: a matrix or cases display is made at
+     once (no size asked: & and \\ grow it, as they fill it in LaTeX), and
+     \end leaves it. Others — aligned, split — the equation already is. */
+  MathField.prototype.environment = function (cmd, env) {
+    var base = String(env || '').replace(/\*$/, '');
+    var MATS = /^(matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|smallmatrix|cases)$/;
+    if (cmd === 'begin') {
+      if (MATS.test(base)) {
+        var m = mat(base === 'smallmatrix' ? 'matrix' : base, 1, base === 'cases' ? 2 : 1);
+        this.insertNode(m);
+        this.texMat = m;
+        return;
+      }
+      this.changed();
+      return;
+    }
+    var at = this.matrixAt();
+    if (at) {
+      var m2 = at.m, last = m2.r[m2.r.length - 1];
+      /* "… \\ \end{cases}": the empty row the last \\ opened goes */
+      if (m2.r.length > 1 && last.every(isEmptyRow)) m2.r.pop();
+      var mo = rowOf.get(m2);
+      this.cur = { row: mo, i: mo.k.indexOf(m2) + 1 };
+      if (this.texMat === m2) this.texMat = null;
+    }
+    this.sel = null;
+    this.changed();
+  };
+  /* \\ in a matrix or cases display: on to the next row, made if need be */
+  MathField.prototype.lineBreak = function () {
+    var at = this.matrixAt();
+    if (!at) { this.changed(); return; }
+    if (at.ri < at.m.r.length - 1) {
+      var cell = at.m.r[at.ri + 1][0];
+      this.sel = null;
+      this.cur = { row: cell, i: 0 };
+      this.changed();
+      return;
+    }
+    this.matrixOp('addrow');
+    var a2 = this.matrixAt();
+    if (a2) { var c0 = a2.m.r[a2.ri][0]; this.cur = { row: c0, i: 0 }; this.render(); }
+  };
+  /* & in a matrix or cases display: on to the next cell of the row — made,
+     in a matrix being typed out with \begin, while its first row grows */
+  MathField.prototype.ampersand = function () {
+    var at = this.matrixAt();
+    if (!at) return false;
+    var cols = at.m.r[0].length, cell;
+    if (at.ci < cols - 1) cell = at.m.r[at.ri][at.ci + 1];
+    else if (this.texMat === at.m && at.ri === 0 && this.matrixOp('addcol')) return true;
+    else if (at.ri < at.m.r.length - 1) cell = at.m.r[at.ri + 1][0];
+    if (cell) { this.sel = null; this.cur = { row: cell, i: 0 }; }
+    this.render();
+    return true;
+  };
+  MathField.prototype.dropCI = function (node) {
+    var at = this.cur.row.k.indexOf(node);
+    if (at < 0) return;
+    this.cur.row.k.splice(at, 1);
+    this.cur = { row: this.cur.row, i: at };
+  };
   /* a run of command names written together, split into names that all
      exist (the longest first): "pmsqrt" → pm, sqrt. Null if it cannot be. */
   function splitNames(n) {
@@ -2077,6 +2357,8 @@
     var k = e.key;
     /* an input method is composing a word: it arrives when done (deskFocus) */
     if (e.isComposing || k === 'Process') return;
+    /* the size picker for a new matrix has the keys while it is up */
+    if (this.picker && this.pickerKey(e) !== 'pass') return;
     var ciNode = this.activeCI();
     if (k === 'Backspace' && this.undoAuto()) { e.preventDefault(); return; }
     if (k !== 'Backspace') this.autoUndo = null;
@@ -2085,6 +2367,7 @@
     if (/^(Arrow|Home|End|Tab)/.test(k)) this.wordBreak = null;
 
     if (k === 'Escape') {
+      this.pending = null;
       /* Esc is "done": a command being typed is finished first (\top
          stays ⊤) — one that names nothing is dropped — and then the
          formula is left, as without one */
@@ -2095,14 +2378,91 @@
       if (this.opts.onEscape) this.opts.onEscape(this);
       e.preventDefault(); return;
     }
-    if (ciNode) {
+    var MOD = /^(Shift|Control|Alt|AltGraph|Meta|CapsLock|OS)$/.test(k);
+    /* \left, \right, \mathbb …: waiting for the bracket or letter they apply to */
+    if (this.pending && !MOD && !(ciNode && this.pending.kind === 'delim')) {
+      if (this.pendingKey(k)) { e.preventDefault(); return; }
+    }
+    if (ciNode && !MOD) {
+      var s0 = ciNode.s;
+      /* \begin{cases}, \end{cases}: the environment's name belongs to the command */
+      if (ciNode.arg != null) {
+        if (/^[A-Za-z*]$/.test(k)) { ciNode.arg += k; e.preventDefault(); this.changed(); return; }
+        if (k === 'Backspace') {
+          if (ciNode.arg) ciNode.arg = ciNode.arg.slice(0, -1); else delete ciNode.arg;
+          e.preventDefault(); this.changed(); return;
+        }
+        var envName = ciNode.arg;
+        this.dropCI(ciNode);
+        this.environment(s0, envName);
+        if (k === '}' || k === ' ' || k === 'Enter' || k === 'Tab') { e.preventDefault(); return; }
+        ciNode = null;
+      }
+    }
+    if (ciNode && !MOD) {
       if (/^[A-Za-z]$/.test(k)) { ciNode.s += k; e.preventDefault(); this.changed(); return; }
-      if (k === 'Enter' || k === ' ' || k === 'Tab') { this.resolveCI(); e.preventDefault(); return; }
       if (k === 'Backspace') { this.backspace(); e.preventDefault(); return; }
+      if ((s0 === 'begin' || s0 === 'end') && k === '{') { ciNode.arg = ''; e.preventDefault(); this.changed(); return; }
+      var waiting = this.pending && this.pending.kind === 'delim';
+      /* the bracket after \left or \right, given by name: \left\langle, \right\} */
+      if (waiting && ((!s0 && '{}|'.indexOf(k) >= 0) || DELIM_NAME[s0])) {
+        this.dropCI(ciNode);
+        this.pendingKey(!s0 ? (k === '|' ? '\\|' : '\\' + k) : DELIM_NAME[s0], true);
+        if (!s0 || k === ' ') { e.preventDefault(); return; }
+        ciNode = null;
+      } else if (waiting) this.pending = null;
+    }
+    if (ciNode && !MOD) {
+      if (s0 === 'left' || s0 === 'right') {
+        /* the bracket comes next — now, or after a space or a "\" */
+        this.dropCI(ciNode);
+        this.pending = { kind: 'delim', side: s0 === 'left' ? 'l' : 'r' };
+        this.render();
+        if (k === ' ' || k === 'Enter' || k === 'Tab') { e.preventDefault(); return; }
+        if (k !== '\\' && this.pendingKey(k)) { e.preventDefault(); return; }
+        ciNode = null;
+      } else if (/^(big|Big|bigg|Bigg)[lrm]?$/.test(s0) || s0 === 'middle') {
+        /* sizes: the brackets size themselves; the bracket typed next is just that */
+        this.dropCI(ciNode); this.render();
+        if (k === ' ' || k === 'Enter' || k === 'Tab') { e.preventDefault(); return; }
+        ciNode = null;
+      } else if (FACE.hasOwnProperty(s0)) {
+        /* \mathbb R, \mathbb{R}: the letter that follows, in that face */
+        this.dropCI(ciNode);
+        this.pending = { kind: 'face', name: s0 === 'mathscr' ? 'mathcal' : s0, f: FACE[s0], open: k === '{' };
+        this.render();
+        if (k === '{' || k === ' ' || k === 'Enter' || k === 'Tab') { e.preventDefault(); return; }
+        this.pending = null; ciNode = null;
+      } else if (s0 === 'sqrt' && k === '[') {
+        /* \sqrt[3]{x}: the index first, "]" on to the root */
+        this.dropCI(ciNode);
+        this.insertNode(sqrtn(row(), row()));
+        e.preventDefault(); return;
+      } else if (!s0 && SPACE_KEY[k]) {
+        /* \, \; \: \! and "\ ": the spaces LaTeX has, as spaces */
+        this.dropCI(ciNode);
+        this.insertNode(sym(SPACE_KEY[k], ' ', 'spc'));
+        e.preventDefault(); return;
+      } else if (!s0 && k === '\\') {
+        /* \\ : the next row of a matrix or cases display */
+        this.dropCI(ciNode);
+        this.lineBreak();
+        e.preventDefault(); return;
+      }
+    }
+    if (ciNode && !MOD) {
+      if (k === 'Enter' || k === ' ' || k === 'Tab') { this.resolveCI(); e.preventDefault(); return; }
       /* "\/" is a slash as written, not a fraction */
-      if (k === '/' && !ciNode.s) { this.resolveCI(true); this.insertNode(ch('/', 'upr')); e.preventDefault(); return; }
-      /* "\frac{", "\sqrt{", "\ddot{": the brace opens what the command made */
-      if (k === '{' && ciNode.s) { this.resolveCI(); if (this.cur.row !== this.root) braced.add(this.cur.row); e.preventDefault(); return; }
+      if (k === '/' && !s0) { this.resolveCI(true); this.insertNode(ch('/', 'upr')); e.preventDefault(); return; }
+      /* "\frac{", "\sqrt{", "\ddot{": the brace opens what the command made;
+         after a command PaperTeX does not know, it opens that command's
+         argument, written back as typed (\overbrace{…}, \cancel{…}) */
+      if (k === '{' && s0) {
+        if (!knownName(s0) && !splitNames(s0)) { this.dropCI(ciNode); this.insertNode(acc(s0), true); }
+        else this.resolveCI(true);
+        if (this.cur.row !== this.root) braced.add(this.cur.row);
+        e.preventDefault(); this.changed(); return;
+      }
       if (k.length === 1) { this.resolveCI(); }
     }
 
@@ -2138,7 +2498,8 @@
        equation goes away, as an empty paragraph does). Only then — after
        Ctrl+A, the first Backspace empties it and the block stays. */
     if (k === 'Backspace' && !this.sel && isEmptyRow(this.root) && this.opts.onDeleteEmpty) {
-      e.preventDefault(); this.opts.onDeleteEmpty(this); return;
+      /* (not by a held key's repeats: those stop at the empty formula) */
+      e.preventDefault(); if (!e.repeat) this.opts.onDeleteEmpty(this); return;
     }
 
     /* A formula set in a line of text (opts.onExit) is left the way it was
@@ -2167,32 +2528,24 @@
       case 'ArrowDown':
         if (!this.vert(1) && this.opts.onLeave) { this.opts.onLeave(this, 'down'); }
         e.preventDefault(); this.render(); return;
-      case 'Home': this.cur = { row: this.cur.row, i: 0 }; e.preventDefault(); this.render(); return;
-      case 'End': this.cur = { row: this.cur.row, i: this.cur.row.k.length }; e.preventDefault(); this.render(); return;
+      /* Home and End: the start and end of the whole line, as in text — so
+         "f(x) =" can go in front of a matrix or cases brace (the start of
+         a cell is ← away) */
+      case 'Home': this.sel = null; this.cur = { row: this.root, i: 0 }; e.preventDefault(); this.render(); return;
+      case 'End': this.sel = null; this.cur = { row: this.root, i: this.root.k.length }; e.preventDefault(); this.render(); return;
       case 'Backspace': this.backspace(); e.preventDefault(); return;
       case 'Delete': this.del(); e.preventDefault(); return;
       case 'Enter':
         /* inside a construct: on to its next part; on the line itself the
            field decides (a new equation line, closing the inline editor).
            Shift+Enter always goes to the field. */
-        /* in the last cell of a matrix or cases display: a new row, as in a
-           list; Enter on that row while it is still empty takes it away
-           again and leaves the display */
-        if (!e.shiftKey && this.matrixEnter()) { e.preventDefault(); return; }
-        /* just out of a cases display at the end of the line (Tab or →
-           from its last cell): another case, not another line */
-        var cb = this.cur.row.k[this.cur.i - 1];
-        if (!e.shiftKey && !this.sel && cb && cb.t === 'mat' && cb.env === 'cases' && this.cur.i === this.cur.row.k.length) {
-          var lr = cb.r[cb.r.length - 1], lc = lr[lr.length - 1];
-          reparent(this.root);
-          this.cur = { row: lc, i: lc.k.length };
-          if (this.matrixEnter()) { e.preventDefault(); return; }
-        }
+        /* (a matrix's size is asked for when it is made, and changed in its
+           large editor: Enter in a cell just goes on to the next one) */
         if (!e.shiftKey && this.advance()) { e.preventDefault(); this.render(); return; }
         if (this.opts.onEnter) { this.opts.onEnter(this, e); e.preventDefault(); }
         return;
       case 'Tab':
-        if (this.opts.onTab) { this.opts.onTab(this, e); e.preventDefault(); return; }
+        if (this.opts.onTab && this.opts.onTab(this, e) !== false) { e.preventDefault(); return; }
         /* in a cell of a matrix or cases display, inside something there
            (words, an index): Tab is still "next cell", as from the cell */
         var mt = this.matrixAt(), stepped = this.nextSlot(e.shiftKey);
@@ -2301,7 +2654,7 @@
       }
     }
     var made = null;
-    if (hit.b) this.insertBuild(hit.b);
+    if (hit.b) this.insertBuild(hit.b, /.matrix$/i.test(at.w) ? at.w : null);
     else if (hit.fn) this.insertNode(made = fnode(hit.fn));
     else this.insertNode(sym(hit.s.tex, hit.s.d, hit.s.cls, hit.s.f));
     this.autoUndo = { fn: function () {
@@ -2379,6 +2732,22 @@
        else is made of it: a digit after "π" selected with Ctrl+A is that
        digit, not an index to the π (only / and brackets wrap a selection) */
     if (this.sel && '/([{|'.indexOf(c) < 0) { this.deleteSel(); reparent(this.root); }
+    /* a "." that stepped out of an exponent (x^2.) and is followed by a
+       digit was a decimal point: it goes back in, x^{2.5} */
+    var sd = this.softDot;
+    this.softDot = null;
+    if (sd && /[0-9]/.test(c) && this.cur.row === sd.row && this.cur.i === sd.i && sd.row.k[sd.i - 1] === sd.dot) {
+      sd.row.k.splice(sd.i - 1, 1);
+      sd.into.k.push(sd.dot);
+      reparent(this.root);
+      this.cur = { row: sd.into, i: sd.into.k.length };
+    }
+    /* in a part of \frac12, \sqrt2, \dot x — typed without "{" — the one
+       thing it takes is there: on to the next part, or out */
+    var ot = this.cur.row;
+    if (oneTok.has(ot) && !braced.has(ot) && !this.sel && ot.k.length && this.cur.i === ot.k.length && c !== '}') {
+      this.advance(); reparent(this.root);
+    }
     var pr = this.parentOf(this.cur.row);
     /* Braces as in LaTeX: "{" where a part begins only opens it, and "}"
        closes it — on to the next part, or out — so x^{2}, \frac{a}{b} and
@@ -2412,7 +2781,7 @@
       var one = this.cur.row.k.length === 1 && (this.cur.row.k[0].t === 'ch' || this.cur.row.k[0].t === 'sym');
       var isSub = pr.node.sub === this.cur.row;
       if ('=<>'.indexOf(c) >= 0 || (one && '+-*,;:'.indexOf(c) >= 0) ||
-          (digits && (isSub ? !/[0-9.^_]/.test(c) : '+-*,;:)]|(['.indexOf(c) >= 0))) {
+          (digits && (isSub ? !/[0-9.^_]/.test(c) : ('+-*,;:)]|(['.indexOf(c) >= 0 || /[A-Za-z\\]/.test(c))))) {
         this.outOf(); reparent(this.root);
       }
     }
@@ -2422,6 +2791,31 @@
     if (softDen.has(this.cur.row) && !this.sel && this.cur.i === this.cur.row.k.length && this.cur.row.k.length &&
         '+-*=<>,;:'.indexOf(c) >= 0) {
       this.outOf(); reparent(this.root);
+    }
+
+    /* A full stop, comma or semicolon at the very end of an exponent, an
+       index, a root, an accent or a "/" fraction ends the sentence, not the
+       box: it goes after the whole thing — x^2. is x², and ω_0, is ω₀ , —
+       through as many boxes as end there. (Not in braces the user typed;
+       a "." followed by a digit goes back in, see softDot.) */
+    if ('.,;'.indexOf(c) >= 0 && !this.sel && this.cur.row !== this.soft) {
+      this.autoWord(true);
+      var into = null;
+      for (;;) {
+        var pr2 = this.parentOf(this.cur.row), cr = this.cur.row;
+        if (!pr2 || braced.has(cr) || !cr.k.length || this.cur.i !== cr.k.length) break;
+        var t2 = pr2.node.t;
+        if (!(t2 === 'scr' || t2 === 'acc' || (t2 === 'sqrt' && pr2.node.k === cr) || softDen.has(cr))) break;
+        if (!this.outOf()) break;
+        reparent(this.root);
+        if (!into) into = cr;
+      }
+      if (into) {
+        var pn = ch(c);
+        this.insertNode(pn);
+        if (c === '.') this.softDot = { dot: pn, into: into, row: this.cur.row, i: this.cur.i };
+        return;
+      }
     }
 
     /* in a soft index (made by typing x1), at its end: digits join it, ^
@@ -2475,6 +2869,10 @@
     if (c === '_') { this.applyScript('sub'); return; }
     if (/[0-9]/.test(c) && this.autoSubscript(c)) return;
     if (OPEN[c]) { this.insertBuild(c === '(' ? 'paren' : (c === '[' ? 'brack' : 'brace')); return; }
+    if (c === ']') {
+      var pi = this.parentOf(this.cur.row);
+      if (pi && pi.node.t === 'sqrt' && pi.node.idx === this.cur.row) { this.cur = { row: pi.node.k, i: 0 }; this.render(); return; }
+    }
     if (c === ')' || c === ']' || c === '}') {
       var pp = this.parentOf(this.cur.row);
       if (pp && pp.node.t === 'paren') { this.outOf(); this.render(); return; }
@@ -2487,6 +2885,8 @@
     }
     if (c === '*') { this.insertNode(sym('\\cdot', '⋅', 'bin')); return; }
     if (c === '-') { this.insertNode(ch('-', 'bin')); return; }
+    /* & : the next cell of a matrix; in a line of text it has nothing to align */
+    if (c === '&' && (this.ampersand() || this.opts.onExit)) return;
     /* a symbol typed as itself — from a Greek layout, the emoji and symbol
        panel, a paste of one character: α is \alpha, ≤ is \leq */
     var g = c.charCodeAt(0) > 127 ? byGlyph()[c] : null;
@@ -2551,24 +2951,209 @@
     this.cur = { row: outer, i: at + (n.d.k.length ? run.length : n.n.k.length + 1) };
   };
 
-  /* Last cell of a matrix or cases display, Enter: a new row below. On a
-     last row that is still empty it is taken away again and the caret
-     leaves the display, as Enter on an empty list item leaves the list. */
-  MathField.prototype.matrixEnter = function () {
-    var p = this.parentOf(this.cur.row);
-    if (!p || p.node.t !== 'mat' || this.sel) return false;
-    var m = p.node, cols = m.r[0].length;
-    if (p.slot !== m.r.length * cols - 1) return false;
-    var last = m.r[m.r.length - 1];
-    if (m.r.length > 1 && last.every(isEmptyRow)) {
-      m.r.pop();
-      reparent(this.root);
-      var outer = rowOf.get(m);
-      this.cur = { row: outer, i: outer.k.indexOf(m) + 1 };
-      this.changed();
-      return true;
+  /* ---- matrices: the size asked for when one is made ---------------------
+     Typing "matrix" (or \bmatrix, "cases", a palette button) does not drop
+     a 2 × 2 in at once: a small picker under the caret asks how big —
+     move over its grid, or use the arrow keys, and Enter or a click puts
+     it in; Esc or Backspace takes the typed name back. The field keeps the
+     focus throughout (the picker never takes it), so its keys come here
+     first (see onKey). */
+  var sheetOpen = false;
+  var BRACKETS = [['pmatrix', '( )'], ['bmatrix', '[ ]'], ['Bmatrix', '{ }'], ['vmatrix', '| |'], ['Vmatrix', '‖ ‖'], ['matrix', 'none']];
+  var MAXR = 10, MAXC = 10, GRID = 8;
+  MathField.prototype.askMatrix = function (env, r, c) {
+    this.closePicker();
+    var self = this, cases = env === 'cases';
+    var pk = { env: env, r: r, c: cases ? 2 : c, cases: cases };
+    var box = el('div', 'popmenu mx-pick');
+    box.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    var head = el('div', 'popg mx-pick-h');
+    box.appendChild(head);
+    var grid = el('div', 'mx-pick-grid');
+    var cols = cases ? 2 : GRID;
+    grid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+    for (var i = 1; i <= GRID; i++) {
+      for (var j = 1; j <= cols; j++) {
+        (function (ri, ci) {
+          var cell = el('span', 'mx-pick-c');
+          cell.addEventListener('mouseenter', function () { pk.r = ri; if (!cases) pk.c = ci; show(); });
+          cell.addEventListener('click', function () { pk.r = ri; if (!cases) pk.c = ci; self.placeMatrix(); });
+          grid.appendChild(cell);
+        })(i, j);
+      }
     }
-    return this.matrixOp('addrow');
+    box.appendChild(grid);
+    if (!cases) {
+      var kinds = el('div', 'mx-pick-k');
+      BRACKETS.forEach(function (b) {
+        var bt = el('button', 'mx-pick-b', b[1]);
+        bt.type = 'button';
+        bt.title = b[0] === 'matrix' ? 'No brackets' : 'Brackets ' + b[1];
+        bt.addEventListener('click', function () { pk.env = b[0]; show(); });
+        bt.__env = b[0];
+        kinds.appendChild(bt);
+      });
+      box.appendChild(kinds);
+    }
+    box.appendChild(el('div', 'mx-pick-f', 'Arrow keys or the mouse · Enter to put it in · Esc to cancel'));
+    function show() {
+      head.textContent = cases ? (pk.r + (pk.r === 1 ? ' case' : ' cases')) : (pk.r + ' × ' + pk.c + ' matrix');
+      [].forEach.call(grid.children, function (cell, k) {
+        var ri = Math.floor(k / cols) + 1, ci = k % cols + 1;
+        cell.classList.toggle('on', ri <= pk.r && ci <= pk.c);
+      });
+      [].forEach.call(box.querySelectorAll('.mx-pick-b'), function (bt) { bt.classList.toggle('on', bt.__env === pk.env); });
+    }
+    pk.el = box;
+    pk.show = show;
+    this.picker = pk;
+    document.body.appendChild(box);
+    show();
+    /* under the caret */
+    var at = this.host.querySelector('.mcaret') || this.host, rr = at.getBoundingClientRect();
+    var left = Math.max(8, Math.min(window.innerWidth - box.offsetWidth - 8, rr.left - 12));
+    var top = rr.bottom + 8 + box.offsetHeight < window.innerHeight ? rr.bottom + 8 : Math.max(8, rr.top - box.offsetHeight - 8);
+    box.style.left = left + window.scrollX + 'px';
+    box.style.top = top + window.scrollY + 'px';
+  };
+  MathField.prototype.closePicker = function () {
+    if (!this.picker) return;
+    this.picker.el.remove();
+    this.picker = null;
+  };
+  MathField.prototype.placeMatrix = function () {
+    var pk = this.picker;
+    if (!pk) return;
+    this.closePicker();
+    this.insertNode(mat(pk.env, pk.r, pk.c));
+  };
+  /* keys while the picker is up: they size it, put it in, or cancel it */
+  MathField.prototype.pickerKey = function (e) {
+    var pk = this.picker, k = e.key;
+    e.preventDefault();
+    if (k === 'ArrowDown') pk.r = Math.min(MAXR, pk.r + 1);
+    else if (k === 'ArrowUp') pk.r = Math.max(1, pk.r - 1);
+    else if (k === 'ArrowRight' && !pk.cases) pk.c = Math.min(MAXC, pk.c + 1);
+    else if (k === 'ArrowLeft' && !pk.cases) pk.c = Math.max(1, pk.c - 1);
+    else if (k === 'Enter' || k === 'Tab' || k === ' ') { this.placeMatrix(); return; }
+    else if (k === 'Escape') {
+      /* nothing made, and the name typed is gone too */
+      this.closePicker();
+      this.autoUndo = null;
+      this.render();
+      return;
+    } else if (k === 'Backspace') {
+      /* nothing made: the name typed comes back as it was */
+      this.closePicker();
+      if (!this.undoAuto()) this.render();
+      return;
+    } else if (k.length === 1 && !e.ctrlKey && !e.metaKey) {
+      /* typing on: the matrix goes in as it stands, and what was typed
+         goes into its first cell */
+      this.placeMatrix();
+      return 'pass';
+    } else return;
+    pk.show();
+  };
+
+  /* ---- a matrix on a sheet of its own -------------------------------------
+     Double-clicking a matrix (or "Edit large…") opens it large, alone on a
+     page, with buttons for its rows, columns and brackets. It is the same
+     matrix, edited where it stands: closing puts the caret back after it. */
+  MathField.prototype.matrixNodeAt = function () {
+    var at = this.matrixAt();
+    if (at) return at.m;
+    var prev = this.cur.row.k[this.cur.i - 1], next = this.cur.row.k[this.cur.i];
+    if (prev && prev.t === 'mat') return prev;
+    if (next && next.t === 'mat') return next;
+    return firstMat(this.root);
+  };
+  MathField.prototype.openMatrix = function (m) {
+    m = m || this.matrixNodeAt();
+    if (!m) return false;
+    var outer = this, cases = m.env === 'cases';
+    this.closePicker();
+    var back = el('div', 'dlg-back mx-back');
+    var box = el('div', 'dlg mx-sheet');
+    box.appendChild(el('div', 'dlg-t', cases ? 'Cases' : 'Matrix'));
+    var tools = el('div', 'mx-tools');
+    var paper = el('div', 'mx-paper');
+    var host = el('div', 'mx-field');
+    paper.appendChild(host);
+    box.appendChild(tools);
+    box.appendChild(paper);
+    var foot = el('div', 'dlg-r');
+    var done = el('button', 'dlg-btn primary', 'Done');
+    done.type = 'button';
+    foot.appendChild(done);
+    box.appendChild(foot);
+    back.appendChild(box);
+    document.body.appendChild(back);
+
+    var big = new MathField(host, {
+      root: row([m]),
+      noMatrixSheet: true,   /* already on its sheet */
+      onEscape: function () { close(); },
+      /* saved as it changes — without redrawing the formula underneath,
+         which would take the matrix's place in it back */
+      onChange: function () { if (outer.opts.onChange) outer.opts.onChange(outer); }
+    });
+    sheetOpen = true;
+    var b0 = m.r[0][0];
+    big.cur = { row: b0, i: b0.k.length };
+    function btn(label, title, fn) {
+      var b = el('button', 'dlg-btn mx-tool', label);
+      b.type = 'button';
+      b.title = title;
+      b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      b.addEventListener('click', function () { fn(); big.host.focus(); });
+      tools.appendChild(b);
+      return b;
+    }
+    /* on the cell the caret is in; with the caret elsewhere, the last one */
+    function op(name) {
+      if (!big.matrixAt()) { var lr = m.r[m.r.length - 1], lc = lr[lr.length - 1]; reparent(big.root); big.cur = { row: lc, i: lc.k.length }; }
+      big.matrixOp(name);
+    }
+    btn('+ Row', 'Add a row below the caret', function () { op('addrow'); });
+    btn('− Row', 'Remove the caret’s row', function () { op('delrow'); });
+    if (!cases) {
+      btn('+ Column', 'Add a column right of the caret', function () { op('addcol'); });
+      btn('− Column', 'Remove the caret’s column', function () { op('delcol'); });
+      var kinds = el('span', 'mx-kinds');
+      BRACKETS.forEach(function (b) {
+        var bt = el('button', 'dlg-btn mx-tool mx-kind' + (m.env === b[0] ? ' on' : ''), b[1]);
+        bt.type = 'button';
+        bt.title = b[0] === 'matrix' ? 'No brackets' : 'Brackets ' + b[1];
+        bt.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        bt.addEventListener('click', function () {
+          m.env = b[0];
+          [].forEach.call(kinds.children, function (x) { x.classList.toggle('on', x === bt); });
+          big.changed();
+          big.host.focus();
+        });
+        kinds.appendChild(bt);
+      });
+      tools.appendChild(kinds);
+    }
+    var closed = false;
+    function close() {
+      if (closed) return;
+      closed = true;
+      sheetOpen = false;
+      back.remove();
+      /* the formula takes its matrix back, and the caret goes after it */
+      reparent(outer.root);
+      var r = rowOf.get(m);
+      if (r) outer.cur = { row: r, i: r.k.indexOf(m) + 1 };
+      outer.sel = null;
+      outer.host.focus();
+      outer.changed();
+    }
+    done.addEventListener('click', close);
+    back.addEventListener('mousedown', function (e) { if (e.target === back) { e.preventDefault(); close(); } });
+    host.focus();
+    return true;
   };
 
   /* Ctrl+B: the selection in bold; with none, what is typed next — or, in
@@ -2702,6 +3287,8 @@
     texRow: texRow, parseTex: parseTex, scanRow: scanRow,
     renderStatic: renderStatic, renderInline: renderInline, layout: layout, plainOf: plainOf,
     /* the command for a symbol given as its character: '≥' → '\geq' */
+    /* a matrix is open on its own sheet (openMatrix): its formula is still being edited */
+    matrixSheetOpen: function () { return sheetOpen; },
     glyphTex: function (c) { var g = byGlyph()[c]; return g ? g.tex : null; },
     touchTyping: function (on) { touchTyping = !!on; },
     MathField: MathField, BUILDS: BUILDS,

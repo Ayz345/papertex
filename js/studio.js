@@ -711,7 +711,7 @@
 
       var s9 = section(P, 'Caption and label');
       captionEditor(st, row(s9, null, 'full'), function () { st.draw(); });
-      input(row(s9, 'Label'), b.label, 'fig:name — to refer to it with \\ref', function (v) {
+      input(row(s9, 'Name, for referring to it'), b.label, 'e.g. fig:growth — a reference to the figure uses it', function (v) {
         b.label = v.replace(/[^A-Za-z0-9:_-]/g, ''); editor.change();
       }, 'wide');
       select(row(s9, 'In the PDF'), PLACEMENT, b.placement || 'htbp', function (v) { b.placement = v; editor.change(); });
@@ -1392,7 +1392,7 @@
       seg(row(s5, 'Caption'), [[false, 'Above the table'], [true, 'Below it']], !!b.capBelow, function (v) {
         b.capBelow = v === true || v === 'true'; st.touch(true);
       });
-      input(row(s5, 'Label'), b.label, 'tab:name — to refer to it with \\ref', function (v) {
+      input(row(s5, 'Name, for referring to it'), b.label, 'e.g. tab:results — a reference to the table uses it', function (v) {
         b.label = v.replace(/[^A-Za-z0-9:_-]/g, ''); editor.change();
       }, 'wide');
       select(row(s5, 'In the PDF'), PLACEMENT, b.placement || 'htbp', function (v) { b.placement = v; editor.change(); });

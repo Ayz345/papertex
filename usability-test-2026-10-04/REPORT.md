@@ -6,7 +6,7 @@
 **Test document:** [test-document/damped-oscillator.pdf](test-document/damped-oscillator.pdf). Its source is [damped-oscillator.tex](test-document/damped-oscillator.tex) and its plot is [fig1.png](test-document/fig1.png).
 **Tester instructions:** [tester-prompts.md](tester-prompts.md)
 
-> **This is round 1.** The problems below were fixed the same evening, and a rerun with the same testers and document is in **[ROUND-2.md](ROUND-2.md)**. A third run, with a fixed window size, page images and a second Word user, is in **[ROUND-3.md](ROUND-3.md)**.
+> **This is round 1.** The problems below were fixed the same evening, and a rerun with the same testers and document is in **[ROUND-2.md](ROUND-2.md)**. A third run, with a fixed window size, page images and a second Word user, is in **[ROUND-3.md](ROUND-3.md)**. A fourth, with six testers on four models and a usability questionnaire, is in **[ROUND-4.md](ROUND-4.md)**.
 >
 > - **Scores:** the three Sonnet testers' combined score rose from 74% to 93% on an organiser-scored checklist ([scoring.md](scoring.md)).
 > - **New blockers:** the rerun also found two bugs that each stop a whole document from compiling.
@@ -435,6 +435,7 @@ Every tester mentioned these:
 | `REPORT.md` | This report (round 1) |
 | [ROUND-2.md](ROUND-2.md) | The rerun after the fixes: scores, fixed and remaining problems, new blockers, corrections |
 | [ROUND-3.md](ROUND-3.md) | The third run: three-round comparison, run-to-run variance, new structural bugs |
+| [ROUND-4.md](ROUND-4.md) | The fourth run: six testers on four models, SUS and intuitiveness ratings, the formula box's "almost LaTeX" gaps |
 | `test-document/pages/` | PNG renders of the test PDF's pages, handed out from round 3 on |
 | [scoring.md](scoring.md) | The 27-item checklist and every score, with reasons |
 | [results/](results/) | Each final document from both rounds: generated `.tex`, the saved document (`.json`), and the compiled `.pdf` where it compiles |

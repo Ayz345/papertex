@@ -641,12 +641,12 @@
 
     var targets = refTargets();
     var cites = state.doc.bib.map(function (e, i) {
-      return { cite: e, kind: 'cite', group: 'Works cited', name: '[' + (i + 1) + ']',
+      return { cite: e, kind: 'cite', group: 'Reference list', name: '[' + (i + 1) + ']',
         text: [L.plainText(e.author), L.plainText(e.title)].filter(Boolean).join(' — ') || e.key };
     });
     /* a work not in the list yet: added to it (and the list to the end of
        the document, if there is none), cited, and its entry opened to fill in */
-    var fresh = { fresh: true, kind: 'cite', group: 'Works cited', name: '+ New work…', text: 'add it to the reference list and cite it' };
+    var fresh = { fresh: true, kind: 'cite', group: 'Reference list', name: '+ New work…', text: 'add it to the reference list and cite it' };
     var all = want === 'cite' ? cites.concat([fresh], targets) : targets.concat(cites, [fresh]);
 
     var m = h('div', 'popmenu pt-refpop');
@@ -762,6 +762,17 @@
     var s = window.getSelection();
     if (!s.rangeCount) return;
     var r = s.getRangeAt(0);
+    /* a selected reference written by hand ("Figure 3", "[2]", "(1)") is
+       replaced by the live one; any other selected words stay, and the
+       reference goes after them */
+    var seltext = r.toString();
+    if (!r.collapsed && !/^\s*(\[[\d,\s]*\]|\(\d+\)|[A-Za-z.]*\s*\d+(\.\d+)*)\s*$/.test(seltext)) {
+      r.collapse(false);
+      if (!/\s$/.test(seltext)) {
+        var gap = document.createTextNode(' ');
+        r.insertNode(gap); r.setStartAfter(gap); r.collapse(true);
+      }
+    }
     var keepSpace = !r.collapsed && /\s$/.test(r.toString());
     r.deleteContents();
     if (word && host && host.contains(r.startContainer)) {
@@ -769,6 +780,19 @@
       pre.selectNodeContents(host);
       pre.setEnd(r.startContainer, r.startOffset);
       var before = pre.toString().replace(/[​ ]/g, ' ');
+      /* "Figure 1" already typed by hand before the caret: its number goes,
+         the live one takes its place, and the word is not doubled */
+      var typed = new RegExp(word + '(\\s*)(\\d+(?:\\.\\d+)*\\s*)$', 'i').exec(before);
+      if (typed && r.startContainer.nodeType === 3 && r.startOffset >= typed[2].length) {
+        var num = document.createRange();
+        num.setStart(r.startContainer, r.startOffset - typed[2].length);
+        num.setEnd(r.startContainer, r.startOffset);
+        num.deleteContents();
+        r = num; r.collapse(true);
+        before = before.slice(0, before.length - typed[2].length);
+        if (!typed[1]) { var sp1 = document.createTextNode(' '); r.insertNode(sp1); r.setStartAfter(sp1); r.collapse(true); before += ' '; }
+        s.removeAllRanges(); s.addRange(r);
+      }
       if (!new RegExp(word + '\\s*$', 'i').test(before)) {
         var w = document.createTextNode((/(^|\s)$/.test(before) ? '' : ' ') + word + ' ');
         r.insertNode(w);
@@ -852,7 +876,7 @@
     field('Separate title page', chk(S.titlepage, function (v) { S.titlepage = v; apply(); }));
 
     group('Formulas');
-    field('Recognise typed names', chk(S.autoMath !== false, function (v) {
+    field('Turn typed names into symbols (alpha → α)', chk(S.autoMath !== false, function (v) {
       S.autoMath = v;
       M.setAutoWords(v);
       state.editor.change(true);
@@ -1113,7 +1137,7 @@
     var paper = $('#paper').cloneNode(true);
     ['.gutter', '.pt-tailadd', '.pt-addauth', '.pt-xauth', '.pt-figctl', '.pt-tabctl', '.pt-chedit', '.pt-cherr',
       '.pt-codebar', '.pt-rawl', '.pt-bibx', '.pt-bibup', '.pt-bibdn', '.pt-bibadd', '.pt-bibkey', '.mcaret', '.pt-drop',
-      '.mf-kb', '.mselbox']
+      '.mf-kb', '.mselbox', '.mf-hintbar']
       .forEach(function (sel) {
         [].forEach.call(paper.querySelectorAll(sel), function (e) { e.remove(); });
       });
@@ -1296,7 +1320,7 @@
         err.appendChild(h('div', 'pdf-errn',
           'This copy cannot reach engine/siglum.js — the published preview is sandboxed ' +
           'and blocks it. Open papertex.html from the folder that contains engine/, ' +
-          'where compiling works. Copy LaTeX and Export .tex work everywhere.'));
+          'where compiling works. Copy LaTeX and Download .tex work everywhere.'));
       } else {
         err.appendChild(h('div', 'pdf-errh', 'The engine could not start'));
         err.appendChild(h('pre', 'pdf-errm', msg));
@@ -1326,7 +1350,7 @@
       note = 'PaperTeX knows no LaTeX command for it. Delete it, or say it in words or as a formula.';
     } else if (file) {
       head = 'The engine here does not have ' + file[1];
-      note = 'That package is outside the set bundled with PaperTeX. Export .tex and compile it with a full TeX installation, or leave the package out.';
+      note = 'That package is outside the set bundled with PaperTeX. Download .tex and compile it with a full TeX installation, or leave the package out.';
     } else {
       at = blockAtLine(log, tex);
       note = at ? 'Check that part, or remove it, and compile again.' : 'Copy LaTeX shows the whole source, if you want to look for it.';
@@ -1525,11 +1549,11 @@
        is not bound is shown nowhere — not in a tooltip, not in the help. */
     add('Document', 'edit.undo', 'Undo', ['Ctrl+Z'], doUndo, { menu: 'undo', fieldsNative: true, glyph: '↶' });
     add('Document', 'edit.redo', 'Redo', ['Ctrl+Y', 'Ctrl+Shift+Z'], doRedo, { menu: 'redo', fieldsNative: true, glyph: '↷' });
-    add('Document', 'doc.export', 'Export .tex', ['Ctrl+S'], exportTex, { menu: 'export', glyph: '⤓' });
+    add('Document', 'doc.export', 'Download .tex', ['Ctrl+S'], exportTex, { menu: 'export', glyph: '⤓' });
     add('Document', 'doc.save', 'Save project', ['Ctrl+Shift+S'], click('#btnSave'), { menu: 'save', glyph: '💾' });
     add('Document', 'doc.open', 'Open project', ['Ctrl+O'], openProject, { menu: 'open', glyph: '📂' });
     add('Document', 'doc.new', 'New document', desk ? ['Ctrl+N'] : [], click('#btnNew'), { menu: 'new', glyph: '＋' });
-    add('Document', 'doc.compile', 'Compile PDF', desk ? ['Ctrl+R'] : [], compilePDF, { menu: 'compile', glyph: '▶' });
+    add('Document', 'doc.compile', 'Make PDF', desk ? ['Ctrl+R'] : [], compilePDF, { menu: 'compile', glyph: '▶' });
     add('Document', 'doc.print', 'Print the page as it looks', ['Ctrl+P'], printDoc, { menu: 'print', glyph: '⎙' });
     add('Document', 'doc.copy', 'Copy LaTeX', [], copyTex, { glyph: '⧉' });
     add('Document', 'view.palette', 'Show or hide the symbol palette', [], click('#btnPal'), { glyph: '▤' });
@@ -1584,6 +1608,11 @@
         return true;
       }, { glyph: '⊞', words: 'matrix cases row column pmatrix' });
     });
+    add('Maths — Matrix', 'math.mat.open', 'Matrix or cases: edit it large', [], function () {
+      var f = activeMathField();
+      if (!f || !f.openMatrix()) toast('Put the caret in a formula with a matrix or cases display first.');
+      return true;
+    }, { glyph: '⤢', words: 'matrix cases zoom bigger large edit' });
 
     PT.symbols.groups.forEach(function (g) {
       g.items.forEach(function (it) {
@@ -1724,9 +1753,9 @@
   var MORE = [
     ['btnPalette', '⌕', 'Commands', 'Search every command, block and symbol'],
     ['btnHelp', '?', 'Shortcuts and tips', ''],
-    ['btnPrint', '⎙', 'Print', 'The page as it looks here — a quick copy'],
+    ['btnPrint', '⎙', 'Quick print', 'The page as it looks here — a quick copy'],
     ['btnCopy', '⧉', 'Copy LaTeX', ''],
-    ['btnTex', '⤓', 'Export .tex', ''],
+    ['btnTex', '⤓', 'Download .tex', ''],
     ['btnPal', '▤', 'Symbol palette', 'Show or hide'],
     ['btnPanel', '▥', 'LaTeX panel', 'Show or hide']
   ];
@@ -1894,7 +1923,7 @@
       },
       onRendered: function () { pageGuides(); },
       onImage: function (b) {
-        toast('Image added as ' + b.filename + ' — Export .tex sends the file with it.');
+        toast('Image added as ' + b.filename + ' — Download .tex sends the file with it.');
       },
       onFieldFocus: function (f) { state.editor.activeField = f; },
       onSettings: function () { buildSettings(); },
@@ -2076,18 +2105,10 @@
     /* a phone gets one line, not a page of keyboard shortcuts it cannot use */
     var phone = window.innerWidth < 760 || (window.matchMedia && matchMedia('(pointer: coarse)').matches && !matchMedia('(any-pointer: fine)').matches);
     if (!seen && !phone) {
-      /* the tips, unless writing has already begun: then they would land
-         over the first words, and keys typed meant for the page would go to
-         them — a line about where to find them instead */
-      var begun = false, mark = function () { begun = true; };
-      document.addEventListener('keydown', mark, true);
-      document.addEventListener('mousedown', mark, true);
-      setTimeout(function () {
-        document.removeEventListener('keydown', mark, true);
-        document.removeEventListener('mousedown', mark, true);
-        if (begun) toast('Tips and shortcuts are under “? Shortcuts” at the top whenever you want them.');
-        else openHelp();
-      }, 500);
+      /* never a dialog over the page at the start: it landed over the first
+         words, and keys meant for the page went to it. A line about where
+         the tips are; the formulas show their own (the hint under them) */
+      toast('New here? Type “/” for blocks and “$” for a formula — tips are under “? Shortcuts”.');
     } else if (phone) {
       toast('PaperTeX is made for a computer with a keyboard — on a phone you can read and make small edits.');
     }

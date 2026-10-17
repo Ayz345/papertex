@@ -432,7 +432,7 @@ blockquote.pt-quote {
 /* in a matrix or cases display (.mf-inmat, math.js): how to get another row */
 .pt-eqw:has(.pt-eqf.mf-inmat) { position: relative; }
 .pt-eqw:has(.pt-eqf.mf-inmat)::after {
-  content: 'Enter in the last row adds a row \00B7  \22EE  for columns';
+  content: 'Double-click to edit it large \00B7  \22EE  for rows and columns';
   position: absolute; right: 0; top: 100%; margin-top: 1px;
   font: 400 10.5px/1.3 ui-sans-serif, system-ui, sans-serif; color: #a08a6c; font-style: normal;
   white-space: nowrap; pointer-events: none;
@@ -522,6 +522,8 @@ blockquote.pt-quote {
 .m-var { font-style: italic; font-family: "PaperTeX Math", "PaperTeX", serif; }
 .m-f-bb  { font-family: "PaperTeX AMS", "PaperTeX", serif; font-style: normal; }
 .m-f-cal { font-family: "PaperTeX Cal", "PaperTeX", serif; font-style: normal; }
+/* fraktur: Unicode letters (math.js m-frak); no bundled face, so the system maths fonts draw them */
+.m-frak { font-style: normal; font-family: "Cambria Math", "STIX Two Math", "Latin Modern Math", "Segoe UI Symbol", serif; }
 .m-num, .m-upr, .m-punct { font-style: normal; }
 /* Space between atoms is not styled here: the renderer applies TeX's
    spacing table, which depends on both neighbours and on the style. */
@@ -549,7 +551,7 @@ blockquote.pt-quote {
    ringed, so it is plain where the next key lands. Paint only — no padding
    or border, which would move what the layout pass measured. */
 .mfield:focus .mslot-on, .mfield.mf-on .mslot-on, .imath.editing .mslot-on {
-  background: rgba(236, 178, 72, .26); box-shadow: 0 0 0 1px rgba(201, 146, 54, .7); border-radius: 2px;
+  background: rgba(236, 178, 72, .3); box-shadow: 0 0 0 1.5px #c99236; border-radius: 2px;
 }
 /* the slots around it — the denominator a subscript sits in — keep a
    fainter ring, so Right arrow leaving only the inner one is visible */
@@ -645,6 +647,29 @@ blockquote.pt-quote {
 /* \mathbf: bold and upright — letters in the text face's bold, since the
    maths italic has no bold to draw them with (\boldsymbol keeps them slanted) */
 .mbf .m-var { font-style: normal; font-family: "PaperTeX", serif; }
+/* Commands typed with an argument that change the face rather than add a
+   mark (math.js: .macc-KIND with no .maccm). Sans and typewriter faces are
+   not bundled, so the nearest system faces stand in on screen; the PDF uses
+   the real ones. Letters inside go upright, as in LaTeX. */
+.macc-mathsf > .maccb, .macc-textsf > .maccb { font-family: "CMU Sans Serif", "Latin Modern Sans", "Segoe UI", Helvetica, Arial, sans-serif; }
+.macc-mathtt > .maccb, .macc-texttt > .maccb { font-family: "CMU Typewriter Text", "Latin Modern Mono", Consolas, "Courier New", monospace; font-size: .95em; }
+.macc-mathsf .m-var, .macc-textsf .m-var, .macc-mathtt .m-var, .macc-texttt .m-var { font-family: inherit; font-style: normal; }
+.macc-textbf > .maccb { font-weight: 700; }
+.macc-textit > .maccb, .macc-emph > .maccb { font-style: italic; }
+.macc-textit .mtext, .macc-emph .mtext, .macc-textit .m-upr, .macc-emph .m-upr { font-style: italic; }
+/* their letters are words, not variables: the text face, upright unless the command slants it */
+.macc-textbf .m-var, .macc-operatorname .m-var { font-family: "PaperTeX", serif; font-style: normal; }
+.macc-textit .m-var, .macc-emph .m-var { font-family: "PaperTeX", serif; font-style: italic; }
+/* \boxed: a thin rule round it, \fboxsep (3pt) inside */
+.macc-boxed > .maccb { border: max(.04em, 1px) solid currentColor; padding: .25em .3em; }
+/* an unknown command with an argument (its reason in the title): the body
+   underlined in red, like an unknown bare command (.mraw-unknown) */
+.macc-unknown { cursor: help; }
+.macc-unknown > .maccb {
+  background: #fdeeea; border-radius: 2px;
+  text-decoration: underline wavy #e07a66; text-decoration-thickness: 1px; text-underline-offset: .22em;
+}
+@media print { .macc-unknown > .maccb { text-decoration: none; background: none; } }
 
 /* matrices */
 .mmat { display: inline-block; }
@@ -666,9 +691,46 @@ blockquote.pt-quote {
   font: .85em/1.2 Consolas, monospace; background: #fdf1dd; border-radius: 3px;
   padding: 0 .2em; color: #8a5a10;
 }
+/* ...and one it does not understand at all (.mraw-unknown, with the reason
+   in its title): red, with a wavy underline, so it reads "not understood",
+   not "fine, just shown as code" */
+.mraw.mraw-unknown {
+  color: #b4290f; background: #fdeeea; cursor: help;
+  text-decoration: underline wavy #e07a66; text-decoration-thickness: 1px; text-underline-offset: .18em;
+}
+@media print { .mraw.mraw-unknown { text-decoration: none; background: none; } }
 .mci { font-family: Consolas, monospace; font-size: .92em; color: #9a5b06; background: #fdf1dd; border-radius: 3px; padding: 0 .12em; }
 .mcibs { opacity: .55; }
 .mcis { text-decoration: underline; text-decoration-style: dotted; }
+
+/* The formula hint bar (.mf-hintbar, math.js): one quiet line of what the
+   keys do where the caret is — "Space leave the power · Esc back to text".
+   It floats, so the page never moves when it appears or changes: under an
+   inline formula as a small chip over the next line, under a display
+   equation at the right, where the matrix hint used to be. */
+.imath.editing { position: relative; }
+.pt-eqw:has(.mf-hintbar) { position: relative; }
+.pt-eqw:has(.mf-hintbar)::after { content: none; }
+.mf-hintbar {
+  position: absolute; left: -.2em; top: calc(100% + 5px); z-index: 30;
+  display: flex; align-items: baseline; white-space: nowrap;
+  font: 400 11px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-style: normal; letter-spacing: 0; text-indent: 0; text-align: left; color: #6f604f;
+  background: #fffdf8; border: 1px solid #eadcc4; border-radius: 6px; padding: 2px 9px;
+  box-shadow: 0 8px 18px -12px rgba(70, 45, 10, .45);
+  pointer-events: none; user-select: none; -webkit-user-select: none;
+  animation: mf-hint-in .18s ease-out both;
+}
+.pt-eqw > .mf-hintbar, .pt-eqw .mf-hintbar { left: auto; right: 0; top: calc(100% + 2px); }
+.mf-hintbar > span + span::before { content: '\00B7'; margin: 0 8px; color: #c9b48e; }
+.mf-hintbar kbd {
+  font: 10px/1.35 Consolas, ui-monospace, monospace; color: #5a4b3a;
+  background: #f6efe3; border: 1px solid #e3d5bd; border-bottom-width: 2px; border-radius: 3px;
+  padding: 0 4px; margin-right: 4px;
+}
+@keyframes mf-hint-in { from { opacity: 0; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .mf-hintbar { animation: none; } }
+@media print { .mf-hintbar { display: none !important; } }
 
 
 /* charts (chart.js); their settings are in the studio (studio.js, app.css) */

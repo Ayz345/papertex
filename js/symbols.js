@@ -154,7 +154,7 @@
     frac: 'frac', dfrac: 'frac', sqrt: 'sqrt', root: 'nthroot', sum: 'sum', prod: 'prod',
     int: 'int', iint: 'iint', oint: 'oint', lim: 'lim', bigcup: 'bigcup', bigcap: 'bigcap',
     text: 'text', binom: 'binom', cases: 'cases', matrix: 'matrix2', pmatrix: 'matrix2',
-    bmatrix: 'matrix2', hat: 'hat', bar: 'bar', vec: 'vec', tilde: 'tilde', dot: 'dot',
+    bmatrix: 'matrix2', Bmatrix: 'matrix2', vmatrix: 'matrix2', Vmatrix: 'matrix2', hat: 'hat', bar: 'bar', vec: 'vec', tilde: 'tilde', dot: 'dot',
     ddot: 'ddot', widehat: 'widehat', overline: 'overline', underline: 'underline',
     boldsymbol: 'boldsym', left: 'paren', abs: 'abs', norm: 'norm',
     mathbf: 'mathbf', bm: 'boldsym', mathrm: 'text', textrm: 'text', tfrac: 'frac'
