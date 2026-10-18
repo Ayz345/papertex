@@ -328,9 +328,9 @@
     texDirty = false;
     var st = $('#texstat'), r;
     /* LaTeX-code blocks the pane still shows, line for line, stay those
-       blocks: read back, "\vspace{1cm}" or "\hfill" would be left out
-       (texread drops hand-made spacing), and the block lost. Each is read
-       as a stand-in environment, matched up again below. */
+       blocks: read back, their LaTeX could become other blocks, or run
+       into a neighbouring LaTeX-code block. Each is read as a stand-in
+       environment, matched up again below. */
     seeBlocks();
     var src = texIn.value, kept = [];
     texSeen.forEach(function (b) {

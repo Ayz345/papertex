@@ -11,7 +11,7 @@
      are data: URLs; the compiled PDF is a blob:. connect-src names the
      engine host — tools/build-web.js narrows it to this site alone when
      TeX Live is deployed beside the page. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-BTJyM//T36beMA6SX6sm1ZiI/X46wKqND3Kylbm02vs=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-MJ5zhakDm7hm0lVafVeFb1BEOQ4+tODFM3S4D+QdsgU=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-CoZh+jYl8McHKRJEdhGuWtNb3QxVr4ajm91zizVx52o=' 'sha256-fLBomP1Kfc2kcR4bmXh1PrEx4o2P8cyJh6KrogSrzNU=' 'sha256-CAerlBtaeMvVxCwYJDdqwAtByKIlI3Invl1J5vX/pEY=' 'sha256-m6ZufmdvKdyk6Jk2FHD7vFynWbDROIwnBtSY5MCstIY=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-FhIJdB2P9akUK79/DSM8iXdsf+ylY8k0PqM4qeuNp40=' 'sha256-8pKaQF1tkxeLhGaQRindJVGvU+UQKwiqACC5Q69e8aY=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-hf+KyeLcxaylmWsQk0qRa3kKgHW1Oxdak1yKCRU//bw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-BTJyM//T36beMA6SX6sm1ZiI/X46wKqND3Kylbm02vs=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-MJ5zhakDm7hm0lVafVeFb1BEOQ4+tODFM3S4D+QdsgU=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-CoZh+jYl8McHKRJEdhGuWtNb3QxVr4ajm91zizVx52o=' 'sha256-fLBomP1Kfc2kcR4bmXh1PrEx4o2P8cyJh6KrogSrzNU=' 'sha256-gTXpx1MqBsqZrci2XKPyfaRAhleCjx+MQvyPz6Ia6r8=' 'sha256-m6ZufmdvKdyk6Jk2FHD7vFynWbDROIwnBtSY5MCstIY=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-FhIJdB2P9akUK79/DSM8iXdsf+ylY8k0PqM4qeuNp40=' 'sha256-8pKaQF1tkxeLhGaQRindJVGvU+UQKwiqACC5Q69e8aY=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-l/BJF6XezXrlTk7RF2h5cCcEcTn3AeUpZu3knEiaecE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <!-- Where the compiler's wasm and TeX Live live, if not beside this page
      (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
 <meta name="papertex-engine" content="">
@@ -12594,12 +12594,16 @@ blockquote.pt-quote {
         }
         i = Math.max(a.end, cm.end); continue;
       }
-      if (/^(vspace|vspace\*|bigskip|medskip|smallskip|vfill|noindent)$/.test(name) && !para.trim()) {
-        /* spacing between blocks: PaperTeX spaces its blocks itself */
+      if (/^(vspace|vspace\*|bigskip|medskip|smallskip|vfill|hfill|noindent)$/.test(name) && !para.trim()) {
+        /* spacing between blocks, put there by hand: kept as LaTeX code
+           (inside running text it is still left out) */
         a = args(s, cm.end, /^vspace/.test(name) ? 1 : 0);
-        if (name !== 'noindent') this.notes.add('vspace', 'Hand-made spacing (\\vspace, \\bigskip …) was left out');
         var kwm = name === 'noindent' ? /^\s*\\textbf\{Keywords:\}/.exec(s.slice(cm.end)) : null;
         if (kwm) { para += '\\textbf{Keywords:}'; i = cm.end + kwm[0].length; continue; }
+        if (name !== 'noindent') {
+          this.notes.add('vspace', 'Hand-made spacing (\\vspace, \\bigskip …) between paragraphs was kept as LaTeX code');
+          raw(s.slice(i, Math.max(a.end, cm.end)));
+        }
         i = Math.max(a.end, cm.end); continue;
       }
       if (/^(newcommand|renewcommand|providecommand|def|DeclareMathOperator|newenvironment|renewenvironment|setlength|newtheorem|theoremstyle)\*?$/.test(name)) {
@@ -16521,9 +16525,9 @@ blockquote.pt-quote {
     texDirty = false;
     var st = $('#texstat'), r;
     /* LaTeX-code blocks the pane still shows, line for line, stay those
-       blocks: read back, "\vspace{1cm}" or "\hfill" would be left out
-       (texread drops hand-made spacing), and the block lost. Each is read
-       as a stand-in environment, matched up again below. */
+       blocks: read back, their LaTeX could become other blocks, or run
+       into a neighbouring LaTeX-code block. Each is read as a stand-in
+       environment, matched up again below. */
     seeBlocks();
     var src = texIn.value, kept = [];
     texSeen.forEach(function (b) {

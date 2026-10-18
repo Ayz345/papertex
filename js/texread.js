@@ -610,12 +610,16 @@
         }
         i = Math.max(a.end, cm.end); continue;
       }
-      if (/^(vspace|vspace\*|bigskip|medskip|smallskip|vfill|noindent)$/.test(name) && !para.trim()) {
-        /* spacing between blocks: PaperTeX spaces its blocks itself */
+      if (/^(vspace|vspace\*|bigskip|medskip|smallskip|vfill|hfill|noindent)$/.test(name) && !para.trim()) {
+        /* spacing between blocks, put there by hand: kept as LaTeX code
+           (inside running text it is still left out) */
         a = args(s, cm.end, /^vspace/.test(name) ? 1 : 0);
-        if (name !== 'noindent') this.notes.add('vspace', 'Hand-made spacing (\\vspace, \\bigskip …) was left out');
         var kwm = name === 'noindent' ? /^\s*\\textbf\{Keywords:\}/.exec(s.slice(cm.end)) : null;
         if (kwm) { para += '\\textbf{Keywords:}'; i = cm.end + kwm[0].length; continue; }
+        if (name !== 'noindent') {
+          this.notes.add('vspace', 'Hand-made spacing (\\vspace, \\bigskip …) between paragraphs was kept as LaTeX code');
+          raw(s.slice(i, Math.max(a.end, cm.end)));
+        }
         i = Math.max(a.end, cm.end); continue;
       }
       if (/^(newcommand|renewcommand|providecommand|def|DeclareMathOperator|newenvironment|renewenvironment|setlength|newtheorem|theoremstyle)\*?$/.test(name)) {

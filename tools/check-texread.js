@@ -92,6 +92,17 @@ check(P, pd.bib.length === 3 && !pd.bib.some((e) => e.key === 'unused2020'), 'on
 const lib = pd.bibLibrary || [], un = lib.find((e) => e.key === 'unused2020');
 check(P, un && un.title && lib.some((e) => e.key === 'einstein1905' && /Körper/.test(e.title)), 'the whole .bib kept as the library (uncited works too)');
 check('fragment', !PT.texread.read('Some \\cite{a} text.').doc.bibLibrary, 'no library without a .bib');
+
+/* hand-made spacing between paragraphs is kept as LaTeX code; inside a
+   paragraph it is still left out */
+const sp = (t) => PT.texread.read(t).doc.blocks.map((b) => b.t === 'raw' ? 'raw:' + b.tex : b.t).join(' | ');
+check('spacing', sp('One.\n\n\\vspace{1cm}\n\nTwo.') === 'para | raw:\\vspace{1cm} | para', '\\vspace{1cm} between paragraphs: ' + sp('One.\n\n\\vspace{1cm}\n\nTwo.'));
+check('spacing', sp('One.\n\n\\vspace*{2em}\n\\bigskip\n\nTwo.') === 'para | raw:\\vspace*{2em}\n\\bigskip | para', 'a run of spacing is one block');
+check('spacing', sp('One.\n\n\\medskip\nTwo.') === 'para | raw:\\medskip | para', '\\medskip starting a paragraph');
+check('spacing', sp('\\hfill\n\nOne.') === 'raw:\\hfill | para', '\\hfill on its own');
+check('spacing', sp('One \\vspace{1cm} two.') === 'para' && !/vspace/.test(PT.texread.read('One \\vspace{1cm} two.').doc.blocks[0].html), 'inside a paragraph, left out');
+check('spacing', sp('\\noindent One.') === 'para', '\\noindent is not spacing');
+check(H, d.blocks.some((b) => b.t === 'raw' && b.tex === '\\vspace{1cm}'), '\\vspace{1cm} kept');
 check(P, pr.notes.some((n) => /missingkey/.test(n)) && !pr.notes.some((n) => /\.bib file cannot be read/.test(n)), 'notes: the key not in the .bib, and no "cannot read .bib"');
 const pf = pd.blocks.find((b) => b.t === 'figure');
 check(P, pf && /^data:image\/png;base64,/.test(pf.src) && pf.filename === 'plot.png' && pf.width === 0.6, 'figure image from figures/plot.png');
