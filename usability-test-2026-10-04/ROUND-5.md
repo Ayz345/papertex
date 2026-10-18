@@ -101,6 +101,21 @@ All 17 fixed. Each was tested in the browser with real key presses and clicks, o
 
 Regression: `npm run check:texread` passes, and all 31 saved test documents from rounds 1–5 compile to a PDF with the new writer.
 
+### Firefox and Safari (WebKit), 2026-10-18
+
+The fixes above were tested only in Chromium. They were tested again in Firefox 156 and WebKit 26.6 (Safari's engine), both driven by Playwright 1.64 with real key presses and clicks. Chrome 155 was run as the baseline. Each run opened round5/project.zip through Open → "Open a file…".
+
+| Item | Firefox 156 | WebKit 26.6 |
+|---|---|---|
+| 1. Enter in a LaTeX-code block ("/" → "latex code"; `\vspace{2mm}`⏎`% a comment line`⏎`Note: $\Delta x^2$,`, then ⏎`which is small.`⏎, Backspace, ⏎, redraw) | pass. Firefox writes `\n` plus a final `<br>`, which was already read right. | **failed, fixed.** Enter at the end stored one `\n` too many (`small.\n\n`): Safari shows an empty last line with an extra trailing `\n`, not a `<br>`. `preText` now drops a final `\n` as it drops a final `<br>`. New `preFill` adds a `<br>` when a stored text ends in a line break, so the empty last line still shows after a redraw and is kept. Now exact in every step. |
+| 2. "/section" in one go on an empty paragraph | **failed, fixed.** Firefox delivers a multi-character insert as an input-method composition (`insertCompositionText`, then `compositionend`), never as `insertText`, so the `beforeinput` check missed it and "/section" stayed in the text. `compositionend` now opens the block menu when the composed text is the whole line and is "/" or "/word". Typed key by key it already passed. | pass (one input and key by key). |
+| 3. "$" inside one multi-character insert | **failed, fixed.** Same cause: the `compositionend` handler called `dollar()` without the composed text, so only a "$" typed last was found. It now passes the text on; "With time steps in both $x^2" gives `$x^{2}$` in the formula. | pass. |
+| 4. Formula "/" rule and the Fraction button | pass: `u=(T_{1}-T_{0})\frac{x}{L}+\frac{(a+b)}{2}+\frac{}{}`. | pass, same result. |
+| 5. Esc from equation (1), then a click on a heading | pass: an empty line appears below the equation, then disappears again (20 → 21 → 20 blocks). | pass, same. |
+| 6. Theorem title (`:has()`) | pass: "**Theorem 1** (Maximum principle). *The largest…*", title upright. | pass, same. |
+
+After the fixes, every item passes in all three browsers, and Chrome shows no regressions. The fixes are in `js/doc.js` (`preText`, `preFill` and the `compositionend` handler in `richEditable`). `npm run check:texread` passes.
+
 ## Tooling artefacts (not PaperTeX)
 
 - **Clipboard:** Ctrl+V never fires a paste event in the test browser, even within one page.

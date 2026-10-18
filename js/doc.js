@@ -571,13 +571,14 @@
      Enter puts a "\n" in the text itself (the browser would make a <div> or
      a <br>, which textContent loses); text pasted or dropped in may still
      bring those, so they are read as line breaks too. A last <br> is only
-     there to show an empty last line. */
+     there to show an empty last line — and so is a last "\n" (Safari's
+     way: a text's final line break shows no line of its own). */
   function preText(el) {
     var out = '', last = el.lastChild;
     while (last && last.lastChild && last.nodeName !== 'BR') last = last.lastChild;
     (function walk(n) {
       [].forEach.call(n.childNodes, function (c) {
-        if (c.nodeType === 3) out += c.nodeValue;
+        if (c.nodeType === 3) out += c === last ? c.nodeValue.replace(/\n$/, '') : c.nodeValue;
         else if (c.nodeName === 'BR') { if (c !== last) out += '\n'; }
         else {
           if (/^(DIV|P)$/.test(c.nodeName) && out && !/\n$/.test(out)) out += '\n';
@@ -586,6 +587,12 @@
       });
     })(el);
     return out;
+  }
+  /* and back: a text ending in a line break gets the <br> that shows its
+     empty last line (preText leaves that <br> out again) */
+  function preFill(pre, text) {
+    pre.textContent = text;
+    if (/\n$/.test(text)) pre.appendChild(document.createElement('br'));
   }
   function plainLines(pre, onChange) {
     pre.addEventListener('keydown', function (ev) {
@@ -669,8 +676,23 @@
     /* a formula being edited in the line is a field of its own: its keys
        and pastes are not the paragraph's */
     var inField = function (ev) { return !!(ev.target.closest && ev.target.closest('.mfield')); };
-    e.addEventListener('compositionend', function () {
-      setTimeout(function () { if (document.activeElement === e) dollar(); }, 0);
+    /* Firefox brings a word from an input method, dictation or a typing
+       tool as one composition (never an "insertText"): it is looked at
+       here, all of it */
+    e.addEventListener('compositionend', function (ev) {
+      var d = ev.data;
+      setTimeout(function () {
+        if (document.activeElement !== e) return;
+        /* "/" or "/section" as the whole of an empty line: the block menu
+           (as in beforeinput, below) */
+        if (d && /^\/[^\s\/]*$/.test(d) && opts.slashMenu && e.textContent === d && !e.querySelector('.imath, .ftnote')) {
+          e.innerHTML = '';
+          onChange('');
+          opts.slashMenu(d.slice(1) || undefined);
+          return;
+        }
+        dollar(d);
+      }, 0);
     });
     /* "\" opens the command palette. Android keyboards send no key for it
        (keydown says "Unidentified"), only the text it types: catch that. */
@@ -1274,7 +1296,7 @@
         var pre = h('pre', 'pt-code');
         pre.contentEditable = 'true';
         pre.spellcheck = false;
-        pre.textContent = b.text || '';
+        preFill(pre, b.text || '');
         pre.dataset.part = 'main';
         pre.dataset.ph = 'Code…';
         plainLines(pre, function (v) { b.text = v; self.change(); });
@@ -1294,7 +1316,7 @@
         var ta = h('pre', 'pt-raw');
         ta.contentEditable = 'true';
         ta.spellcheck = false;
-        ta.textContent = b.tex || '';
+        preFill(ta, b.tex || '');
         ta.dataset.part = 'main';
         ta.dataset.ph = 'LaTeX of your own, written into the .tex as typed — e.g. \\vspace{1cm}';
         plainLines(ta, function (v) { b.tex = v; self.change(); });
