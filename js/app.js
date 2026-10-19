@@ -101,7 +101,8 @@
       el.textContent = { saving: 'Saving…', saved: 'Saved', failed: 'Not saved', volatile: 'Not stored' }[s] || '';
       el.title = {
         saving: 'Writing your changes to this ' + (NATIVE ? 'computer' : 'browser'),
-        saved: 'Every change is kept in this ' + (NATIVE ? 'app' : 'browser') + ' — open it again any time from Open',
+        saved: NATIVE ? 'Every change is kept in this app — open it again any time from Open'
+          : 'Every change is kept in this browser — open it again from Open. Safari deletes it after 7 days without a visit: Save project keeps a copy on disk',
         failed: 'The last change could not be stored: ' + (err && err.message || 'storage refused'),
         volatile: 'This page cannot store anything here; your work lasts only as long as the tab'
       }[s] || '';
@@ -111,8 +112,23 @@
     else if (s === 'volatile') showBar('volatile', 'This page cannot store anything, so your work disappears when the tab closes.' +
       ' Use Save project to keep it.');
     else if (s === 'saved' && (state.bar === 'failed' || state.bar === 'volatile')) hideBar();
+    else if (s === 'saved') tellWeek();
   }
-  function showBar(kind, text, later) {
+  /* Said once in each browser, when the first change is stored: work kept
+     in a browser is not kept for ever — Safari (and every browser on an
+     iPhone or iPad) deletes a site's storage after 7 days without a
+     visit. Until "Got it", it is said again next time. */
+  function tellWeek() {
+    if (NATIVE || state.weekTold || state.bar || !state.docId) return;
+    state.weekTold = true;
+    S.getMeta('told.week').then(function (told) {
+      if (told || state.bar) return;
+      showBar('week', 'Your work is kept in this browser, not on a server. Safari (and any browser on an iPhone or iPad) deletes it after' +
+        ' 7 days without a visit, and clearing browsing data deletes it too. Save project keeps a copy on your disk.',
+        function () { S.setMeta('told.week', Date.now()); }, 'Got it');
+    });
+  }
+  function showBar(kind, text, later, laterLabel) {
     var bar = $('#savebar');
     if (!bar) return;
     state.bar = kind;
@@ -123,7 +139,7 @@
     act.onclick = function () { if (kind === 'stale') location.reload(); else saveProject(); };
     bar.appendChild(act);
     if (later) {
-      var no = h('button', 'savebar-b', 'Later');
+      var no = h('button', 'savebar-b', laterLabel || 'Later');
       no.onclick = function () { later(); hideBar(); };
       bar.appendChild(no);
     }
@@ -181,7 +197,8 @@
         if (r === 'saved' || r === 'anchor') {
           toast('Project saved — reopen it with Open.');
           S.markBackedUp(id);
-          if (state.bar === 'backup') hideBar();
+          if (state.bar === 'week') S.setMeta('told.week', Date.now());   /* they know: they kept a copy */
+          if (state.bar === 'backup' || state.bar === 'week') hideBar();
         }
         return r;
       });
@@ -2100,7 +2117,8 @@
     S.estimate().then(function (e) {
       foot.textContent = (e ? sizeText(e.usage) + ' used. ' + (e.persisted
         ? 'Protected from automatic clearing.'
-        : 'The ' + (NATIVE ? 'app' : 'browser') + ' may clear this when space runs low — keep copies of what matters.') : '') + where;
+        : 'The ' + (NATIVE ? 'app' : 'browser') + ' may clear this when space runs low — keep copies of what matters.') : '') + where +
+        (NATIVE ? '' : ' Safari deletes documents kept here after 7 days without a visit — Save project keeps them.');
     });
     document.body.appendChild(m);
     var r = anchor.getBoundingClientRect();

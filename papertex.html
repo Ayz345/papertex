@@ -11,7 +11,7 @@
      are data: URLs; the compiled PDF is a blob:. connect-src names the
      engine host — tools/build-web.js narrows it to this site alone when
      TeX Live is deployed beside the page. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-BTJyM//T36beMA6SX6sm1ZiI/X46wKqND3Kylbm02vs=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-MJ5zhakDm7hm0lVafVeFb1BEOQ4+tODFM3S4D+QdsgU=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-CoZh+jYl8McHKRJEdhGuWtNb3QxVr4ajm91zizVx52o=' 'sha256-eRyB0e9MwcV/sN/Bkhv2uITPtCubhMwZrfU9ePEG2XU=' 'sha256-gTXpx1MqBsqZrci2XKPyfaRAhleCjx+MQvyPz6Ia6r8=' 'sha256-m6ZufmdvKdyk6Jk2FHD7vFynWbDROIwnBtSY5MCstIY=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-FhIJdB2P9akUK79/DSM8iXdsf+ylY8k0PqM4qeuNp40=' 'sha256-8pKaQF1tkxeLhGaQRindJVGvU+UQKwiqACC5Q69e8aY=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-l/BJF6XezXrlTk7RF2h5cCcEcTn3AeUpZu3knEiaecE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-BTJyM//T36beMA6SX6sm1ZiI/X46wKqND3Kylbm02vs=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-MJ5zhakDm7hm0lVafVeFb1BEOQ4+tODFM3S4D+QdsgU=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-CoZh+jYl8McHKRJEdhGuWtNb3QxVr4ajm91zizVx52o=' 'sha256-eRyB0e9MwcV/sN/Bkhv2uITPtCubhMwZrfU9ePEG2XU=' 'sha256-gTXpx1MqBsqZrci2XKPyfaRAhleCjx+MQvyPz6Ia6r8=' 'sha256-m6ZufmdvKdyk6Jk2FHD7vFynWbDROIwnBtSY5MCstIY=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-FhIJdB2P9akUK79/DSM8iXdsf+ylY8k0PqM4qeuNp40=' 'sha256-8pKaQF1tkxeLhGaQRindJVGvU+UQKwiqACC5Q69e8aY=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-Bm4neXlZbum5dQXAHcUnRPgw0OJwbcXPoCmwDaR+k3w='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <!-- Where the compiler's wasm and TeX Live live, if not beside this page
      (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
 <meta name="papertex-engine" content="">
@@ -16320,7 +16320,8 @@ blockquote.pt-quote {
       el.textContent = { saving: 'Saving…', saved: 'Saved', failed: 'Not saved', volatile: 'Not stored' }[s] || '';
       el.title = {
         saving: 'Writing your changes to this ' + (NATIVE ? 'computer' : 'browser'),
-        saved: 'Every change is kept in this ' + (NATIVE ? 'app' : 'browser') + ' — open it again any time from Open',
+        saved: NATIVE ? 'Every change is kept in this app — open it again any time from Open'
+          : 'Every change is kept in this browser — open it again from Open. Safari deletes it after 7 days without a visit: Save project keeps a copy on disk',
         failed: 'The last change could not be stored: ' + (err && err.message || 'storage refused'),
         volatile: 'This page cannot store anything here; your work lasts only as long as the tab'
       }[s] || '';
@@ -16330,8 +16331,23 @@ blockquote.pt-quote {
     else if (s === 'volatile') showBar('volatile', 'This page cannot store anything, so your work disappears when the tab closes.' +
       ' Use Save project to keep it.');
     else if (s === 'saved' && (state.bar === 'failed' || state.bar === 'volatile')) hideBar();
+    else if (s === 'saved') tellWeek();
   }
-  function showBar(kind, text, later) {
+  /* Said once in each browser, when the first change is stored: work kept
+     in a browser is not kept for ever — Safari (and every browser on an
+     iPhone or iPad) deletes a site's storage after 7 days without a
+     visit. Until "Got it", it is said again next time. */
+  function tellWeek() {
+    if (NATIVE || state.weekTold || state.bar || !state.docId) return;
+    state.weekTold = true;
+    S.getMeta('told.week').then(function (told) {
+      if (told || state.bar) return;
+      showBar('week', 'Your work is kept in this browser, not on a server. Safari (and any browser on an iPhone or iPad) deletes it after' +
+        ' 7 days without a visit, and clearing browsing data deletes it too. Save project keeps a copy on your disk.',
+        function () { S.setMeta('told.week', Date.now()); }, 'Got it');
+    });
+  }
+  function showBar(kind, text, later, laterLabel) {
     var bar = $('#savebar');
     if (!bar) return;
     state.bar = kind;
@@ -16342,7 +16358,7 @@ blockquote.pt-quote {
     act.onclick = function () { if (kind === 'stale') location.reload(); else saveProject(); };
     bar.appendChild(act);
     if (later) {
-      var no = h('button', 'savebar-b', 'Later');
+      var no = h('button', 'savebar-b', laterLabel || 'Later');
       no.onclick = function () { later(); hideBar(); };
       bar.appendChild(no);
     }
@@ -16400,7 +16416,8 @@ blockquote.pt-quote {
         if (r === 'saved' || r === 'anchor') {
           toast('Project saved — reopen it with Open.');
           S.markBackedUp(id);
-          if (state.bar === 'backup') hideBar();
+          if (state.bar === 'week') S.setMeta('told.week', Date.now());   /* they know: they kept a copy */
+          if (state.bar === 'backup' || state.bar === 'week') hideBar();
         }
         return r;
       });
@@ -18319,7 +18336,8 @@ blockquote.pt-quote {
     S.estimate().then(function (e) {
       foot.textContent = (e ? sizeText(e.usage) + ' used. ' + (e.persisted
         ? 'Protected from automatic clearing.'
-        : 'The ' + (NATIVE ? 'app' : 'browser') + ' may clear this when space runs low — keep copies of what matters.') : '') + where;
+        : 'The ' + (NATIVE ? 'app' : 'browser') + ' may clear this when space runs low — keep copies of what matters.') : '') + where +
+        (NATIVE ? '' : ' Safari deletes documents kept here after 7 days without a visit — Save project keeps them.');
     });
     document.body.appendChild(m);
     var r = anchor.getBoundingClientRect();
