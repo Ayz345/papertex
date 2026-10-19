@@ -693,31 +693,8 @@ button { font: inherit; color: inherit; }
 .privacy__item p { margin: 0; color: #b9bcc2; font-size: 15px; }
 .draw * { fill: none; stroke: var(--amber); stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 
-/* --------------------------------------------------------------- desktop */
-.desktop { padding: 104px 0; }
-.desktop__grid { display: flex; flex-wrap: wrap; align-items: center; gap: 48px 72px; }
-.desktop__copy { flex: 1 1 440px; min-width: 0; }
-.desktop__card {
-  flex: 1 1 380px; min-width: 0; background: var(--paper); border-radius: 14px; padding: 26px;
-  box-shadow: 0 0 0 1px rgba(30, 28, 24, .07), 0 24px 48px -32px rgba(30, 28, 24, .5);
-  display: flex; flex-direction: column; gap: 14px;
-}
-.os { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.os__item {
-  display: flex; flex-direction: column; gap: 2px; padding: 14px; border-radius: 10px;
-  box-shadow: inset 0 0 0 1px var(--line); transition: box-shadow .3s ease, background-color .3s ease, transform .3s var(--ease);
-}
-.os__item:hover { transform: translateY(-2px); }
-.os__item.is-yours { background: var(--accent-soft); box-shadow: inset 0 0 0 1.5px #d9a441; }
-.os__name { font-weight: 650; }
-.os__fmt { font-size: 13px; color: var(--muted); }
-.os__item.is-yours .os__fmt::after { content: " · your system"; color: var(--accent-ink); }
-.desktop__soon { margin: 0; display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--ink-2); }
-.dot { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: live-amber 2s ease-out 2; }
 /* carets outside the hero's pause control settle after a few blinks */
 .tpl__caret { animation-iteration-count: 4; }   /* stops within 5 s (WCAG 2.2.2) */
-@keyframes live-amber { 0% { box-shadow: 0 0 0 0 rgba(154, 91, 6, .5); } 70%, 100% { box-shadow: 0 0 0 8px rgba(154, 91, 6, 0); } }
-.desktop__cta { align-self: flex-start; }
 
 /* ---------------------------------------------------------------- footer */
 .foot { border-top: 1px solid #cfcbc4; }
@@ -788,7 +765,7 @@ button { font: inherit; color: inherit; }
   .plot__svg .plot__ticks text { font-size: 17px; }
   .data__sheet { padding: 22px 18px 40px; }
   .data__tex { margin-right: -8px; }
-  .try, .desktop, .privacy { padding: 72px 0; }
+  .try, .privacy { padding: 72px 0; }
   .try__eq { padding: 0 30px 0 0; min-height: 110px; }
   .try__mf { font-size: 24px; }
   .try__sheet { padding: 22px 12px 12px; }

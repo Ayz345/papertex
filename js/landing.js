@@ -16,7 +16,7 @@
      plot                   a function typed and drawn as you scroll
      gallery                pie, histogram, polar, bars, 3D, log axis, area
      data                   table → chart, chart type, fitted model
-     how, templates, recent, privacy, desktop, footer */
+     how, templates, recent, privacy, footer */
 (function () {
   'use strict';
 
@@ -330,7 +330,7 @@
     });
     // anything reached by keyboard before its scroll trigger fires shows at once
     document.addEventListener('focusin', function (e) {
-      var r = e.target.closest && e.target.closest('[data-reveal], .tpl, .how__step, .os__item, .doc-card');
+      var r = e.target.closest && e.target.closest('[data-reveal], .tpl, .how__step, .doc-card');
       if (r && parseFloat(getComputedStyle(r).opacity) < 1) gsap.set(r, { opacity: 1, clearProps: 'transform' });
     });
   }
@@ -1879,7 +1879,7 @@
   }
 
   /* =====================================================================
-     privacy, desktop, footer
+     privacy, footer
      ===================================================================== */
   function setupPrivacy() {
     var sec = $('#privacy'), glow = $('.privacy__glow');
@@ -1897,20 +1897,6 @@
         strokeDashoffset: 0, duration: 1.1, ease: 'power2.inOut', stagger: 0.18,
         scrollTrigger: { trigger: svg, start: 'top 88%', once: true }
       });
-    });
-  }
-
-  function setupDesktop() {
-    var ua = navigator.userAgent || '';
-    var os = /Windows/i.test(ua) ? 'windows' : /Mac/i.test(ua) && !/iPhone|iPad/i.test(ua) ? 'mac' : /Linux|X11/i.test(ua) && !/Android/i.test(ua) ? 'linux' : null;
-    if (os) {
-      var mine = $('.os__item[data-os="' + os + '"]');
-      if (mine) mine.classList.add('is-yours');
-    }
-    if (!MOTION) return;
-    gsap.fromTo('.os__item', { opacity: 0, y: 20, scale: 0.94 }, {
-      opacity: 1, y: 0, scale: 1, duration: 0.6, ease: 'back.out(1.8)', stagger: 0.08, clearProps: 'transform',
-      scrollTrigger: { trigger: '#osList', start: 'top 88%', once: true }
     });
   }
 
@@ -1937,7 +1923,6 @@
     setupGallery();
     setupData();
     setupTemplates();
-    setupDesktop();
     setupRecent();
     return;
   }
@@ -1948,7 +1933,6 @@
   setupButtons();
   setupData();
   setupTemplates();
-  setupDesktop();
   setupHow();
   setupPrivacy();
   setupRecent();
