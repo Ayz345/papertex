@@ -733,6 +733,8 @@ button { font: inherit; color: inherit; }
 .foot__top svg { transition: transform .3s var(--spring); }
 .foot__top:hover svg { transform: translateY(-3px); }
 .foot__line { padding-bottom: 40px; font-size: 13px; color: var(--muted); }
+.foot__line a { color: inherit; text-decoration: underline; text-decoration-color: rgba(95, 100, 109, .4); text-underline-offset: 3px; transition: color .2s ease, text-decoration-color .2s ease; }
+.foot__line a:hover { color: var(--ink); text-decoration-color: currentColor; }
 
 /* ------------------------------------------------------------- narrow */
 @media (max-width: 900px) {

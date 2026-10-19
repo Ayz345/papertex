@@ -57,11 +57,6 @@
   .topnav .open { margin-top: 0; }
   @media (max-width: 760px) { .topnav__in { padding: 6px 16px; } .topnav__links { order: 3; flex: 1 0 100%; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; } .topnav__links::-webkit-scrollbar { display: none; } .topnav__links a:focus-visible { outline-offset: -2px; } }
   @media (prefers-reduced-motion: reduce) { * { transition-duration: .001ms !important; } }
-  /* parts the author still has to write — impossible to miss */
-  .todo {
-    background: var(--accent-soft); border: 1px dashed #d9a441; border-radius: 6px; padding: 10px 14px;
-    color: #7a4f10; font: 14px/1.5 system-ui, "Segoe UI", sans-serif;
-  }
   table { border-collapse: collapse; width: 100%; font-size: 14px; }
   td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--ink-2); }
   td:first-child { white-space: nowrap; color: var(--ink); }
@@ -93,7 +88,7 @@
   <p>PaperTeX is a free LaTeX editor that runs entirely in your browser. Headings, equations,
     tables and references are edited directly on a page that looks like the finished PDF, and a
     clean, compilable <code>.tex</code> file is written for you as you go. Type <code>int</code>
-    and you get an integral with the caret in its lower limit; <code>alpha</code> becomes α;
+    and you get an integral with the cursor in its lower limit; <code>alpha</code> becomes α;
     <code>x1</code> becomes x₁. When you are done, PaperTeX compiles the document with real
     LaTeX (TeX Live, running in your browser) or hands you the source for Overleaf, a journal,
     or your own TeX installation.</p>
@@ -102,22 +97,8 @@
     in the LaTeX pane beside the page: it becomes a document you can edit on the page.</p>
   <p><a class="open" href="app.html">Open the editor</a></p>
 
-  <h2>Why I made it</h2>
-  <div class="todo">To write, in your own words: what made you build this — the moment LaTeX got
-    in your way, who you had in mind, what you wanted it to feel like. A short paragraph is plenty.</div>
-
-  <h2>Who made it</h2>
-  <p>PaperTeX is made by <strong>Ayaz Büyükterzi</strong>.</p>
-  <div class="todo">Optional: a sentence about yourself (school, what you study or want to), and a
-    way to reach you — a GitHub profile or an email address you are happy to publish.</div>
-
-  <h2>How it was built</h2>
-  <p>I designed PaperTeX and built it with an AI coding assistant (Claude, by Anthropic). I decided
-    what it should do and how it should feel, tested it against real LaTeX output, found what was
-    wrong, and chose what to fix and what to ship; much of the code itself was written by the
-    assistant under that direction.</p>
-  <div class="todo">Check this matches what you did, and add any part you built or worked out yourself.
-    Keep it accurate — it is the version of the story you will be asked about.</div>
+  <h2>Why</h2>
+  <p>You shouldn’t have to write code for science.</p>
 
   <h2 id="privacy">Privacy</h2>
   <ul>
@@ -142,7 +123,8 @@
     <tr><td>TeX Live packages</td><td>each under its own licence, mostly the LaTeX Project Public License, kept inside the files</td></tr>
   </table>
 
-  <footer><a href="./">Home</a> · <a href="app.html">Open the editor</a></footer>
+  <footer><a href="./">Home</a> · <a href="app.html">Open the editor</a><br>
+    Made by Ayaz Büyükterzi · <a href="mailto:ayaz.buyukterzi.hza@gmail.com">ayaz.buyukterzi.hza@gmail.com</a></footer>
 </main>
 </body>
 </html>
