@@ -44,7 +44,8 @@
       case 'frac': return [n.n, n.d];
       case 'scr': return n.sub && n.sup ? [n.sub, n.sup] : (n.sub ? [n.sub] : (n.sup ? [n.sup] : []));
       case 'sqrt': return n.idx ? [n.idx, n.k] : [n.k];
-      case 'big': return [n.lo, n.hi];
+      /* \lim and its kind have no upper limit to step into */
+      case 'big': return /^[A-Za-z]+$/.test(n.d || '') && isEmptyRow(n.hi) ? [n.lo] : [n.lo, n.hi];
       case 'paren': return [n.k];
       case 'acc': return [n.k];
       case 'txt': return [n.k];
@@ -75,7 +76,26 @@
   };
   /* accent glyphs — the accent forms in cmr, not the ASCII look-alikes;
      \overline and \underline are rules, drawn by the layout pass */
-  var ACC = { hat: '^', widehat: '^', bar: 'ˉ', vec: '→', tilde: '˜', dot: '˙', ddot: '¨', overline: null, underline: null, boldsym: null };
+  var ACC = { hat: '^', widehat: '^', bar: 'ˉ', vec: '→', tilde: '˜', dot: '˙', ddot: '¨', overline: null, underline: null, boldsym: null, mathbf: null,
+    overrightarrow: '→', overleftarrow: '←', overleftrightarrow: '↔', widetilde: '˜', check: 'ˇ', breve: '˘',
+    acute: 'ˊ', grave: 'ˋ', mathring: '˚' };
+  /* commands that set their argument in another style: drawn as the
+     argument, written back as the command (WRAP_TXT: upright words, like
+     \text) */
+  var WRAP = { operatorname: 1, mathsf: 1, mathtt: 1, mathit: 1, mathnormal: 1, textbf: 1, textit: 1,
+    texttt: 1, textsf: 1, emph: 1, boxed: 1 };
+  var WRAP_TXT = { operatorname: 1, mathsf: 1, mathtt: 1, textbf: 1, textit: 1, texttt: 1, textsf: 1, emph: 1 };
+  /* spacing commands, by name */
+  var SPACE_CMD = { quad: 1, qquad: 1, enspace: 1, thinspace: 1, medspace: 1, thickspace: 1, negthinspace: 1 };
+  /* \mathbb R, \mathcal{C}: the letter in another face */
+  var FACE = { mathbb: 'bb', mathcal: 'cal', mathfrak: '', mathscr: 'cal' };
+  /* what \left and \right take, as typed after them */
+  var DELIM_KEY = { '(': '(', ')': ')', '[': '[', ']': ']', '|': '|', '.': '.', '<': '\\langle', '>': '\\rangle', '/': '/' };
+  var DELIM_NAME = { langle: '\\langle', rangle: '\\rangle', lvert: '|', rvert: '|', vert: '|', lVert: '\\|', rVert: '\\|',
+    Vert: '\\|', lfloor: '\\lfloor', rfloor: '\\rfloor', lceil: '\\lceil', rceil: '\\rceil', lbrace: '\\{', rbrace: '\\}',
+    lbrack: '[', rbrack: ']' };
+  var DELIM_CLOSE = { '(': ')', '[': ']', '\\{': '\\}', '|': '|', '\\|': '\\|', '\\langle': '\\rangle',
+    '\\lfloor': '\\rfloor', '\\lceil': '\\rceil', '.': '.', '/': '/', ')': '(', ']': '[' };
   /* cmmi skew: how far right of centre an accent sits over a slanted letter */
   var SKEW = {
     A: .13889, B: .08334, C: .08334, D: .05556, E: .08334, F: .08334, G: .08334, H: .05556,
@@ -166,6 +186,18 @@
     [-1, 1, -2, -3, -1, 0, -1, -1]
   ];
   var MU = [0, 3, 4, 5];   /* thin, medium, thick space in mu (1/18 em) */
+  /* Brackets around something tall — a fraction, a matrix, a big
+     operator — grow with it (\left … \right); around anything else they
+     stay plain, as one writes them in LaTeX: f(x), [0, 10]. */
+  function tallRow(r) {
+    return !!r && r.k.some(function (x) {
+      return x.t === 'frac' || x.t === 'mat' || x.t === 'big' ||
+        (x.t === 'paren' && !plainParen(x)) || (x.t === 'sqrt' && tallRow(x.k)) ||
+        (x.t === 'scr' && (tallRow(x.sup) || tallRow(x.sub))) || (x.t === 'acc' && tallRow(x.k));
+    });
+  }
+  function plainParen(n) { return n.l !== '.' && n.r !== '.' && !tallRow(n.k); }
+
   function atomKind(n) {
     switch (n.t) {
       case 'ch': case 'sym':
@@ -179,6 +211,7 @@
         if (c === ')' || c === ']' || c === '⟩' || c === '⌉' || c === '⌋') return K_CLOSE;
         return K_ORD;
       case 'fn': case 'big': return K_OP;
+      case 'acc': return n.kind === 'operatorname' ? K_OP : K_ORD;   /* \operatorname{rank} A, spaced as \sin x */
       case 'frac': case 'paren': return K_INNER;
       case 'mat': return n.env === 'matrix' ? K_ORD : K_INNER;
       case 'scr': return undefined;                 /* belongs to the atom before it */
@@ -186,22 +219,27 @@
     }
   }
   function spaceAtoms(nodes, els, st) {
-    var kinds = nodes.map(atomKind), i, k, prev = -1, script = st.z >= S;
+    /* kl: what an atom is to the one before it; kr: to the one after. A
+       bracket set with plain delimiters is an opening sign, its contents and
+       a closing sign, so x(0) has no space before the bracket — only a
+       \left…\right pair is one inner atom, spaced as such. */
+    var kl = nodes.map(atomKind), kr = kl.slice(), i, k, prev = -1, script = st.z >= S;
+    nodes.forEach(function (n, j) { if (n.t === 'paren' && plainParen(n)) { kl[j] = K_OPEN; kr[j] = K_CLOSE; } });
     /* resolve binary signs that have nothing to bind (TeX rules 5 and 6) */
-    for (i = 0; i < kinds.length; i++) {
-      k = kinds[i];
+    for (i = 0; i < kl.length; i++) {
+      k = kl[i];
       if (k === null || k === undefined) continue;
-      if (k === K_BIN && (prev < 0 || kinds[prev] === K_BIN || kinds[prev] === K_OP || kinds[prev] === K_REL ||
-          kinds[prev] === K_OPEN || kinds[prev] === K_PUNCT)) kinds[i] = k = K_ORD;
-      if ((k === K_REL || k === K_CLOSE || k === K_PUNCT) && prev >= 0 && kinds[prev] === K_BIN) kinds[prev] = K_ORD;
+      if (k === K_BIN && (prev < 0 || kr[prev] === K_BIN || kr[prev] === K_OP || kr[prev] === K_REL ||
+          kr[prev] === K_OPEN || kr[prev] === K_PUNCT)) kl[i] = kr[i] = k = K_ORD;
+      if ((k === K_REL || k === K_CLOSE || k === K_PUNCT) && prev >= 0 && kr[prev] === K_BIN) kl[prev] = kr[prev] = K_ORD;
       prev = i;
     }
     prev = -1;
-    for (i = 0; i < kinds.length; i++) {
-      k = kinds[i];
+    for (i = 0; i < kl.length; i++) {
+      k = kl[i];
       if (k === null || k === undefined) continue;
       if (prev >= 0) {
-        var s = SPACING[kinds[prev]][k];
+        var s = SPACING[kr[prev]][k];
         if (s < 0) s = script ? 0 : -s;
         if (s) els[i].style.marginLeft = +(MU[s] / 18).toFixed(4) + 'em';
       }
@@ -220,18 +258,26 @@
     f: .10764, g: .03588, j: .05724, l: .01968, q: .03588, r: .02778, v: .03588, w: .02691,
     y: .03588, z: .04398, '∂': .05556
   };
-  var SPACES = { '\\,': 3 / 18, '\\:': 4 / 18, '\\;': 5 / 18, '\\!': -3 / 18, '\\quad': 1, '\\qquad': 2 };
+  var SPACES = { '\\,': 3 / 18, '\\:': 4 / 18, '\\;': 5 / 18, '\\!': -3 / 18, '\\quad': 1, '\\qquad': 2,
+    '\\ ': 6 / 18, '\\enspace': 0.5, '\\thinspace': 3 / 18, '\\medspace': 4 / 18, '\\thickspace': 5 / 18, '\\negthinspace': -3 / 18 };
   function spaceWidth(e, tex) {
     var w = SPACES[tex] != null ? SPACES[tex] : 3 / 18;
     if (w < 0) { e.style.width = '0'; e.style.marginRight = +w.toFixed(4) + 'em'; }
     else e.style.width = +w.toFixed(4) + 'em';
   }
 
+  function frak(L) {
+    var odd = { C: 0x212D, H: 0x210C, I: 0x2111, R: 0x211C, Z: 0x2128 };
+    var cp = odd[L] || (/[A-Z]/.test(L) ? 0x1D504 + L.charCodeAt(0) - 65 : 0x1D51E + L.charCodeAt(0) - 97);
+    return String.fromCodePoint(cp);
+  }
+
   function renderNode(n, ctx, st) {
     var e, a, b;
     switch (n.t) {
       case 'ch':
-        e = el('span', 'mi m-' + n.cls, n.c === '-' ? '−' : n.c);
+        /* a minus is a minus sign; an apostrophe in maths is a prime, f′ */
+        e = el('span', 'mi m-' + n.cls, n.c === '-' ? '−' : n.c === "'" && !st.txt ? '′' : n.c);
         if (n.cls === 'var' && ITALIC[n.c] && !st.txt) {
           e.__it = ITALIC[n.c];
           e.style.marginRight = ITALIC[n.c] + 'em';
@@ -244,6 +290,10 @@
           (n.f ? ' m-f-' + n.f : ''), n.d);
         if (ITALIC[n.d] && !st.txt) { e.__it = ITALIC[n.d]; e.style.marginRight = ITALIC[n.d] + 'em'; }
         if (n.cls === 'spc') { e.textContent = ' '; e.classList.add('mspc'); spaceWidth(e, n.tex); }
+        /* \mathfrak{g}: the maths fonts have no fraktur, Unicode does (the
+           PDF sets it with LaTeX's own) */
+        var fk = /^\\mathfrak\{([A-Za-z])\}$/.exec(n.tex || '');
+        if (fk) { e.textContent = frak(fk[1]); e.classList.add('m-frak'); }
         return e;
       case 'fn':
         return el('span', 'mi m-fn', n.name);
@@ -278,12 +328,17 @@
         return e;
       }
       case 'big': {
-        /* Empty limits are only there to be typed into: drawn while the
-           formula is being edited, absent otherwise — as in the output. */
-        var hasHi = ctx.focused || !isEmptyRow(n.hi), hasLo = ctx.focused || !isEmptyRow(n.lo);
+        /* Empty limits are only there to be typed into: drawn for the
+           operator the caret is at (in a limit, or just after the sign),
+           absent otherwise — as in the output — so the rest of the formula
+           does not jump when it gets the caret. A word operator (\lim) has
+           no upper limit. */
+        var word = /^[A-Za-z]+$/.test(n.d);
+        var cr = ctx.focused && ctx.cur ? ctx.cur.row : null;
+        var near = !!cr && (cr === n.lo || cr === n.hi || cr.k[ctx.cur.i - 1] === n);
+        var hasHi = !isEmptyRow(n.hi) || (near && !word), hasLo = !isEmptyRow(n.lo) || near;
         /* word operators (lim, max, det) set at text size; symbols take the
            large cmex glyph in display style and the small one elsewhere */
-        var word = /^[A-Za-z]+$/.test(n.d);
         var op = el('span', 'mbigop' + (word ? ' mbigword' : st.z === D ? ' mbigD' : ''), n.d);
         if (n.limits && st.z === D) {
           /* \sum, \lim in display style: limits centred above and below */
@@ -318,9 +373,27 @@
       }
       case 'acc': {
         e = el('span', 'macc macc-' + n.kind);
+        if (!ACC.hasOwnProperty(n.kind)) {
+          /* \operatorname, \mathsf, \boxed … — and a command PaperTeX does
+             not know, typed with a "{": the argument as it is, the command
+             kept for the LaTeX */
+          var wb = el('span', 'maccb');
+          wb.appendChild(renderRow(n.k, ctx, WRAP_TXT[n.kind] ? { z: st.z, c: st.c, txt: true } : st));
+          e.appendChild(wb);
+          if (!WRAP[n.kind]) {
+            e.classList.add('macc-unknown');
+            e.title = '\\' + n.kind + ' is not a command PaperTeX knows: it goes into the LaTeX as typed, and may not compile';
+          }
+          return e;
+        }
         var body = el('span', 'maccb'); body.appendChild(renderRow(n.k, ctx, sty(st.z, true)));
         e.__st = st;
-        if (n.kind === 'boldsym') { body.classList.add('mbold'); e.appendChild(body); return e; }
+        /* \boldsymbol: bold as they are; \mathbf: bold and upright (mbf) */
+        if (n.kind === 'boldsym' || n.kind === 'mathbf') {
+          body.classList.add('mbold');
+          if (n.kind === 'mathbf') body.classList.add('mbf');
+          e.appendChild(body); return e;
+        }
         e.appendChild(body);
         if (n.kind === 'overline' || n.kind === 'underline') {
           e.appendChild(el('span', 'maccr' + (n.kind === 'underline' ? ' maccu' : '')));
@@ -339,6 +412,7 @@
       }
       case 'mat': {
         e = el('span', 'mmat mmat-' + n.env);
+        e.__mat = n;
         var d = matDelims(n.env);
         if (d[0]) e.appendChild(delimEl(d[0]));
         var grid = el('span', 'mgrid');
@@ -351,8 +425,15 @@
         if (d[1]) e.appendChild(delimEl(d[1]));
         return e;
       }
-      case 'raw':
-        return el('span', 'mraw', n.tex);
+      case 'raw': {
+        e = el('span', 'mraw', n.tex);
+        var um = /^\\([A-Za-z]+)$/.exec(n.tex || '');
+        if (um && !knownName(um[1])) {
+          e.classList.add('mraw-unknown');
+          e.title = '\\' + um[1] + ' is not a command PaperTeX knows: it goes into the LaTeX as typed, and may not compile';
+        }
+        return e;
+      }
       case 'ci':
         e = el('span', 'mci');
         e.appendChild(el('span', 'mcibs', '\\'));
@@ -729,14 +810,6 @@
     box.style.transformOrigin = 'center center';
     box.style.transform = 'translateY(' + em(dy, fpx(box)) + ')' + (k !== 1 ? ' scaleY(' + k.toFixed(4) + ')' : '');
   }
-  /* \left/\right: cover the formula to within 5pt either side of the axis
-     (\delimiterfactor 901, \delimitershortfall 5pt), centred on the axis */
-  function sizeDelim(dl, cy, want, fs) {
-    var sz = delimSize(want / fs);
-    setGlyph(dl, dl.firstChild, sz);
-    if (sz.size === 1) return;
-    centreGlyph(dl, cy, sz.k);
-  }
   function delimWant(delta, fs) { return Math.max(2 * delta * 0.901, 2 * delta - 0.5 * fs); }
   function layParen(e) {
     var body = e.querySelector(':scope > .mpin, :scope > .mfrac');
@@ -749,18 +822,42 @@
          style, delim2 elsewhere */
       want = ((body.__st || sty(T)).z === D ? 2.39 : 1.01) * fs;
     } else {
+      /* \left/\right: cover the formula to within 5pt either side of the
+         axis (\delimiterfactor 901, \delimitershortfall 5pt) */
       var ink = inkBox(body);
       want = delimWant(ink ? Math.max(ax - ink.top, ink.bottom - ax) : 0, fs);
     }
-    [].forEach.call(dls, function (d) { sizeDelim(d, ax, want, fs); });
+    /* Every delimiter gets its size first and is centred on the axis after:
+       a bigger glyph is wider, and the wider formula may have moved to the
+       next line — the axis measured before would leave the closing one
+       drawn a line too high. */
+    var sz = delimSize(want / fs);
+    [].forEach.call(dls, function (d) { setGlyph(d, d.firstChild, sz); });
+    if (sz.size === 1) return;
+    ax = baselineY(e) - 0.25 * fs;
+    [].forEach.call(dls, function (d) { centreGlyph(d, ax, sz.k); });
   }
   /* A matrix is centred on the axis as a whole, its delimiters with it. */
   function layMatrix(e) {
     var fs = fpx(e), dls = [].slice.call(e.querySelectorAll(':scope > .mdelim'));
     var grid = e.querySelector(':scope > .mgrid');
     if (!grid) return;
+    if (!grid.getBoundingClientRect().height) return;
+    /* The cells of a row share a baseline, measured here rather than left
+       to the grid's own baseline alignment: browsers disagree about where
+       a cell holding a laid-out fraction or script has its baseline. Each
+       cell starts at the row's top and is let down to the row's baseline. */
+    var cols = parseInt((/repeat\((\d+)/.exec(grid.style.gridTemplateColumns) || [])[1], 10) || 1;
+    var cells = [].slice.call(grid.children);
+    grid.style.alignItems = 'start';
+    cells.forEach(function (c) { c.style.marginTop = ''; });
+    for (var ci = 0; ci < cells.length; ci += cols) {
+      var rowCells = cells.slice(ci, ci + cols);
+      var asc = rowCells.map(function (c) { return baselineY(c) - c.getBoundingClientRect().top; });
+      var A = Math.max.apply(null, asc);
+      rowCells.forEach(function (c, j) { if (A - asc[j] > 0.01) c.style.marginTop = em(A - asc[j], fpx(c)); });
+    }
     var gh = grid.getBoundingClientRect().height;
-    if (!gh) return;
     var sz = delimSize(delimWant(gh / 2, fs) / fs);
     dls.forEach(function (d) { setGlyph(d, d.firstChild, sz); });
     /* raise the box until the middle of the grid is on the axis */
@@ -833,14 +930,36 @@
     var f = fpx(mk);
     mk.style.top = '0'; mk.style.transform = '';
     mk.style.marginLeft = e.__skew ? em(2 * e.__skew * fs, f) : '';
+    /* \widehat and \widetilde over more than a letter: drawn to the width of
+       what they cover (a stretched glyph's ink sits off-centre in its box) */
+    var wide = /\bmacc-(widehat|widetilde)\b/.exec(e.className);
+    if (wide && body.getBoundingClientRect().width > 0.9 * fs) {
+      var bw = body.getBoundingClientRect().width, H = 0.26 * fs, NS = 'http://www.w3.org/2000/svg';
+      mk.textContent = '';
+      var svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('viewBox', '0 0 100 20');
+      svg.setAttribute('preserveAspectRatio', 'none');
+      svg.style.cssText = 'display:block;margin:0 auto;overflow:visible;width:' + em(bw * 0.94, f) + ';height:' + em(H, f);
+      var pth = document.createElementNS(NS, 'path');
+      pth.setAttribute('d', wide[1] === 'widehat' ? 'M0 20 L50 1 L100 20' : 'M0 16 C18 1 34 1 50 10 S82 19 100 4');
+      pth.setAttribute('fill', 'none');
+      pth.setAttribute('stroke', 'currentColor');
+      pth.setAttribute('stroke-width', String(Math.max(1, 0.045 * fs)));
+      pth.setAttribute('vector-effect', 'non-scaling-stroke');
+      svg.appendChild(pth);
+      mk.appendChild(svg);
+      var top2 = y - (Math.max(h, sig('xh', z) * fs) + ACCENT_GAP * fs) - H;
+      mk.style.top = em(top2 - er.top, f);
+      return;
+    }
     var g = inkBox(mk);
     if (!g) return;
     var target = y - (Math.max(h, sig('xh', z) * fs) + ACCENT_GAP * fs);
     mk.style.top = em(target - g.bottom, f);
-    if (e.classList.contains('macc-widehat')) {
+    if (/\bmacc-(widehat|widetilde|overrightarrow|overleftarrow|overleftrightarrow)\b/.test(e.className)) {
       var w = body.getBoundingClientRect().width, mw = mk.firstChild ? mk.getBoundingClientRect().width : 0;
       var gw = (function () { var rg = document.createRange(); rg.selectNodeContents(mk); return rg.getBoundingClientRect().width; })();
-      if (gw && w > gw) mk.style.transform = 'scaleX(' + Math.min(4, w * 0.9 / gw).toFixed(3) + ')';
+      if (gw && w > gw) mk.style.transform = 'scaleX(' + Math.min(12, w * 0.9 / gw).toFixed(3) + ')';
     }
   }
 
@@ -890,6 +1009,70 @@
     return e;
   }
 
+  /* A formula in running text, which may break across lines where TeX
+     would break it: after a relation or a binary operator on its own top
+     level (not inside a fraction, a script or brackets), never at its end.
+     It is drawn whole first — so the spacing between atoms is exactly that
+     of the unbroken formula — and then cut into pieces that the line can
+     wrap between. */
+  function renderInline(target, r) {
+    var e = renderStatic(target, r);
+    target.classList.remove('mbreak');
+    var k = r.k || [], cuts = {};
+    for (var i = 0; i < k.length - 1; i++) {
+      var n = k[i], nx = k[i + 1];
+      if ((n.t === 'ch' || n.t === 'sym') && (n.cls === 'rel' || n.cls === 'bin') && nx.t !== 'scr') cuts[i] = true;
+    }
+    if (!Object.keys(cuts).length) return e;
+    var pieces = [], cur = null;
+    [].slice.call(e.childNodes).forEach(function (c) {
+      if (!cur) { cur = el('span', 'mrow mroot mpiece'); pieces.push(cur); }
+      cur.appendChild(c);
+      if (c.nodeType === 1 && cuts[c.dataset.mi]) cur = null;
+    });
+    target.textContent = '';
+    pieces.forEach(function (p, j) {
+      if (j) target.appendChild(document.createElement('wbr'));
+      target.appendChild(p);
+    });
+    target.classList.add('mbreak');
+    return e;
+  }
+
+  /* --------------------------------------------------------- plain text out */
+
+  /* A formula as plain characters, for where only text can go — a file
+     name, a window title, the PDF's title, the list of documents:
+     x^2/2, √(a+b), α → β. */
+  var PLAIN_DELIM = { '.': '', '\\{': '{', '\\}': '}', '\\langle': '⟨', '\\rangle': '⟩', '\\lvert': '|', '\\rvert': '|',
+    '\\lVert': '‖', '\\rVert': '‖', '\\|': '‖', '\\lfloor': '⌊', '\\rfloor': '⌋', '\\lceil': '⌈', '\\rceil': '⌉' };
+  function plainOf(r) {
+    var out = '';
+    ((r && r.k) || []).forEach(function (n) {
+      switch (n.t) {
+        case 'ch': out += n.c; break;
+        case 'sym': out += n.d || ''; break;
+        case 'fn': out += n.name + ' '; break;
+        case 'frac': out += plainOf(n.n) + '/' + plainOf(n.d); break;
+        case 'scr':
+          if (n.sub) out += '_' + plainOf(n.sub);
+          if (n.sup) out += '^' + plainOf(n.sup);
+          break;
+        case 'sqrt': out += '√(' + plainOf(n.k) + ')'; break;
+        case 'paren': {
+          var l = PLAIN_DELIM[n.l] != null ? PLAIN_DELIM[n.l] : String(n.l || '');
+          var rr = PLAIN_DELIM[n.r] != null ? PLAIN_DELIM[n.r] : String(n.r || '');
+          out += l + plainOf(n.k) + rr;
+          break;
+        }
+        case 'big': out += (n.d || '') + ' '; break;
+        case 'raw': out += String(n.tex || '').replace(/^\\/, ''); break;
+        default: slots(n).forEach(function (s) { out += plainOf(s); });
+      }
+    });
+    return out.replace(/\s+/g, ' ').trim();
+  }
+
   /* ------------------------------------------------------------- LaTeX out */
 
   function texRow(r, mode) {
@@ -904,7 +1087,13 @@
 
   function texNode(n, mode) {
     switch (n.t) {
-      case 'ch': return mode === 'text' ? escText(n.c) : n.c;
+      case 'ch': {
+        if (mode === 'text') return escText(n.c);
+        /* a symbol that came in as a character (older documents, pastes) is
+           written as its command: TeX's maths fonts know no α */
+        var g = n.c.charCodeAt(0) > 127 ? byGlyph()[n.c] : null;
+        return g ? g.tex : n.c;
+      }
       case 'sym': return n.tex;
       case 'fn': return '\\' + n.name;
       case 'frac':
@@ -927,12 +1116,17 @@
         if (!isEmptyRow(n.hi)) t += '^{' + texRow(n.hi) + '}';
         return t;
       }
-      case 'paren':
-        return '\\left' + n.l + ' ' + texRow(n.k) + ' \\right' + n.r;
+      case 'paren': {
+        if (!plainParen(n)) return '\\left' + n.l + ' ' + texRow(n.k) + ' \\right' + n.r;
+        /* a command name needs a space after it, a sign does not */
+        var lt = n.l + (/[A-Za-z]$/.test(n.l) ? ' ' : ''), inner = texRow(n.k);
+        return lt + inner + (/[A-Za-z]$/.test(inner) && /^\\[A-Za-z]/.test(n.r) ? ' ' : '') + n.r;
+      }
       case 'acc': {
         var m = { hat: '\\hat', bar: '\\bar', vec: '\\vec', tilde: '\\tilde', dot: '\\dot',
           ddot: '\\ddot', widehat: '\\widehat', overline: '\\overline',
-          underline: '\\underline', boldsym: '\\boldsymbol' }[n.kind] || '\\hat';
+          underline: '\\underline', boldsym: '\\boldsymbol', mathbf: '\\mathbf' }[n.kind] ||
+          (/^[A-Za-z]+$/.test(n.kind || '') ? '\\' + n.kind : '\\hat');
         return m + '{' + texRow(n.k) + '}';
       }
       case 'txt': return '\\text{' + texRow(n.k, 'text') + '}';
@@ -942,8 +1136,10 @@
         }).join(' \\\\\n');
         return '\\begin{' + n.env + '}\n' + body + '\n\\end{' + n.env + '}';
       }
-      case 'raw': return n.tex;
-      case 'ci': return n.s ? '\\' + n.s : '';
+      /* a \left, \right, \begin or \end on its own can only break the
+         compile: the structures they make are written by their nodes */
+      case 'raw': return /^\\(left|right|middle|begin|end)(?![A-Za-z])/.test(n.tex || '') ? '' : n.tex;
+      case 'ci': return n.s && !/^(left|right|middle|begin|end)$/.test(n.s) ? '\\' + n.s : '';
       default: return '';
     }
   }
@@ -952,7 +1148,10 @@
     var map = { '&': '\\&', '%': '\\%', '$': '\\$', '#': '\\#', '_': '\\_',
       '{': '\\{', '}': '\\}', '~': '\\textasciitilde{}', '^': '\\textasciicircum{}',
       '\\': '\\textbackslash{}' };
-    return map[c] || c;
+    if (map[c]) return map[c];
+    /* a symbol in words (\text{c ≥ 0}): the text font has none */
+    var g = c.charCodeAt(0) >= 0x370 ? byGlyph()[c] : null;
+    return g ? '\\ensuremath{' + g.tex + '}' : c;
   }
 
   /* Packages a formula needs, so the preamble can be generated from the doc. */
@@ -996,6 +1195,34 @@
       var one = atom();
       return row(one ? [one] : []);
     }
+    /* The inside of \text{…}: words, not maths — letters stay upright and
+       spaces are kept ("T_{\text{room temp}}"), an escaped character is
+       itself, and a command inside is dropped. */
+    function textGroup() {
+      ws();
+      if (s[i] !== '{') { var one = s[i++]; return row(one ? [ch(one, 'txtc')] : []); }
+      i++;
+      var k = [], depth = 0;
+      while (i < s.length) {
+        var c = s[i];
+        if (c === '}' && !depth) { i++; break; }
+        if (c === '\\') {
+          i++;
+          if (/[A-Za-z]/.test(s[i] || '')) { cmdName(); continue; }
+          if (i < s.length) k.push(ch(s[i] === '~' ? ' ' : s[i], 'txtc'));
+          i++;
+          continue;
+        }
+        if (c === '{') depth++;
+        else if (c === '}') depth--;
+        else {
+          var t = c === '~' || /\s/.test(c) ? ' ' : c;
+          if (t !== ' ' || !k.length || k[k.length - 1].c !== ' ') k.push(ch(t, 'txtc'));   /* runs of space are one, as in TeX */
+        }
+        i++;
+      }
+      return row(k);
+    }
     function cmdName() {
       var m = /^[A-Za-z]+/.exec(s.slice(i));
       if (m) { i += m[0].length; return m[0]; }
@@ -1024,8 +1251,8 @@
         if (s[i] === '[') { i++; idx = seq(']'); if (s[i] === ']') i++; }
         return sqrtn(group(), idx);
       }
-      if (name === 'text' || name === 'textrm' || name === 'mathrm') return txt(group());
-      if (ACC.hasOwnProperty(name) || name === 'boldsymbol') {
+      if (name === 'text' || name === 'textrm' || name === 'mathrm') return txt(textGroup());
+      if (ACC.hasOwnProperty(name) || WRAP[name] || name === 'boldsymbol') {
         return acc(name === 'boldsymbol' ? 'boldsym' : name, group());
       }
       if (name === 'left') {
@@ -1066,9 +1293,13 @@
       if (TEX_EXTRA[name]) return sym('\\' + name, TEX_EXTRA[name][0], TEX_EXTRA[name][1]);
       if (DELIM['\\' + name]) return sym('\\' + name, DELIM['\\' + name], 'upr');
       if (name === '\\') return { t: 'nl' };
-      if (name === ',' || name === ';' || name === ':' || name === '!' || name === 'quad' || name === 'qquad')
+      if (name === ',' || name === ';' || name === ':' || name === '!' || SPACE_CMD[name])
         return sym('\\' + name, ' ', 'spc');
-      return sym('\\' + name, name, 'fn');
+      /* a command PaperTeX does not know: kept as written, and marked —
+         with its argument, if it has one (\overbrace{x+y}) */
+      ws();
+      if (s[i] === '{') return acc(name, group());
+      return raw('\\' + name);
     }
     function readDelim() {
       ws();
@@ -1124,7 +1355,7 @@
       while (i < s.length) {
         ws();
         if (stop && s[i] === stop) break;
-        if (s.slice(i, i + 6) === '\\right') break;
+        if (leftDepth && s.slice(i, i + 6) === '\\right') break;
         if (s[i] === '&' || s.slice(i, i + 2) === '\\\\') break;
         if (s[i] === '^') { i++; pushAtom(r, { t: 'scrmark', kind: 'sup', k: group() }); continue; }
         if (s[i] === '_') { i++; pushAtom(r, { t: 'scrmark', kind: 'sub', k: group() }); continue; }
@@ -1134,8 +1365,12 @@
       }
       return r;
     }
+    /* a \right ends only a \left's contents; a stray one is just its bracket */
+    var leftDepth = 0;
     function seqUntilRight() {
+      leftDepth++;
       var r = seq(null);
+      leftDepth--;
       if (s.slice(i, i + 6) === '\\right') i += 6;
       return r;
     }
@@ -1182,7 +1417,8 @@
     widehat: function () { return acc('widehat'); },
     overline: function () { return acc('overline'); },
     underline: function () { return acc('underline'); },
-    boldsym: function () { return acc('boldsym'); }
+    boldsym: function () { return acc('boldsym'); },
+    mathbf: function () { return acc('mathbf'); }
   };
 
   var OPEN = { '(': ')', '[': ']', '{': '\\}' };
@@ -1193,13 +1429,17 @@
      longer grow into a longer name ("sum" at once, "sin" once you type the
      next character, because "sinh" exists). Backspace right after undoes it. */
   var AUTO = {}, PREFIX = {};
+  /* the names that also count at the end of a run of letters ("xpi" is x π,
+     "asinx" a sin x): Greek letters and function names only. The rest —
+     ell, in, to … — only as a whole word, or "hello" would come out hℓo. */
+  var TAIL = {}, TAILPRE = {};
   var autoOff = false;
 
   function autoAdd(word, spec) { if (!AUTO[word]) AUTO[word] = spec; }
   (function buildAuto() {
     var S = PT.symbols;
     Object.keys(S.buildCmds).forEach(function (w) {
-      if (w.length > 1 && w !== 'left') autoAdd(w, { b: S.buildCmds[w] });
+      if (w.length > 1 && w !== 'left' && w !== 'bm') autoAdd(w, { b: S.buildCmds[w] });
     });
     Object.keys(S.byCmd).forEach(function (w) {
       if (w.length < 2) return;
@@ -1215,8 +1455,16 @@
     ['sqrt', 'int', 'sum', 'lim', 'prod'].forEach(function (w) {
       if (S.buildCmds[w]) AUTO[w] = { b: S.buildCmds[w] };
     });
+    /* bold letters, the word processor's way: "bold", then the letters */
+    AUTO.bold = { b: 'mathbf' };
     Object.keys(AUTO).forEach(function (w) {
       for (var i = 1; i < w.length; i++) PREFIX[w.slice(0, i)] = true;
+      var a = AUTO[w];
+      var g = a.s && a.s.d && a.s.d.length === 1 ? a.s.d.charCodeAt(0) : 0;
+      if (a.fn || (g >= 0x370 && g <= 0x3ff)) {   /* the Greek block */
+        TAIL[w] = true;
+        for (var k = 1; k < w.length; k++) TAILPRE[w.slice(0, k)] = true;
+      }
     });
   })();
 
@@ -1244,13 +1492,15 @@
     this.host.__mf = this;
     var self = this;
     this.host.addEventListener('mousedown', function (e) { self.onMouse(e); });
+
     this.host.addEventListener('keydown', function (e) { self.onKey(e); });
-    this.host.addEventListener('focus', function () { self.focused = true; self.render(); if (self.opts.onFocus) self.opts.onFocus(self); });
-    this.host.addEventListener('blur', function () {
-      self.autoWord(true);
-      self.resolveCI(true);
-      self.focused = false; self.sel = null; self.render();
-      if (self.opts.onBlur) self.opts.onBlur(self);
+    this.host.addEventListener('focus', function () { self.gotFocus(); });
+    this.host.addEventListener('blur', function (e) {
+      /* handing the typing to the touch keyboard's box, or to the field's
+         own text box, is not leaving */
+      if (proxy && e.relatedTarget === proxy && proxy.__mf === self) return;
+      if (self.kb && e.relatedTarget === self.kb) return;
+      self.lostFocus();
     });
     this.host.addEventListener('paste', function (e) {
       var t = (e.clipboardData || window.clipboardData).getData('text');
@@ -1259,7 +1509,196 @@
       var r = parseTex(t.replace(/^\$+|\$+$/g, ''));
       self.insertNodes(r.k);
     });
+    if (touchTyping) wireTouch(this);
     this.render();
+  }
+
+  MathField.prototype.gotFocus = function () {
+    var was = this.focused;
+    this.focused = true;
+    if (!touchTyping) deskFocus(this);
+    this.render();
+    if (this.opts.onFocus && !was) this.opts.onFocus(this);
+  };
+  MathField.prototype.lostFocus = function () {
+    /* a matrix being sized when the focus goes: it goes in as it stands */
+    if (this.picker) this.placeMatrix();
+    this.autoWord(true);
+    this.resolveCI(true);
+    this.focused = false; this.sel = null; this.render();
+    if (this.opts.onBlur) this.opts.onBlur(this);
+  };
+  /* has the caret: the browser's focus, or the touch keyboard's box typing for it */
+  MathField.prototype.hasFocus = function () {
+    var ae = document.activeElement;
+    return ae === this.host || (!!this.kb && ae === this.kb) || (!!proxy && ae === proxy && proxy.__mf === this);
+  };
+
+  /* ---- with a keyboard --------------------------------------------------
+     Keys are read as they are pressed (onKey). But some typing comes as
+     text, with no key behind it: the emoji and symbol panel (Win+.),
+     Chinese, Japanese and Korean input, dictation, handwriting — and a
+     formula, which is not a text box, never gets it. So while a formula has
+     the caret, a small invisible text box inside it holds the focus: its
+     keys still reach the formula as before (they bubble), and whatever
+     text arrives in it is typed into the formula. While an input method is
+     composing, the box shows the word being composed at the caret. */
+  var COMBINING = /[̀-ͯ]/g;
+  function deskFocus(f) {
+    var kb = f.kb;
+    if (!kb) {
+      kb = f.kb = document.createElement('input');
+      kb.type = 'text';
+      kb.className = 'mf-proxy mf-kb';
+      kb.__mf = f;
+      ['autocomplete', 'autocorrect', 'autocapitalize'].forEach(function (a) { kb.setAttribute(a, 'off'); });
+      kb.spellcheck = false;
+      kb.tabIndex = -1;
+      kb.setAttribute('aria-label', 'Formula');
+      kb.style.cssText = 'position:absolute;left:0;top:0;width:1px;height:1.2em;padding:0;border:0;margin:0;' +
+        'opacity:0;font:inherit;font-size:16px;background:#fffbe8;color:#333;pointer-events:none;z-index:3;outline:none;';
+      var typeIn = function (s) {
+        if (!s) return;
+        /* a dead key already made its superscript: what the system composes
+           from it is the accent and the letter, of which only the letter is
+           still wanted (^2 → 2, â → a) */
+        if (f.deadAt && Date.now() - f.deadAt < 4000) {
+          s = s.replace(/^[\^ˆ¨´`~˜]/, '').normalize('NFD').replace(COMBINING, '');
+        }
+        f.deadAt = 0;
+        for (var i = 0; i < s.length; i++) {
+          /* a "$" in the middle closed the formula: the rest is text again */
+          if (!f.hasFocus()) {
+            var ae = document.activeElement;
+            if (ae && ae.isContentEditable) document.execCommand('insertText', false, s.slice(i));
+            break;
+          }
+          f.onKey(fakeKey(s[i]));
+        }
+      };
+      var clear = function () { kb.value = ''; kb.style.opacity = '0'; kb.style.width = '1px'; };
+      kb.addEventListener('beforeinput', function (e) {
+        e.stopPropagation();
+        if (e.isComposing || /Composition/.test(e.inputType)) return;   /* taken at compositionend */
+        e.preventDefault();
+        if (e.inputType === 'insertText' || e.inputType === 'insertReplacementText') typeIn(e.data || (e.dataTransfer && e.dataTransfer.getData('text/plain')));
+      });
+      kb.addEventListener('input', function (e) { e.stopPropagation(); });
+      kb.addEventListener('compositionstart', function (e) {
+        e.stopPropagation();
+        kb.style.opacity = '1'; kb.style.width = 'auto';
+      });
+      kb.addEventListener('compositionend', function (e) {
+        e.stopPropagation();
+        var d = e.data;
+        clear();
+        typeIn(d);
+      });
+      kb.addEventListener('blur', function (e) {
+        clear();
+        if (e.relatedTarget === f.host) return;
+        f.lostFocus();
+      });
+    }
+    if (kb.parentNode !== f.host) f.host.insertBefore(kb, f.host.firstChild);
+    if (getComputedStyle(f.host).position === 'static') f.host.style.position = 'relative';
+    if (document.activeElement !== kb) kb.focus({ preventScroll: true });
+  }
+
+  /* ---- phones and tablets ----------------------------------------------
+     Their on-screen keyboard comes up only for a text box, and a formula is
+     not one. There, one hidden text box takes the typing for whichever
+     formula has the caret and passes every key on to it; that formula
+     counts as focused all the while. Android keyboards compose a word
+     before they commit it: the composing text is followed as it changes,
+     so the formula keeps up letter by letter. The box always holds one
+     space, so a Backspace has something to delete and is reported. */
+  var touchTyping = !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+  var proxy = null, SENT = ' ', composed = '';
+  function fakeKey(k) {
+    return { key: k, shiftKey: false, ctrlKey: false, metaKey: false, altKey: false,
+      getModifierState: function () { return false; }, preventDefault: function () {}, stopPropagation: function () {} };
+  }
+  function proxyReset() { proxy.value = SENT; try { proxy.setSelectionRange(1, 1); } catch (e) { /* not shown */ } }
+  function proxyType(s) {
+    var f = proxy.__mf;
+    if (!f) return;
+    for (var i = 0; i < s.length; i++) f.onKey(fakeKey(s[i]));
+  }
+  function touchProxy() {
+    if (proxy) return proxy;
+    proxy = document.createElement('input');
+    proxy.type = 'text';
+    proxy.className = 'mf-proxy';
+    ['autocomplete', 'autocorrect', 'autocapitalize'].forEach(function (a) { proxy.setAttribute(a, 'off'); });
+    proxy.spellcheck = false;
+    proxy.setAttribute('aria-label', 'Formula');
+    /* 16px, or iOS zooms the page in on it; see-through and untouchable */
+    proxy.style.cssText = 'position:fixed;left:0;top:0;width:2px;height:20px;padding:0;border:0;margin:0;' +
+      'opacity:0;font-size:16px;pointer-events:none;z-index:-1;';
+    document.body.appendChild(proxy);
+    proxyReset();
+    proxy.addEventListener('beforeinput', function (e) {
+      if (!proxy.__mf || e.isComposing || /Composition/.test(e.inputType)) return;   /* followed on input */
+      if (e.inputType === 'insertText' && e.data) { e.preventDefault(); proxyType(e.data); }
+      else if (e.inputType === 'deleteContentBackward') { e.preventDefault(); proxy.__mf.onKey(fakeKey('Backspace')); }
+      else if (e.inputType === 'insertLineBreak' || e.inputType === 'insertParagraph') { e.preventDefault(); proxy.__mf.onKey(fakeKey('Enter')); }
+    });
+    proxy.addEventListener('input', function () {
+      var f = proxy.__mf;
+      if (!f) return;
+      var v = proxy.value;
+      if (v.indexOf(SENT) !== 0) { if (!composed) f.onKey(fakeKey('Backspace')); proxyReset(); composed = ''; return; }
+      var now = v.slice(SENT.length), k = 0;
+      while (k < now.length && k < composed.length && now[k] === composed[k]) k++;
+      for (var b = composed.length; b > k; b--) f.onKey(fakeKey('Backspace'));
+      proxyType(now.slice(k));
+      composed = now;
+    });
+    proxy.addEventListener('compositionend', function () { setTimeout(function () { composed = ''; proxyReset(); }, 0); });
+    proxy.addEventListener('keydown', function (e) {
+      var f = proxy.__mf;
+      if (!f || e.isComposing || e.key === 'Unidentified' || e.key === 'Process') return;
+      /* keys that are not characters, and shortcuts on a tablet's keyboard */
+      if (e.key.length > 1 || e.ctrlKey || e.metaKey) f.onKey(e);
+    });
+    proxy.addEventListener('blur', function (e) {
+      var f = proxy.__mf;
+      if (!f || e.relatedTarget === f.host) return;
+      proxy.__mf = null;
+      composed = '';
+      f.lostFocus();
+    });
+    return proxy;
+  }
+  /* keep the box under the formula, so the page scrolls to the right place
+     when the keyboard comes up */
+  function handTo(f) {
+    var p = touchProxy(), r = f.host.getBoundingClientRect();
+    p.__mf = f;
+    p.style.left = Math.max(0, r.left) + 'px';
+    p.style.top = Math.max(0, r.top) + 'px';
+    composed = '';
+    proxyReset();
+    if (document.activeElement !== p) p.focus({ preventScroll: true });
+  }
+  function wireTouch(f) {
+    var host = f.host;
+    host.addEventListener('focus', function () { handTo(f); });
+    /* Moving the caret to another formula while the keyboard is up goes
+       straight from one to the other: through the formula itself, iOS
+       would put the keyboard away and not bring it back. */
+    host.focus = function (o) {
+      if (proxy && document.activeElement === proxy) {
+        var was = proxy.__mf;
+        if (was === f) return;
+        handTo(f);
+        if (was) was.lostFocus();
+        f.gotFocus();
+        return;
+      }
+      HTMLElement.prototype.focus.call(host, o);
+    };
   }
 
   MathField.prototype.setRoot = function (r) {
@@ -1271,13 +1710,104 @@
   MathField.prototype.tex = function () { return texRow(this.root); };
   MathField.prototype.render = function () {
     reparent(this.root);
-    this.host.textContent = '';
+    /* everything but the text box that has the focus (see deskFocus) */
+    var kb = this.kb && this.kb.parentNode === this.host ? this.kb : null;
+    for (var n = this.host.lastChild; n; ) { var p = n.previousSibling; if (n !== kb) this.host.removeChild(n); n = p; }
+    /* :focus for styling, also while the touch keyboard's box has the focus */
+    this.host.classList.toggle('mf-on', this.focused);
     var e = renderRow(this.root, { cur: this.cur, sel: this.sel, focused: this.focused },
       sty(this.opts.inline ? T : D));
     e.classList.add('mroot');
     this.host.appendChild(e);
     layout(this.host);
+    /* the part the caret is in — an index, a numerator, a cell — shows as one */
+    var inMat = false;
+    if (this.focused && this.cur.row !== this.root) {
+      var rows = this.host.querySelectorAll('.mrow');
+      for (var i = 0; i < rows.length; i++) if (rows[i].__row === this.cur.row) { rows[i].classList.add('mslot-on'); break; }
+      inMat = !!this.matrixAt();
+    }
+    this.host.classList.toggle('mf-inmat', inMat);
+    this.hintBar();
+    if (this.sel && this.focused) this.drawSel();
+    if (kb && this.focused) {
+      /* at the caret, so an input method's word list opens beside it */
+      var c = this.host.querySelector('.mcaret'), hr = this.host.getBoundingClientRect();
+      if (c) {
+        var cr = c.getBoundingClientRect();
+        kb.style.left = (cr.left - hr.left - this.host.clientLeft) + 'px';
+        kb.style.top = (cr.top - hr.top - this.host.clientTop) + 'px';
+      }
+    }
     if (this.opts.onRender) this.opts.onRender(this);
+  };
+  /* One line under the formula saying what the keys do where the caret is
+     — "Space leaves the power", "Tab: next cell" — so the rules of the box
+     can be seen instead of guessed. Shown while the formula has the caret
+     (styled in paper.css: .mf-hintbar, items as <kbd>key</kbd> text). */
+  MathField.prototype.hintBar = function () {
+    var box = this.host.closest && this.host.closest('.imath, .pt-eqw');
+    if (!box) return;
+    var bar = box.querySelector(':scope > .mf-hintbar');
+    var items = this.focused && !this.picker ? this.hints() : [];
+    if (!items.length) { if (bar) bar.remove(); return; }
+    if (!bar) { bar = document.createElement('div'); bar.className = 'mf-hintbar'; box.appendChild(bar); }
+    var html = items.map(function (it) {
+      return '<span' + (it[2] ? ' class="mf-hintmain"' : '') + '>' + it[0].map(function (k) { return '<kbd>' + k + '</kbd>'; }).join('') + ' ' + it[1] + '</span>';
+    }).join('');
+    if (bar.innerHTML !== html) bar.innerHTML = html;
+  };
+  MathField.prototype.hints = function () {
+    var H = [], r = this.cur.row, p = this.parentOf(r), inline = !!this.opts.onExit;
+    if (this.pending && this.pending.kind === 'delim') return [[['(', '[', '|', '\\{'], 'the bracket']];
+    if (this.activeCI()) return [[['Space'], 'finish the name'], [['alpha'], 'names work without \\ too']];
+    var mt = this.matrixAt();
+    if (p) {
+      var n = p.node, t = n.t, brace = braced.has(r);
+      if (brace) H.push([['}'], 'close the brace']);
+      else if (t === 'scr') H.push([['Space'], n.sup === r ? 'leave the power' : 'leave the subscript']);
+      else if (t === 'frac') H.push([['Space'], p.slot === 0 ? 'on to the denominator' : 'leave the fraction']);
+      else if (t === 'sqrt') H.push([['Space'], n.k === r ? 'leave the root' : 'on to the root']);
+      else if (t === 'acc') H.push([['Space'], 'leave it']);
+      else if (t === 'big') H.push([['Space'], p.slot === 0 && n.hi ? 'on to the upper limit' : 'leave the limits']);
+      else if (t === 'paren') H.push([[(DELIM[n.r] || n.r || ')')], 'close the bracket']);
+      else if (t === 'txt') H.push([['→'], 'leave the words']);
+    }
+    if (mt) {
+      H.push([['Tab'], 'next cell']);
+      if (!this.opts.noMatrixSheet) H.push([['Double-click'], 'edit it large']);
+      if (!inline && !this.opts.noMatrixSheet) H.push([['⋮'], 'rows and columns']);
+    } else if (!p) {
+      /* a display equation: how to get out of it is said first, plainly */
+      if (isEmptyRow(this.root) && !inline && this.opts.enterLeaves && this.opts.enterLeaves()) {
+        H.push([['Enter'], 'leave the equation', 1], [['Backspace'], 'remove this line']);
+      } else if (isEmptyRow(this.root)) {
+        H.push([['alpha', 'sqrt', 'sum'], 'type a name'], [['/'], 'fraction'], [['^'], 'power']);
+      } else if (inline) H.push([['Esc'], 'back to the text', 1]);
+      else if (this.leftMat) H.push([['Enter'], 'done', 1]);
+      else H.push([['Esc'], 'done, write on below', 1], [['Enter'], 'new aligned line']);
+    }
+    return H;
+  };
+
+  /* A selection is one band over the run, from the first atom to the last
+     and as tall as the tallest — not a patch per atom with the spacing
+     showing through between them. */
+  MathField.prototype.drawSel = function () {
+    var atoms = [].filter.call(this.host.querySelectorAll('.msel'), function (a) { return !a.parentElement.closest('.msel'); });
+    if (!atoms.length) return;
+    var host = this.host, hr = host.getBoundingClientRect();
+    var first = atoms[0].getBoundingClientRect(), last = atoms[atoms.length - 1].getBoundingClientRect();
+    var top = Infinity, bottom = -Infinity;
+    atoms.forEach(function (a) { var r = a.getBoundingClientRect(); top = Math.min(top, r.top); bottom = Math.max(bottom, r.bottom); });
+    if (!(last.right > first.left)) return;
+    if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+    var band = el('span', 'mselbox');
+    band.style.left = (first.left - hr.left - host.clientLeft + host.scrollLeft) + 'px';
+    band.style.top = (top - hr.top - host.clientTop + host.scrollTop) + 'px';
+    band.style.width = (last.right - first.left) + 'px';
+    band.style.height = (bottom - top) + 'px';
+    host.appendChild(band);
   };
   MathField.prototype.changed = function () {
     this.render();
@@ -1285,34 +1815,45 @@
   };
 
   MathField.prototype.onMouse = function (e) {
-    var self = this;
-    this.host.focus();
-    var atom = e.target.closest ? e.target.closest('.matom') : null;
+    this.wordBreak = null;
+    this.leftMat = null;
+    /* Where the press landed, read before the field takes the focus:
+       taking it redraws the formula, and the element pressed is gone. */
+    var hit = null, atom = e.target.closest ? e.target.closest('.matom') : null;
     if (atom && this.host.contains(atom)) {
       var rowEl = atom.parentElement;
       while (rowEl && !rowEl.__row) rowEl = rowEl.parentElement;
       if (rowEl) {
-        var r = rowEl.__row;
         var idx = parseInt(atom.dataset.mi, 10);
         if (atom.classList.contains('mph')) idx = 0;
         else {
           var rc = atom.getBoundingClientRect();
           if (e.clientX > rc.left + rc.width / 2) idx += 1;
         }
-        this.sel = null;
-        this.cur = { row: r, i: idx };
-        e.preventDefault();
-        this.render();
-        return;
+        hit = { row: rowEl.__row, i: idx };
       }
     }
-    /* clicked padding: go to the nearest end of the root row */
+    /* a double click on a matrix opens it large, on a sheet of its own —
+       counted here, as the formula is redrawn between the two clicks and
+       the browser's own dblclick never comes */
+    var dm = e.detail === 2 && e.target.closest ? e.target.closest('.mmat') : null;
     var hr = this.host.getBoundingClientRect();
-    this.sel = null;
-    this.cur = { row: this.root, i: e.clientX < hr.left + hr.width / 2 ? 0 : this.root.k.length };
+    this.host.focus();
     e.preventDefault();
+    this.sel = null;
+    /* a triple click takes the whole formula, as it would a line of text —
+       so a box holding "−2π" can be typed over */
+    if (e.detail >= 3) {
+      this.sel = { row: this.root, a: 0, b: this.root.k.length };
+      this.cur = { row: this.root, i: this.root.k.length };
+    } else if (hit) {
+      this.cur = hit;
+    } else {
+      /* clicked padding: go to the nearest end of the root row */
+      this.cur = { row: this.root, i: e.clientX < hr.left + hr.width / 2 ? 0 : this.root.k.length };
+    }
     this.render();
-    void self;
+    if (dm && dm.__mat && !this.opts.noMatrixSheet) this.openMatrix(dm.__mat);
   };
 
   /* ---- caret motion */
@@ -1497,14 +2038,21 @@
     return null;
   }
 
-  MathField.prototype.insertBuild = function (name) {
+  var ASK = { matrix2: [2, 2], matrix3: [3, 3], cases: [2, 2] };
+  /* `env`: for a matrix, which brackets (\bmatrix …) */
+  MathField.prototype.insertBuild = function (name, env) {
     var f = BUILDS[name];
     if (!f) return;
+    /* a matrix or cases display: how big, first (askMatrix) */
+    if (ASK[name]) { this.askMatrix(name === 'cases' ? 'cases' : env || 'pmatrix', ASK[name][0], ASK[name][1]); return; }
     var n = f();
     /* wrap the selection or the trailing operand where it makes sense */
     var grab = null;
     if (n.t === 'frac' && n.style !== 'binom') {
-      grab = this.takeOperand();
+      /* "/" makes a fraction of what is just before it; the Fraction button,
+         \frac and "frac" give an empty one, the caret in its numerator (a
+         selection becomes the numerator either way) */
+      grab = env === '/' ? this.takeOperand() : this.takeSelection();
       if (grab.length) { n.n.k = grab; this.insertAt(n); this.cur = { row: n.d, i: 0 }; this.changed(); return; }
     } else if (n.t === 'sqrt' || n.t === 'acc' || n.t === 'paren') {
       grab = this.takeSelection();
@@ -1530,16 +2078,39 @@
     this.sel = null;
     return got;
   };
-  /* what "/" should pull into the numerator: the trailing operand */
+  /* What "/" pulls into the numerator: the term just before it, back to an
+     operator — x/, 12/, dy/, x^2y/ — but a bracket group only when it is
+     right before the "/": (a+b)/ takes (a+b), and (T_1-T_0)x/ takes x, not
+     the bracket too. */
   MathField.prototype.takeOperand = function () {
     var selGot = this.takeSelection();
     if (selGot.length) return selGot;
     var r = this.cur.row, i = this.cur.i, j = i;
+    var group = function (n) { return n.t === 'paren' || (n.t === 'ch' && /^[)\]]$/.test(n.c)); };
+    /* where a bracket written as characters, "(" … ")", opens */
+    var opening = function (at) {
+      var depth = 0;
+      for (var q = at; q >= 0; q--) {
+        var x = r.k[q];
+        if (x.t !== 'ch') continue;
+        if (/^[)\]]$/.test(x.c)) depth++;
+        else if (/^[([]$/.test(x.c) && --depth === 0) return q;
+      }
+      return -1;
+    };
     while (j > 0) {
       var n = r.k[j - 1];
       if (n.t === 'ch' && (n.cls === 'bin' || n.cls === 'rel' || n.cls === 'punct')) break;
       if (n.t === 'sym' && (n.cls === 'bin' || n.cls === 'rel' || n.cls === 'spc')) break;
       if (n.t === 'big') break;
+      if (group(n)) {
+        /* the bracket with its scripts, (a+b)^2, counts as right before */
+        var after = r.k.slice(j, i).every(function (x) { return x.t === 'scr'; });
+        if (!after) break;
+        if (n.t === 'ch') { var o = opening(j - 1); if (o < 0) break; j = o; }
+        else j--;
+        break;
+      }
       j--;
     }
     if (j === i) return [];
@@ -1566,6 +2137,11 @@
       if (sl.length) {
         var allEmpty = sl.every(isEmptyRow);
         if (allEmpty) { c.row.k.splice(c.i - 1, 1); this.cur = { row: c.row, i: c.i - 1 }; }
+        /* a whole fraction, root, accent, matrix or operator is marked
+           first, and the next Backspace takes it away in one go (← goes
+           inside it instead); an index or a bracket is stepped into, to go
+           on typing in it */
+        else if (WHOLE[prev.t]) { this.sel = { row: c.row, a: c.i - 1, b: c.i }; this.render(); return; }
         else { var last = sl[sl.length - 1]; this.cur = { row: last, i: last.k.length }; }
         this.changed(); return;
       }
@@ -1578,7 +2154,20 @@
     if (!p) return;
     var n = p.node, outer = rowOf.get(n);
     if (!outer) return;
+    /* a fraction taken apart from its denominator is set on the line:
+       a/b */
     var at = outer.k.indexOf(n);
+    /* a matrix or cases display is never taken apart: Backspace at the
+       start of a cell goes to the end of the cell before, and from the
+       first cell out in front of the display; one with nothing in it goes */
+    if (n.t === 'mat') {
+      var cells = slots(n);
+      if (cells.every(isEmptyRow)) { outer.k.splice(at, 1); this.cur = { row: outer, i: at }; this.changed(); return; }
+      if (p.slot > 0) { var pc = cells[p.slot - 1]; this.cur = { row: pc, i: pc.k.length }; }
+      else this.cur = { row: outer, i: at };
+      this.render(); return;
+    }
+    if (n.t === 'frac' && n.style === 'frac' && p.slot === 1) { this.unFrac(n); this.cur = { row: outer, i: at + n.n.k.length + 1 }; this.changed(); return; }
     var contents = [];
     slots(n).forEach(function (s) { contents = contents.concat(s.k); });
     outer.k.splice(at, 1);
@@ -1586,13 +2175,30 @@
     this.cur = { row: outer, i: at };
     this.changed();
   };
+  var WHOLE = { frac: 1, sqrt: 1, acc: 1, mat: 1, big: 1 };
+  /* Rows the user opened with a typed "{" (closed by "}"), and the
+     denominators of fractions made with "/" (closed by nothing): typing
+     treats them differently (keepsSpaces, typeChar, autoWord). Kept
+     beside the tree, not in it, so the document never stores them. */
+  var braced = new WeakSet(), softDen = new WeakSet();
+  /* Space stays put inside typed braces, inside brackets and in the cells of
+     a matrix (x & \text{if } x > 0 is typed with spaces; Tab, Enter and &
+     go on to the next cell) */
+  MathField.prototype.keepsSpaces = function () {
+    var p = this.parentOf(this.cur.row);
+    return braced.has(this.cur.row) || !!(p && (p.node.t === 'paren' || p.node.t === 'mat'));
+  };
 
   MathField.prototype.del = function () {
     if (this.deleteSel()) { this.changed(); return; }
     var c = this.cur;
     if (c.i < c.row.k.length) {
       var n = c.row.k[c.i];
-      if (slots(n).length && !slots(n).every(isEmptyRow)) { this.right(); this.render(); return; }
+      if (slots(n).length && !slots(n).every(isEmptyRow)) {
+        if (WHOLE[n.t]) this.sel = { row: c.row, a: c.i, b: c.i + 1 };
+        else this.right();
+        this.render(); return;
+      }
       c.row.k.splice(c.i, 1);
       this.changed();
     }
@@ -1613,8 +2219,29 @@
     c.row.k.splice(at, 1);
     this.cur = { row: c.row, i: at };
     if (!name) { if (!silent) this.changed(); else this.render(); return true; }
+    if (name === 'slash') { this.insertNode(ch('/', 'upr')); return true; }
+    /* sizes and a \right with nothing to close: the brackets size themselves */
+    if (name === 'right' || name === 'middle' || /^(big|Big|bigg|Bigg)[lrm]?$/.test(name)) { this.changed(); return true; }
+    if (!knownName(name)) {
+      /* two commands run together, "\pmsqrt": \pm then \sqrt */
+      var parts = splitNames(name);
+      if (parts) {
+        for (var q = 0; q < parts.length; q++) {
+          this.cur.row.k.splice(this.cur.i, 0, ci());
+          this.cur.row.k[this.cur.i].s = parts[q];
+          this.cur = { row: this.cur.row, i: this.cur.i + 1 };
+          reparent(this.root);
+          this.resolveCI(silent && q < parts.length - 1);
+        }
+        return true;
+      }
+    }
+    if (SPACE_CMD[name]) { this.insertNode(sym('\\' + name, ' ', 'spc')); return true; }
+    if ((ACC.hasOwnProperty(name) && !PT.symbols.buildCmds[name]) || WRAP[name]) {
+      this.insertNode(acc(name)); this.markOneTok(); return true;
+    }
     var bld = PT.symbols.buildCmds[name];
-    if (bld) { this.insertBuild(bld); return true; }
+    if (bld) { this.insertBuild(bld, /.matrix$/i.test(name) ? name : null); this.markOneTok(); return true; }
     var it = PT.symbols.byCmd[name];
     if (it) { this.insertNode(sym(it.tex, it.d, it.cls, it.f)); return true; }
     if (/^(sin|cos|tan|log|ln|exp|min|max|det|dim|ker|arg|sup|inf|gcd)$/.test(name)) {
@@ -1624,22 +2251,253 @@
     return true;
   };
 
+  var FNS = /^(sin|cos|tan|log|ln|exp|min|max|det|dim|ker|arg|sup|inf|gcd)$/;
+  function knownName(n) {
+    return !!(n === 'slash' || PT.symbols.buildCmds[n] || PT.symbols.byCmd[n] || FNS.test(n) ||
+      ACC.hasOwnProperty(n) || WRAP[n] || SPACE_CMD[n] || FACE.hasOwnProperty(n) || n === 'right' ||
+      /^(big|Big|bigg|Bigg)[lrm]?$/.test(n));
+  }
+  /* A structure made by a typed command with no "{" after it takes one
+     thing, as in LaTeX: \frac12 is ½, \sqrt2x is √2·x, \dot\mathbf{y} = …
+     dots only the y. Its parts are marked here (typeChar steps on once one
+     holds something); a "{" typed instead opens the part as usual. */
+  var oneTok = new WeakSet();
+  MathField.prototype.markOneTok = function () {
+    var p = this.parentOf(this.cur.row);
+    if (!p || !/^(frac|sqrt|acc)$/.test(p.node.t) || !isEmptyRow(this.cur.row)) return;
+    slots(p.node).forEach(function (s) { oneTok.add(s); });
+  };
+  var SPACE_KEY = { ',': '\\,', ';': '\\;', ':': '\\:', '!': '\\!', ' ': '\\ ' };
+  /* The key after \left or \right (a bracket), or after \mathbb (a letter,
+     or a "{" and letters up to "}"). True when it was used up. `given`: the
+     bracket, already read from a command (\langle, \{). */
+  MathField.prototype.pendingKey = function (k, given) {
+    var p = this.pending;
+    if (!p) return false;
+    if (p.kind === 'delim') {
+      if (!given && k === '\\') return false;       /* \left\{ — the name comes next */
+      if (!given && k === ' ') return true;
+      var d = given ? k : DELIM_KEY[k];
+      this.pending = null;
+      if (!d) return false;
+      if (p.side === 'l') {
+        this.insertNode(paren(d, DELIM_CLOSE[d] || d));
+        return true;
+      }
+      /* \right: closes the bracket the caret is in, with this one */
+      var r = this.cur.row, o = this.parentOf(r);
+      while (o && o.node.t !== 'paren') { r = rowOf.get(o.node); o = r ? this.parentOf(r) : null; }
+      if (o) {
+        o.node.r = d;
+        var outer = rowOf.get(o.node);
+        this.cur = { row: outer, i: outer.k.indexOf(o.node) + 1 };
+      }
+      this.changed();
+      return true;
+    }
+    if (p.kind === 'face') {
+      if (/^[A-Za-z]$/.test(k)) {
+        this.insertNode(sym('\\' + p.name + '{' + k + '}', k, 'upr', p.f || undefined));
+        if (!p.open) this.pending = null;
+        return true;
+      }
+      if (k === '{' && !p.open) { p.open = true; return true; }
+      if (k === ' ' && !p.open) return true;
+      this.pending = null;
+      return k === '}' && p.open;
+    }
+    this.pending = null;
+    return false;
+  };
+
+  /* \begin{…} and \end{…} typed out: a matrix or cases display is made at
+     once (no size asked: & and \\ grow it, as they fill it in LaTeX), and
+     \end leaves it. Others — aligned, split — the equation already is. */
+  MathField.prototype.environment = function (cmd, env) {
+    var base = String(env || '').replace(/\*$/, '');
+    var MATS = /^(matrix|pmatrix|bmatrix|Bmatrix|vmatrix|Vmatrix|smallmatrix|cases)$/;
+    if (cmd === 'begin') {
+      if (MATS.test(base)) {
+        var m = mat(base === 'smallmatrix' ? 'matrix' : base, 1, base === 'cases' ? 2 : 1);
+        this.insertNode(m);
+        this.texMat = m;
+        return;
+      }
+      this.changed();
+      return;
+    }
+    var at = this.matrixAt();
+    if (at) {
+      var m2 = at.m, last = m2.r[m2.r.length - 1];
+      /* "… \\ \end{cases}": the empty row the last \\ opened goes */
+      if (m2.r.length > 1 && last.every(isEmptyRow)) m2.r.pop();
+      var mo = rowOf.get(m2);
+      this.cur = { row: mo, i: mo.k.indexOf(m2) + 1 };
+      if (this.texMat === m2) this.texMat = null;
+    }
+    this.sel = null;
+    this.changed();
+  };
+  /* \\ in a matrix or cases display: on to the next row, made if need be */
+  MathField.prototype.lineBreak = function () {
+    var at = this.matrixAt();
+    if (!at) { this.changed(); return; }
+    if (at.ri < at.m.r.length - 1) {
+      var cell = at.m.r[at.ri + 1][0];
+      this.sel = null;
+      this.cur = { row: cell, i: 0 };
+      this.changed();
+      return;
+    }
+    this.matrixOp('addrow');
+    var a2 = this.matrixAt();
+    if (a2) { var c0 = a2.m.r[a2.ri][0]; this.cur = { row: c0, i: 0 }; this.render(); }
+  };
+  /* & in a matrix or cases display: on to the next cell of the row — made,
+     in a matrix being typed out with \begin, while its first row grows */
+  MathField.prototype.ampersand = function () {
+    var at = this.matrixAt();
+    if (!at) return false;
+    var cols = at.m.r[0].length, cell;
+    if (at.ci < cols - 1) cell = at.m.r[at.ri][at.ci + 1];
+    else if (this.texMat === at.m && at.ri === 0 && this.matrixOp('addcol')) return true;
+    else if (at.ri < at.m.r.length - 1) cell = at.m.r[at.ri + 1][0];
+    if (cell) { this.sel = null; this.cur = { row: cell, i: 0 }; }
+    this.render();
+    return true;
+  };
+  MathField.prototype.dropCI = function (node) {
+    var at = this.cur.row.k.indexOf(node);
+    if (at < 0) return;
+    this.cur.row.k.splice(at, 1);
+    this.cur = { row: this.cur.row, i: at };
+  };
+  /* a run of command names written together, split into names that all
+     exist (the longest first): "pmsqrt" → pm, sqrt. Null if it cannot be. */
+  function splitNames(n) {
+    if (!n) return [];
+    for (var k = n.length; k > 0; k--) {
+      if (!knownName(n.slice(0, k))) continue;
+      var rest = splitNames(n.slice(k));
+      if (rest) return [n.slice(0, k)].concat(rest);
+    }
+    return null;
+  }
+
   MathField.prototype.onKey = function (e) {
     var k = e.key;
+    /* an input method is composing a word: it arrives when done (deskFocus) */
+    if (e.isComposing || k === 'Process') return;
+    /* Enter just took the caret out of a matrix or cases display (see
+       'Enter' below): only the key straight after it may use that */
+    var leftMat = this.leftMat;
+    if (!/^(Shift|Control|Alt|AltGraph|Meta|CapsLock|OS)$/.test(k)) this.leftMat = null;
+    /* the size picker for a new matrix has the keys while it is up */
+    if (this.picker && this.pickerKey(e) !== 'pass') return;
     var ciNode = this.activeCI();
     if (k === 'Backspace' && this.undoAuto()) { e.preventDefault(); return; }
     if (k !== 'Backspace') this.autoUndo = null;
     if (k === ' ' || /^(Arrow|Home|End|Enter|Tab)/.test(k)) this.autoWord(true);
+    /* the caret moved: a space typed earlier no longer marks where a word starts */
+    if (/^(Arrow|Home|End|Tab)/.test(k)) this.wordBreak = null;
 
     if (k === 'Escape') {
-      if (ciNode) { var at = this.cur.row.k.indexOf(ciNode); this.cur.row.k.splice(at, 1); this.cur.i = at; this.changed(); }
-      else if (this.opts.onEscape) this.opts.onEscape(this);
+      this.pending = null;
+      /* Esc is "done": a command being typed is finished first (\top
+         stays ⊤) — one that names nothing is dropped — and then the
+         formula is left, as without one */
+      if (ciNode) {
+        if (ciNode.s && (knownName(ciNode.s) || splitNames(ciNode.s))) this.resolveCI();
+        else { var at = this.cur.row.k.indexOf(ciNode); this.cur.row.k.splice(at, 1); this.cur.i = at; this.changed(); }
+      }
+      if (this.opts.onEscape) this.opts.onEscape(this);
       e.preventDefault(); return;
     }
-    if (ciNode) {
+    var MOD = /^(Shift|Control|Alt|AltGraph|Meta|CapsLock|OS)$/.test(k);
+    /* \left, \right, \mathbb …: waiting for the bracket or letter they apply to */
+    if (this.pending && !MOD && !(ciNode && this.pending.kind === 'delim')) {
+      if (this.pendingKey(k)) { e.preventDefault(); return; }
+    }
+    if (ciNode && !MOD) {
+      var s0 = ciNode.s;
+      /* \begin{cases}, \end{cases}: the environment's name belongs to the command */
+      if (ciNode.arg != null) {
+        if (/^[A-Za-z*]$/.test(k)) { ciNode.arg += k; e.preventDefault(); this.changed(); return; }
+        if (k === 'Backspace') {
+          if (ciNode.arg) ciNode.arg = ciNode.arg.slice(0, -1); else delete ciNode.arg;
+          e.preventDefault(); this.changed(); return;
+        }
+        var envName = ciNode.arg;
+        this.dropCI(ciNode);
+        this.environment(s0, envName);
+        if (k === '}' || k === ' ' || k === 'Enter' || k === 'Tab') { e.preventDefault(); return; }
+        ciNode = null;
+      }
+    }
+    if (ciNode && !MOD) {
       if (/^[A-Za-z]$/.test(k)) { ciNode.s += k; e.preventDefault(); this.changed(); return; }
-      if (k === 'Enter' || k === ' ' || k === 'Tab') { this.resolveCI(); e.preventDefault(); return; }
       if (k === 'Backspace') { this.backspace(); e.preventDefault(); return; }
+      if ((s0 === 'begin' || s0 === 'end') && k === '{') { ciNode.arg = ''; e.preventDefault(); this.changed(); return; }
+      var waiting = this.pending && this.pending.kind === 'delim';
+      /* the bracket after \left or \right, given by name: \left\langle, \right\} */
+      if (waiting && ((!s0 && '{}|'.indexOf(k) >= 0) || DELIM_NAME[s0])) {
+        this.dropCI(ciNode);
+        this.pendingKey(!s0 ? (k === '|' ? '\\|' : '\\' + k) : DELIM_NAME[s0], true);
+        if (!s0 || k === ' ') { e.preventDefault(); return; }
+        ciNode = null;
+      } else if (waiting) this.pending = null;
+    }
+    if (ciNode && !MOD) {
+      if (s0 === 'left' || s0 === 'right') {
+        /* the bracket comes next — now, or after a space or a "\" */
+        this.dropCI(ciNode);
+        this.pending = { kind: 'delim', side: s0 === 'left' ? 'l' : 'r' };
+        this.render();
+        if (k === ' ' || k === 'Enter' || k === 'Tab') { e.preventDefault(); return; }
+        if (k !== '\\' && this.pendingKey(k)) { e.preventDefault(); return; }
+        ciNode = null;
+      } else if (/^(big|Big|bigg|Bigg)[lrm]?$/.test(s0) || s0 === 'middle') {
+        /* sizes: the brackets size themselves; the bracket typed next is just that */
+        this.dropCI(ciNode); this.render();
+        if (k === ' ' || k === 'Enter' || k === 'Tab') { e.preventDefault(); return; }
+        ciNode = null;
+      } else if (FACE.hasOwnProperty(s0)) {
+        /* \mathbb R, \mathbb{R}: the letter that follows, in that face */
+        this.dropCI(ciNode);
+        this.pending = { kind: 'face', name: s0 === 'mathscr' ? 'mathcal' : s0, f: FACE[s0], open: k === '{' };
+        this.render();
+        if (k === '{' || k === ' ' || k === 'Enter' || k === 'Tab') { e.preventDefault(); return; }
+        this.pending = null; ciNode = null;
+      } else if (s0 === 'sqrt' && k === '[') {
+        /* \sqrt[3]{x}: the index first, "]" on to the root */
+        this.dropCI(ciNode);
+        this.insertNode(sqrtn(row(), row()));
+        e.preventDefault(); return;
+      } else if (!s0 && SPACE_KEY[k]) {
+        /* \, \; \: \! and "\ ": the spaces LaTeX has, as spaces */
+        this.dropCI(ciNode);
+        this.insertNode(sym(SPACE_KEY[k], ' ', 'spc'));
+        e.preventDefault(); return;
+      } else if (!s0 && k === '\\') {
+        /* \\ : the next row of a matrix or cases display */
+        this.dropCI(ciNode);
+        this.lineBreak();
+        e.preventDefault(); return;
+      }
+    }
+    if (ciNode && !MOD) {
+      if (k === 'Enter' || k === ' ' || k === 'Tab') { this.resolveCI(); e.preventDefault(); return; }
+      /* "\/" is a slash as written, not a fraction */
+      if (k === '/' && !s0) { this.resolveCI(true); this.insertNode(ch('/', 'upr')); e.preventDefault(); return; }
+      /* "\frac{", "\sqrt{", "\ddot{": the brace opens what the command made;
+         after a command PaperTeX does not know, it opens that command's
+         argument, written back as typed (\overbrace{…}, \cancel{…}) */
+      if (k === '{' && s0) {
+        if (!knownName(s0) && !splitNames(s0)) { this.dropCI(ciNode); this.insertNode(acc(s0), true); }
+        else this.resolveCI(true);
+        if (this.cur.row !== this.root) braced.add(this.cur.row);
+        e.preventDefault(); this.changed(); return;
+      }
       if (k.length === 1) { this.resolveCI(); }
     }
 
@@ -1648,8 +2506,48 @@
        a shortcut. */
     var altGr = (e.getModifierState && e.getModifierState('AltGraph')) || (e.ctrlKey && e.altKey && k.length === 1);
     if ((e.ctrlKey || e.metaKey) && !altGr) {
-      if (k === 'a') { this.sel = { row: this.root, a: 0, b: this.root.k.length }; this.cur = { row: this.root, i: this.root.k.length }; e.preventDefault(); this.render(); return; }
+      if (k === 'a') {
+        /* in a formula set in a line of text, a second Ctrl+A (all of the
+           formula already selected) takes the whole line, as it would
+           anywhere else in the text */
+        var all = this.sel && this.sel.row === this.root && Math.min(this.sel.a, this.sel.b) === 0 &&
+          Math.max(this.sel.a, this.sel.b) === this.root.k.length;
+        var line = this.host.parentElement && this.host.parentElement.closest('[contenteditable="true"]');
+        if (all && this.opts.onExit && line) {
+          e.preventDefault();
+          this.opts.onExit(this, 'right');
+          var rr = document.createRange();
+          rr.selectNodeContents(line);
+          var ss = window.getSelection();
+          ss.removeAllRanges(); ss.addRange(rr);
+          return;
+        }
+        this.sel = { row: this.root, a: 0, b: this.root.k.length }; this.cur = { row: this.root, i: this.root.k.length }; e.preventDefault(); this.render(); return;
+      }
+      /* bold, as in text: what is selected, or what is typed next */
+      if ((k === 'b' || k === 'B') && !e.shiftKey && !e.altKey) { this.bold(); e.preventDefault(); return; }
       return; /* let copy/paste/undo bubble */
+    }
+
+    /* Backspace in a formula with nothing in it: the field decides (an
+       equation goes away, as an empty paragraph does). Only then — after
+       Ctrl+A, the first Backspace empties it and the block stays. */
+    if (k === 'Backspace' && !this.sel && isEmptyRow(this.root) && this.opts.onDeleteEmpty) {
+      /* (not by a held key's repeats: those stop at the empty formula) */
+      e.preventDefault(); if (!e.repeat) this.opts.onDeleteEmpty(this); return;
+    }
+
+    /* A formula set in a line of text (opts.onExit) is left the way it was
+       entered: ← at its start and → at its end go back into the text, and
+       a "$" closes it as it would in LaTeX. Backspace at its start leaves
+       it too, or takes it away if nothing is in it. */
+    var X = this.opts.onExit, atStart = !this.sel && this.cur.row === this.root && this.cur.i === 0,
+      atEnd = !this.sel && this.cur.row === this.root && this.cur.i === this.root.k.length;
+    if (X) {
+      var out = k === '$' ? 'right' : e.shiftKey ? null :
+        k === 'ArrowLeft' && atStart ? 'left' : k === 'ArrowRight' && atEnd ? 'right' :
+        k === 'Backspace' && atStart ? (isEmptyRow(this.root) ? 'remove' : 'left') : null;
+      if (out) { e.preventDefault(); X(this, out); return; }
     }
 
     switch (k) {
@@ -1665,36 +2563,81 @@
       case 'ArrowDown':
         if (!this.vert(1) && this.opts.onLeave) { this.opts.onLeave(this, 'down'); }
         e.preventDefault(); this.render(); return;
-      case 'Home': this.cur = { row: this.cur.row, i: 0 }; e.preventDefault(); this.render(); return;
-      case 'End': this.cur = { row: this.cur.row, i: this.cur.row.k.length }; e.preventDefault(); this.render(); return;
+      /* Home and End: the start and end of the whole line, as in text — so
+         "f(x) =" can go in front of a matrix or cases brace (the start of
+         a cell is ← away) */
+      case 'Home': this.sel = null; this.cur = { row: this.root, i: 0 }; e.preventDefault(); this.render(); return;
+      case 'End': this.sel = null; this.cur = { row: this.root, i: this.root.k.length }; e.preventDefault(); this.render(); return;
       case 'Backspace': this.backspace(); e.preventDefault(); return;
       case 'Delete': this.del(); e.preventDefault(); return;
       case 'Enter':
         /* inside a construct: on to its next part; on the line itself the
            field decides (a new equation line, closing the inline editor).
            Shift+Enter always goes to the field. */
-        if (!e.shiftKey && this.advance()) { e.preventDefault(); this.render(); return; }
+        /* (a matrix's size is asked for when it is made, and changed in its
+           large editor: Enter in a cell just goes on to the next one) */
+        /* Enter again, straight after Enter left the last cell of a matrix
+           or cases display: that is "done", as Enter on an empty row is —
+           the field is told so (an equation is left, instead of growing a
+           stray aligned line the next keys would go into) */
+        if (!e.shiftKey && leftMat && !this.sel && this.cur.row.k[this.cur.i - 1] === leftMat) {
+          if (this.opts.onEnter) { this.opts.onEnter(this, e, 'done'); e.preventDefault(); }
+          return;
+        }
+        var from = this.parentOf(this.cur.row);
+        if (!e.shiftKey && this.advance()) {
+          if (from && from.node.t === 'mat' && this.cur.row.k[this.cur.i - 1] === from.node) this.leftMat = from.node;
+          e.preventDefault(); this.render(); return;
+        }
         if (this.opts.onEnter) { this.opts.onEnter(this, e); e.preventDefault(); }
         return;
       case 'Tab':
-        if (this.opts.onTab) { this.opts.onTab(this, e); e.preventDefault(); return; }
-        if (!this.nextSlot(e.shiftKey)) {
-          if (e.shiftKey) this.left();
-          else if (!this.outOf() && this.opts.onLeave) this.opts.onLeave(this, 'next');
+        if (this.opts.onTab && this.opts.onTab(this, e) !== false) { e.preventDefault(); return; }
+        /* in a cell of a matrix or cases display, inside something there
+           (words, an index): Tab is still "next cell", as from the cell */
+        var mt = this.matrixAt(), stepped = this.nextSlot(e.shiftKey);
+        if (!stepped && mt && !mt.direct) {
+          var cols = mt.m.r[0].length, flat = mt.ri * cols + mt.ci + (e.shiftKey ? -1 : 1);
+          if (flat >= 0 && flat < mt.m.r.length * cols) {
+            var cell = mt.m.r[Math.floor(flat / cols)][flat % cols];
+            this.cur = { row: cell, i: e.shiftKey ? cell.k.length : 0 };
+          } else {
+            var mo = rowOf.get(mt.m);
+            if (mo) this.cur = { row: mo, i: mo.k.indexOf(mt.m) + (e.shiftKey ? 0 : 1) };
+          }
+          this.sel = null;
+          e.preventDefault(); this.render(); return;
+        }
+        if (!stepped) {
+          /* Shift+Tab before the first thing: back to whatever comes before */
+          if (e.shiftKey) {
+            if (this.cur.row === this.root && this.cur.i === 0 && this.opts.onLeave) this.opts.onLeave(this, 'prev');
+            else this.left();
+          } else if (!this.outOf() && this.opts.onLeave) this.opts.onLeave(this, 'next');
         }
         e.preventDefault(); this.render(); return;
       case ' ':
+        /* in words (\text{…}) a space is a space */
+        if (!e.shiftKey && this.inTextSlot()) { e.preventDefault(); this.typeChar(' '); return; }
         /* Space means "done with this bit", never a literal space — otherwise
            ordinary typing litters the output with \; spacers. Shift+Space is
            there when a real thin space is wanted. */
         if (e.shiftKey) this.insertNode(sym('\\,', ' ', 'spc'));
-        else { this.advance(); this.render(); }
+        else {
+          /* except inside braces the user typed, or inside brackets: there
+             a space is what it is in LaTeX, nothing — \sqrt{a - b} and
+             (x + 1) stay whole; "}" and ")" close them */
+          if (!this.keepsSpaces()) this.advance();
+          /* and it ends a word: "x in A" is x ∈ A, not ξ … */
+          this.wordBreak = { row: this.cur.row, i: this.cur.i };
+          this.render();
+        }
         e.preventDefault(); return;
     }
 
     /* A dead key — ^ on Turkish and many European layouts — never reaches
        typeChar as a character. In a formula it can only mean a superscript. */
-    if (k === 'Dead') { e.preventDefault(); this.typeChar('^'); return; }
+    if (k === 'Dead') { e.preventDefault(); this.deadAt = Date.now(); this.typeChar('^'); return; }
 
     if (k.length !== 1) return;
     e.preventDefault();
@@ -1711,28 +2654,65 @@
     if (this.sel.a === this.sel.b) this.sel = null;
   };
 
-  /* Collect the letters immediately before the caret and, if they name
-     something, replace them with it. `flush` converts even a word that
-     could still have grown. */
-  MathField.prototype.autoWord = function (flush) {
-    if (autoOff) return false;
+  /* The name the letters just before the caret end in, or may yet become.
+     A name can follow other letters — "xpi" is x times π, "2asin" is 2a
+     times sin — so every ending is tried, the longest first: "asinh" ends
+     in "sinh", not in "in". Returns where it starts, the word, and whether
+     it is a whole name (auto) and/or the start of a longer one (prefix). */
+  MathField.prototype.wordAt = function (wholeOnly) {
     var r = this.cur.row, i = this.cur.i, j = i;
-    while (j > 0 && r.k[j - 1].t === 'ch' && /[A-Za-z]/.test(r.k[j - 1].c)) j--;
-    if (j === i) return false;
+    var wb = this.wordBreak;
+    while (j > 0 && r.k[j - 1].t === 'ch' && /[A-Za-z]/.test(r.k[j - 1].c) && !(wb && wb.row === r && wb.i === j)) j--;
     var w = '', z;
     for (z = j; z < i; z++) w += r.k[z].c;
-    var hit = AUTO[w];
-    if (!hit) return false;
-    if (!flush && PREFIX[w]) return false;
+    for (var s = 0; s < w.length; s++) {
+      /* "in" after one letter, once the word is done, is that letter and ∈:
+         "tin [0,10]" is t ∈ [0, 10] (min, sin … are names of their own) */
+      var part = w.slice(s), A = s ? TAIL[part] || (wholeOnly && part === 'in' && s === 1 && w.length === 3) : AUTO[part],
+        P = s ? TAILPRE[part] : PREFIX[part];
+      if (A || (!wholeOnly && P)) return { j: j + s, w: part, auto: !!A, prefix: !!P };
+    }
+    return null;
+  };
+
+  /* Replace the name the letters before the caret end in with what it
+     names. `flush` converts even a name that could still have grown. */
+  MathField.prototype.autoWord = function (flush) {
+    if (autoOff || this.inTextSlot()) return false;   /* words in \text stay words */
+    var at = this.wordAt(flush);
+    if (!at || !at.auto) return false;
+    if (!flush && at.prefix) return false;
+    var hit = AUTO[at.w];
+    var r = this.cur.row, i = this.cur.i, j = at.j;
 
     var before = r.k.slice(), self = this;
     r.k.splice(j, i - j);
     this.cur = { row: r, i: j };
     reparent(this.root);
-    if (hit.b) this.insertBuild(hit.b);
-    else if (hit.fn) this.insertNode(fnode(hit.fn));
+    /* A function name is never an index or part of a denominator made
+       with "/": typed at the end of one that already holds something, it
+       goes on the line after it — γ/ω_d sin … is (γ/ω_d) sin …, not
+       γ/(ω_d sin) */
+    if (hit.fn) {
+      while (this.cur.i === this.cur.row.k.length && this.cur.row.k.length && !braced.has(this.cur.row)) {
+        var own = this.parentOf(this.cur.row);
+        if (!own || !(own.node.t === 'scr' || softDen.has(this.cur.row))) break;
+        this.outOf(); reparent(this.root);
+      }
+    }
+    var made = null;
+    if (hit.b) this.insertBuild(hit.b, /.matrix$/i.test(at.w) ? at.w : null);
+    else if (hit.fn) this.insertNode(made = fnode(hit.fn));
     else this.insertNode(sym(hit.s.tex, hit.s.d, hit.s.cls, hit.s.f));
-    this.autoUndo = { fn: function () { r.k = before; self.cur = { row: r, i: i }; } };
+    this.autoUndo = { fn: function () {
+      /* the letters back where they were typed, and the name gone from
+         wherever it went */
+      var at = made && rowOf.get(made);
+      if (at && at !== r) at.k.splice(at.k.indexOf(made), 1);
+      r.k = before; self.cur = { row: r, i: i };
+    } };
+    /* which name made which symbol, for a "{" that follows (braceName) */
+    this.lastAuto = hit.b ? null : { word: at.w, node: r.k[j] };
     return true;
   };
 
@@ -1789,11 +2769,101 @@
     return true;
   };
 
+  /* the caret is in words: the inside of a \text{…} */
+  MathField.prototype.inTextSlot = function () {
+    var p = this.parentOf(this.cur.row);
+    return !!(p && p.node.t === 'txt');
+  };
   MathField.prototype.typeChar = function (c) {
-    var inText = false, p = this.parentOf(this.cur.row);
-    if (p && p.node.t === 'txt') inText = true;
+    /* typed over a selection, a character replaces it — before anything
+       else is made of it: a digit after "π" selected with Ctrl+A is that
+       digit, not an index to the π (only / and brackets wrap a selection) */
+    if (this.sel && '/([{|'.indexOf(c) < 0) { this.deleteSel(); reparent(this.root); }
+    /* a "." that stepped out of an exponent (x^2.) and is followed by a
+       digit was a decimal point: it goes back in, x^{2.5} */
+    var sd = this.softDot;
+    this.softDot = null;
+    if (sd && /[0-9]/.test(c) && this.cur.row === sd.row && this.cur.i === sd.i && sd.row.k[sd.i - 1] === sd.dot) {
+      sd.row.k.splice(sd.i - 1, 1);
+      sd.into.k.push(sd.dot);
+      reparent(this.root);
+      this.cur = { row: sd.into, i: sd.into.k.length };
+    }
+    /* in a part of \frac12, \sqrt2, \dot x — typed without "{" — the one
+       thing it takes is there: on to the next part, or out */
+    var ot = this.cur.row;
+    if (oneTok.has(ot) && !braced.has(ot) && !this.sel && ot.k.length && this.cur.i === ot.k.length && c !== '}') {
+      this.advance(); reparent(this.root);
+    }
+    var pr = this.parentOf(this.cur.row);
+    /* Braces as in LaTeX: "{" where a part begins only opens it, and "}"
+       closes it — on to the next part, or out — so x^{2}, \frac{a}{b} and
+       \text{word} typed out in full come out as written. */
+    if (c === '{' && pr && !this.sel && isEmptyRow(this.cur.row)) { braced.add(this.cur.row); this.render(); return; }
+    /* and a brace straight after a name that takes one, typed without its
+       backslash — "mddot{x}", "cdot{x}" — makes that thing of it: m ẍ, c ẋ */
+    if (c === '{' && !this.sel && !this.inTextSlot() && this.braceName()) return;
+    if (c === '}' && pr && pr.node.t !== 'paren') {
+      /* it closes the nearest brace the user typed — in \sqrt{x^2 - y^2}
+         the root's, not the exponent's, which had none — and with none
+         typed, whatever the caret is in */
+      this.sel = null;
+      var br = this.cur.row;
+      while (br && !braced.has(br)) { var bo = this.parentOf(br); br = bo ? rowOf.get(bo.node) : null; }
+      if (br) this.cur = { row: br, i: br.k.length };
+      this.advance(); this.render(); return;
+    }
+    if (this.inTextSlot()) { this.insertNode(ch(c, 'txtc')); return; }
 
-    if (inText) { this.insertNode(ch(c, 'txtc')); return; }
+    /* An index or exponent typed with _ or ^ is done when a relation comes
+       (ω_d = …), and one that is a number when anything but a digit comes
+       after it in an index (x_0, y) or an operator after it in an exponent
+       (x^2 + 1). Letters stay in: x^{n+1}, a_{ij} — → or Space leaves. */
+    /* (Not in braces the user typed: x_{i=1} means what it says.) An
+       index or exponent of one symbol is done, too, when an operator or
+       punctuation follows it: x^n + 1, ω_d = …, a_i, b. */
+    if (pr && pr.node.t === 'scr' && !this.sel && this.cur.i === this.cur.row.k.length && this.cur.row.k.length &&
+        this.cur.row !== this.soft && !braced.has(this.cur.row)) {
+      var digits = this.cur.row.k.every(function (n) { return n.t === 'ch' && /^[0-9]$/.test(n.c); });
+      var one = this.cur.row.k.length === 1 && (this.cur.row.k[0].t === 'ch' || this.cur.row.k[0].t === 'sym');
+      var isSub = pr.node.sub === this.cur.row;
+      if ('=<>'.indexOf(c) >= 0 || (one && '+-*,;:'.indexOf(c) >= 0) ||
+          (digits && (isSub ? !/[0-9.^_]/.test(c) : ('+-*,;:)]|(['.indexOf(c) >= 0 || /[A-Za-z\\]/.test(c))))) {
+        this.outOf(); reparent(this.root);
+      }
+    }
+    /* A fraction made by "/" has no brace to close it: an operator or a
+       relation at the end of its denominator ends it, as / binds tighter
+       than + and = do — a/b + c, k/m = ω² */
+    if (softDen.has(this.cur.row) && !this.sel && this.cur.i === this.cur.row.k.length && this.cur.row.k.length &&
+        '+-*=<>,;:'.indexOf(c) >= 0) {
+      this.outOf(); reparent(this.root);
+    }
+
+    /* A full stop, comma or semicolon at the very end of an exponent, an
+       index, a root, an accent or a "/" fraction ends the sentence, not the
+       box: it goes after the whole thing — x^2. is x², and ω_0, is ω₀ , —
+       through as many boxes as end there. (Not in braces the user typed;
+       a "." followed by a digit goes back in, see softDot.) */
+    if ('.,;'.indexOf(c) >= 0 && !this.sel && this.cur.row !== this.soft) {
+      this.autoWord(true);
+      var into = null;
+      for (;;) {
+        var pr2 = this.parentOf(this.cur.row), cr = this.cur.row;
+        if (!pr2 || braced.has(cr) || !cr.k.length || this.cur.i !== cr.k.length) break;
+        var t2 = pr2.node.t;
+        if (!(t2 === 'scr' || t2 === 'acc' || (t2 === 'sqrt' && pr2.node.k === cr) || softDen.has(cr))) break;
+        if (!this.outOf()) break;
+        reparent(this.root);
+        if (!into) into = cr;
+      }
+      if (into) {
+        var pn = ch(c);
+        this.insertNode(pn);
+        if (c === '.') this.softDot = { dot: pn, into: into, row: this.cur.row, i: this.cur.i };
+        return;
+      }
+    }
 
     /* in a soft index (made by typing x1), at its end: digits join it, ^
        puts an exponent on the same letter, _ makes it an ordinary index to
@@ -1808,7 +2878,15 @@
     }
 
     if (/[A-Za-z]/.test(c)) {
+      /* a name held back because it might grow ("sin" → "sinh", "pi" →
+         "pitchfork") is settled by a letter that does not continue it:
+         "sinx" is sin x, "pix" is π x */
+      if (!autoOff) {
+        var at = this.wordAt(false);
+        if (at && at.auto && at.prefix && !AUTO[at.w + c] && !PREFIX[at.w + c]) this.autoWord(true);
+      }
       this.insertNode(ch(c));
+      this.autoUndo = null;       /* Backspace now takes back the letter, not the name */
       this.autoWord(false);
       return;
     }
@@ -1817,13 +2895,31 @@
     if (this.combine(c)) return;
 
     if (c === '\\') { this.insertNode(ci()); return; }
-    if (c === '/') { this.insertBuild('frac'); return; }
+    if (c === '/') {
+      /* "//" is a slash as written: the fraction the first one made gives
+         its numerator back, followed by "/" */
+      var pf = this.parentOf(this.cur.row);
+      if (pf && pf.node.t === 'frac' && pf.node.style === 'frac' && pf.node.d === this.cur.row && isEmptyRow(this.cur.row)) {
+        this.unFrac(pf.node); this.changed(); return;
+      }
+      this.insertBuild('frac', '/');
+      var den = this.parentOf(this.cur.row);
+      if (den && den.node.t === 'frac') softDen.add(den.node.d);
+      /* and Backspace straight after it does the same */
+      var made = this.parentOf(this.cur.row), self = this;
+      if (made && made.node.t === 'frac') this.autoUndo = { fn: function () { if (rowOf.get(made.node)) self.unFrac(made.node); } };
+      return;
+    }
     /* ü doubles for ^ : on a Turkish keyboard ^ is a dead key that needs
        pressing twice, so there is an ordinary key for it too. */
     if (c === '^' || c === 'ü' || c === 'Ü') { this.applyScript('sup'); return; }
     if (c === '_') { this.applyScript('sub'); return; }
     if (/[0-9]/.test(c) && this.autoSubscript(c)) return;
     if (OPEN[c]) { this.insertBuild(c === '(' ? 'paren' : (c === '[' ? 'brack' : 'brace')); return; }
+    if (c === ']') {
+      var pi = this.parentOf(this.cur.row);
+      if (pi && pi.node.t === 'sqrt' && pi.node.idx === this.cur.row) { this.cur = { row: pi.node.k, i: 0 }; this.render(); return; }
+    }
     if (c === ')' || c === ']' || c === '}') {
       var pp = this.parentOf(this.cur.row);
       if (pp && pp.node.t === 'paren') { this.outOf(); this.render(); return; }
@@ -1836,14 +2932,296 @@
     }
     if (c === '*') { this.insertNode(sym('\\cdot', '⋅', 'bin')); return; }
     if (c === '-') { this.insertNode(ch('-', 'bin')); return; }
+    /* & : the next cell of a matrix; in a line of text it has nothing to align */
+    if (c === '&' && (this.ampersand() || this.opts.onExit)) return;
+    /* a symbol typed as itself — from a Greek layout, the emoji and symbol
+       panel, a paste of one character: α is \alpha, ≤ is \leq */
+    var g = c.charCodeAt(0) > 127 ? byGlyph()[c] : null;
+    if (g) { this.insertNode(sym(g.tex, g.d, g.cls, g.f)); return; }
     this.insertNode(ch(c));
+  };
+  var glyphs = null;
+  function byGlyph() {
+    if (glyphs) return glyphs;
+    glyphs = {};
+    PT.symbols.groups.forEach(function (g) {
+      g.items.forEach(function (it) { if (!it.build && it.tex && it.d && it.d.length === 1 && !it.f && !glyphs[it.d]) glyphs[it.d] = it; });
+    });
+    glyphs['−'] = null;   /* a minus sign is typed as one */
+    return glyphs;
+  }
+
+  /* The names a "{" can follow: accents, roots, fractions, words, bold. */
+  var BRACED = { hat: 1, widehat: 1, bar: 1, vec: 1, tilde: 1, dot: 1, ddot: 1, overline: 1, underline: 1,
+    mathbf: 1, boldsymbol: 1, sqrt: 1, frac: 1, dfrac: 1, tfrac: 1, text: 1, mathrm: 1, textrm: 1 };
+  /* "{" typed just after letters ending in such a name — or just after a
+     symbol whose typed name ended in one ("cdot" became ⋅, but "c" and
+     "dot{" was meant) — turns that name into its structure, the caret
+     inside. False when there is no such name. */
+  MathField.prototype.braceName = function () {
+    var r = this.cur.row, i = this.cur.i, j = i, w = '', k;
+    while (j > 0 && r.k[j - 1].t === 'ch' && /[A-Za-z]/.test(r.k[j - 1].c)) j--;
+    for (k = j; k < i; k++) w += r.k[k].c;
+    var prefix = '', name = null, s;
+    for (s = 0; s < w.length; s++) if (BRACED[w.slice(s)]) { name = w.slice(s); break; }
+    if (name) {
+      r.k.splice(i - name.length, name.length);
+      this.cur = { row: r, i: i - name.length };
+    } else {
+      var la = this.lastAuto, prev = r.k[i - 1];
+      if (!la || la.node !== prev) return false;
+      for (s = 1; s < la.word.length; s++) if (BRACED[la.word.slice(s)]) { name = la.word.slice(s); prefix = la.word.slice(0, s); break; }
+      if (!name) return false;
+      r.k.splice(i - 1, 1);
+      var self = this;
+      prefix.split('').forEach(function (ch1, q) { r.k.splice(i - 1 + q, 0, ch(ch1)); });
+      this.cur = { row: r, i: i - 1 + prefix.length };
+      void self;
+    }
+    this.lastAuto = null;
+    reparent(this.root);
+    this.insertBuild(PT.symbols.buildCmds[name] || name);
+    if (this.cur.row !== this.root) braced.add(this.cur.row);
+    return true;
+  };
+
+  /* A fraction set out on the line: numerator / denominator, the caret
+     after the slash (or after the denominator, if it has one). */
+  MathField.prototype.unFrac = function (n) {
+    var outer = rowOf.get(n);
+    if (!outer) return;
+    var at = outer.k.indexOf(n), slash = ch('/', 'upr');
+    var run = n.n.k.concat([slash], n.d.k);
+    Array.prototype.splice.apply(outer.k, [at, 1].concat(run));
+    reparent(this.root);
+    this.sel = null;
+    this.cur = { row: outer, i: at + (n.d.k.length ? run.length : n.n.k.length + 1) };
+  };
+
+  /* ---- matrices: the size asked for when one is made ---------------------
+     Typing "matrix" (or \bmatrix, "cases", a palette button) does not drop
+     a 2 × 2 in at once: a small picker under the caret asks how big —
+     move over its grid, or use the arrow keys, and Enter or a click puts
+     it in; Esc or Backspace takes the typed name back. The field keeps the
+     focus throughout (the picker never takes it), so its keys come here
+     first (see onKey). */
+  var sheetOpen = false;
+  var BRACKETS = [['pmatrix', '( )'], ['bmatrix', '[ ]'], ['Bmatrix', '{ }'], ['vmatrix', '| |'], ['Vmatrix', '‖ ‖'], ['matrix', 'none']];
+  var MAXR = 10, MAXC = 10, GRID = 8;
+  MathField.prototype.askMatrix = function (env, r, c) {
+    this.closePicker();
+    var self = this, cases = env === 'cases';
+    var pk = { env: env, r: r, c: cases ? 2 : c, cases: cases };
+    var box = el('div', 'popmenu mx-pick');
+    box.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    var head = el('div', 'popg mx-pick-h');
+    box.appendChild(head);
+    var grid = el('div', 'mx-pick-grid');
+    var cols = cases ? 2 : GRID;
+    grid.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+    for (var i = 1; i <= GRID; i++) {
+      for (var j = 1; j <= cols; j++) {
+        (function (ri, ci) {
+          var cell = el('span', 'mx-pick-c');
+          cell.addEventListener('mouseenter', function () { pk.r = ri; if (!cases) pk.c = ci; show(); });
+          cell.addEventListener('click', function () { pk.r = ri; if (!cases) pk.c = ci; self.placeMatrix(); });
+          grid.appendChild(cell);
+        })(i, j);
+      }
+    }
+    box.appendChild(grid);
+    if (!cases) {
+      var kinds = el('div', 'mx-pick-k');
+      BRACKETS.forEach(function (b) {
+        var bt = el('button', 'mx-pick-b', b[1]);
+        bt.type = 'button';
+        bt.title = b[0] === 'matrix' ? 'No brackets' : 'Brackets ' + b[1];
+        bt.addEventListener('click', function () { pk.env = b[0]; show(); });
+        bt.__env = b[0];
+        kinds.appendChild(bt);
+      });
+      box.appendChild(kinds);
+    }
+    box.appendChild(el('div', 'mx-pick-f', 'Arrow keys or the mouse · Enter to put it in · Esc to cancel'));
+    function show() {
+      head.textContent = cases ? (pk.r + (pk.r === 1 ? ' case' : ' cases')) : (pk.r + ' × ' + pk.c + ' matrix');
+      [].forEach.call(grid.children, function (cell, k) {
+        var ri = Math.floor(k / cols) + 1, ci = k % cols + 1;
+        cell.classList.toggle('on', ri <= pk.r && ci <= pk.c);
+      });
+      [].forEach.call(box.querySelectorAll('.mx-pick-b'), function (bt) { bt.classList.toggle('on', bt.__env === pk.env); });
+    }
+    pk.el = box;
+    pk.show = show;
+    this.picker = pk;
+    document.body.appendChild(box);
+    show();
+    /* under the caret */
+    var at = this.host.querySelector('.mcaret') || this.host, rr = at.getBoundingClientRect();
+    var left = Math.max(8, Math.min(window.innerWidth - box.offsetWidth - 8, rr.left - 12));
+    var top = rr.bottom + 8 + box.offsetHeight < window.innerHeight ? rr.bottom + 8 : Math.max(8, rr.top - box.offsetHeight - 8);
+    box.style.left = left + window.scrollX + 'px';
+    box.style.top = top + window.scrollY + 'px';
+  };
+  MathField.prototype.closePicker = function () {
+    if (!this.picker) return;
+    this.picker.el.remove();
+    this.picker = null;
+  };
+  MathField.prototype.placeMatrix = function () {
+    var pk = this.picker;
+    if (!pk) return;
+    this.closePicker();
+    this.insertNode(mat(pk.env, pk.r, pk.c));
+  };
+  /* keys while the picker is up: they size it, put it in, or cancel it */
+  MathField.prototype.pickerKey = function (e) {
+    var pk = this.picker, k = e.key;
+    e.preventDefault();
+    if (k === 'ArrowDown') pk.r = Math.min(MAXR, pk.r + 1);
+    else if (k === 'ArrowUp') pk.r = Math.max(1, pk.r - 1);
+    else if (k === 'ArrowRight' && !pk.cases) pk.c = Math.min(MAXC, pk.c + 1);
+    else if (k === 'ArrowLeft' && !pk.cases) pk.c = Math.max(1, pk.c - 1);
+    else if (k === 'Enter' || k === 'Tab' || k === ' ') { this.placeMatrix(); return; }
+    else if (k === 'Escape') {
+      /* nothing made, and the name typed is gone too */
+      this.closePicker();
+      this.autoUndo = null;
+      this.render();
+      return;
+    } else if (k === 'Backspace') {
+      /* nothing made: the name typed comes back as it was */
+      this.closePicker();
+      if (!this.undoAuto()) this.render();
+      return;
+    } else if (k.length === 1 && !e.ctrlKey && !e.metaKey) {
+      /* typing on: the matrix goes in as it stands, and what was typed
+         goes into its first cell */
+      this.placeMatrix();
+      return 'pass';
+    } else return;
+    pk.show();
+  };
+
+  /* ---- a matrix on a sheet of its own -------------------------------------
+     Double-clicking a matrix (or "Edit large…") opens it large, alone on a
+     page, with buttons for its rows, columns and brackets. It is the same
+     matrix, edited where it stands: closing puts the caret back after it. */
+  MathField.prototype.matrixNodeAt = function () {
+    var at = this.matrixAt();
+    if (at) return at.m;
+    var prev = this.cur.row.k[this.cur.i - 1], next = this.cur.row.k[this.cur.i];
+    if (prev && prev.t === 'mat') return prev;
+    if (next && next.t === 'mat') return next;
+    return firstMat(this.root);
+  };
+  MathField.prototype.openMatrix = function (m) {
+    m = m || this.matrixNodeAt();
+    if (!m) return false;
+    var outer = this, cases = m.env === 'cases';
+    this.closePicker();
+    var back = el('div', 'dlg-back mx-back');
+    var box = el('div', 'dlg mx-sheet');
+    box.appendChild(el('div', 'dlg-t', cases ? 'Cases' : 'Matrix'));
+    var tools = el('div', 'mx-tools');
+    var paper = el('div', 'mx-paper');
+    var host = el('div', 'mx-field');
+    paper.appendChild(host);
+    box.appendChild(tools);
+    box.appendChild(paper);
+    var foot = el('div', 'dlg-r');
+    var done = el('button', 'dlg-btn primary', 'Done');
+    done.type = 'button';
+    foot.appendChild(done);
+    box.appendChild(foot);
+    back.appendChild(box);
+    document.body.appendChild(back);
+
+    var big = new MathField(host, {
+      root: row([m]),
+      noMatrixSheet: true,   /* already on its sheet */
+      onEscape: function () { close(); },
+      /* saved as it changes — without redrawing the formula underneath,
+         which would take the matrix's place in it back */
+      onChange: function () { if (outer.opts.onChange) outer.opts.onChange(outer); }
+    });
+    sheetOpen = true;
+    var b0 = m.r[0][0];
+    big.cur = { row: b0, i: b0.k.length };
+    function btn(label, title, fn) {
+      var b = el('button', 'dlg-btn mx-tool', label);
+      b.type = 'button';
+      b.title = title;
+      b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+      b.addEventListener('click', function () { fn(); big.host.focus(); });
+      tools.appendChild(b);
+      return b;
+    }
+    /* on the cell the caret is in; with the caret elsewhere, the last one */
+    function op(name) {
+      if (!big.matrixAt()) { var lr = m.r[m.r.length - 1], lc = lr[lr.length - 1]; reparent(big.root); big.cur = { row: lc, i: lc.k.length }; }
+      big.matrixOp(name);
+    }
+    btn('+ Row', 'Add a row below the cursor', function () { op('addrow'); });
+    btn('− Row', 'Remove the cursor’s row', function () { op('delrow'); });
+    if (!cases) {
+      btn('+ Column', 'Add a column right of the cursor', function () { op('addcol'); });
+      btn('− Column', 'Remove the cursor’s column', function () { op('delcol'); });
+      var kinds = el('span', 'mx-kinds');
+      BRACKETS.forEach(function (b) {
+        var bt = el('button', 'dlg-btn mx-tool mx-kind' + (m.env === b[0] ? ' on' : ''), b[1]);
+        bt.type = 'button';
+        bt.title = b[0] === 'matrix' ? 'No brackets' : 'Brackets ' + b[1];
+        bt.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        bt.addEventListener('click', function () {
+          m.env = b[0];
+          [].forEach.call(kinds.children, function (x) { x.classList.toggle('on', x === bt); });
+          big.changed();
+          big.host.focus();
+        });
+        kinds.appendChild(bt);
+      });
+      tools.appendChild(kinds);
+    }
+    var closed = false;
+    function close() {
+      if (closed) return;
+      closed = true;
+      sheetOpen = false;
+      back.remove();
+      /* the formula takes its matrix back, and the caret goes after it */
+      reparent(outer.root);
+      var r = rowOf.get(m);
+      if (r) outer.cur = { row: r, i: r.k.indexOf(m) + 1 };
+      outer.sel = null;
+      outer.host.focus();
+      outer.changed();
+    }
+    done.addEventListener('click', close);
+    back.addEventListener('mousedown', function (e) { if (e.target === back) { e.preventDefault(); close(); } });
+    host.focus();
+    return true;
+  };
+
+  /* Ctrl+B: the selection in bold; with none, what is typed next — or, in
+     bold already, back out of it */
+  MathField.prototype.bold = function () {
+    var p = this.parentOf(this.cur.row);
+    if (!this.sel && p && p.node.t === 'acc' && p.node.kind === 'mathbf') { this.outOf(); this.render(); return; }
+    var grab = this.takeSelection();
+    var n = acc('mathbf', row(grab));
+    this.insertAt(n);
+    this.cur = grab.length ? { row: this.cur.row, i: this.cur.i + 1 } : { row: n.k, i: 0 };
+    this.changed();
   };
 
   MathField.prototype.applyScript = function (kind) {
     var c = this.cur;
     var prev = c.row.k[c.i - 1];
-    /* typing ^ or _ just after a big operator edits its limits */
-    if (prev && prev.t === 'big') {
+    var wordOp = function (n) { return /^[A-Za-z]+$/.test(n.d || ''); };
+    /* typing ^ or _ just after a big operator edits its limits (\lim has
+       only the lower one) */
+    if (prev && prev.t === 'big' && !(kind === 'sup' && wordOp(prev))) {
       var lim = kind === 'sub' ? 'lo' : 'hi';
       if (isEmptyRow(prev[lim])) {
         reparent(this.root);
@@ -1862,7 +3240,11 @@
     var pb = this.parentOf(c.row);
     if (pb && pb.node.t === 'big') {
       var want = kind === 'sup' ? pb.node.hi : pb.node.lo;
-      if (want !== c.row) {
+      /* "int" then "_": already in the lower limit, with nothing to hang an
+         index on — not an index inside the limit */
+      if (want === c.row && c.i === 0) { this.render(); return; }
+      /* \lim's lower limit takes scripts of its own: x → 0^+ */
+      if (want !== c.row && !wordOp(pb.node)) {
         this.cur = { row: want, i: want.k.length };
         this.render();
         return;
@@ -1887,18 +3269,59 @@
     this.host.focus();
   };
 
-  /* matrix row/col editing, exposed for the equation toolbar */
-  MathField.prototype.matrixOp = function (op) {
+  /* The matrix or cases display the caret is in (at any depth): the node,
+     and the row and column of the cell holding the caret. */
+  MathField.prototype.matrixAt = function () {
     var r = this.cur.row, p = this.parentOf(r);
     while (p && p.node.t !== 'mat') { r = rowOf.get(p.node); p = r ? this.parentOf(r) : null; }
-    if (!p) return false;
-    var m = p.node, cols = m.r[0].length, ri = Math.floor(p.slot / cols), cidx = p.slot % cols, i;
-    if (op === 'addrow') { var nr = []; for (i = 0; i < cols; i++) nr.push(row()); m.r.splice(ri + 1, 0, nr); }
-    if (op === 'delrow' && m.r.length > 1) m.r.splice(ri, 1);
-    if (op === 'addcol') m.r.forEach(function (rr) { rr.splice(cidx + 1, 0, row()); });
-    if (op === 'delcol' && cols > 1) m.r.forEach(function (rr) { rr.splice(cidx, 1); });
+    if (!p) return null;
+    var m = p.node, cols = m.r[0].length;
+    return { m: m, ri: Math.floor(p.slot / cols), ci: p.slot % cols, direct: r === this.cur.row };
+  };
+
+  function firstMat(r) {
+    for (var i = 0; i < r.k.length; i++) {
+      var n = r.k[i];
+      if (n.t === 'mat') return n;
+      var sl = slots(n);
+      for (var j = 0; j < sl.length; j++) { var m = firstMat(sl[j]); if (m) return m; }
+    }
+    return null;
+  }
+  MathField.prototype.hasMatrix = function () { return !!firstMat(this.root); };
+  /* as matrixOp; with the caret outside any matrix, on the first one */
+  MathField.prototype.matrixOpAnywhere = function (op) {
+    if (!this.matrixAt()) {
+      var m = firstMat(this.root);
+      if (!m) return false;
+      reparent(this.root);
+      var last = m.r[m.r.length - 1], cell = last[last.length - 1];
+      this.cur = { row: cell, i: cell.k.length };
+    }
+    return this.matrixOp(op);
+  };
+
+  /* Rows and columns of a matrix or cases display: added after, or
+     removed at, the caret's cell; the caret goes to the new row or column,
+     or stays in the row or column that took the removed one's place. */
+  MathField.prototype.matrixOp = function (op) {
+    var at = this.matrixAt();
+    if (!at) return false;
+    var m = at.m, cols = m.r[0].length, ri = at.ri, cidx = at.ci, i;
+    var go = null;
+    if (op === 'addrow') { var nr = []; for (i = 0; i < cols; i++) nr.push(row()); m.r.splice(ri + 1, 0, nr); go = [ri + 1, 0]; }
+    else if (op === 'delrow') { if (m.r.length < 2) return false; m.r.splice(ri, 1); go = [Math.min(ri, m.r.length - 1), cidx]; }
+    else if (op === 'addcol') {
+      /* LaTeX's cases has two columns, its matrices at most ten */
+      if (cols >= (m.env === 'cases' ? 2 : 10)) return false;
+      m.r.forEach(function (rr) { rr.splice(cidx + 1, 0, row()); }); go = [ri, cidx + 1];
+    }
+    else if (op === 'delcol') { if (cols < 2) return false; m.r.forEach(function (rr) { rr.splice(cidx, 1); }); go = [ri, Math.min(cidx, cols - 2)]; }
+    else return false;
     reparent(this.root);
-    this.cur = { row: m.r[0][0], i: 0 };
+    var cell = m.r[go[0]][go[1]];
+    this.sel = null;
+    this.cur = { row: cell, i: cell.k.length };
     this.changed();
     return true;
   };
@@ -1909,7 +3332,12 @@
     paren: paren, acc: acc, txt: txt, mat: mat, raw: raw, fn: fnode,
     slots: slots, clone: clone, isEmptyRow: isEmptyRow,
     texRow: texRow, parseTex: parseTex, scanRow: scanRow,
-    renderStatic: renderStatic, layout: layout,
+    renderStatic: renderStatic, renderInline: renderInline, layout: layout, plainOf: plainOf,
+    /* the command for a symbol given as its character: '≥' → '\geq' */
+    /* a matrix is open on its own sheet (openMatrix): its formula is still being edited */
+    matrixSheetOpen: function () { return sheetOpen; },
+    glyphTex: function (c) { var g = byGlyph()[c]; return g ? g.tex : null; },
+    touchTyping: function (on) { touchTyping = !!on; },
     MathField: MathField, BUILDS: BUILDS,
     setAutoWords: function (on) { autoOff = !on; },
     autoWords: function () { return !autoOff; }

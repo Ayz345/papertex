@@ -1,0 +1,28 @@
+% An Overleaf-style project: main.tex, a section in its own file, a .bib, an image
+\documentclass[11pt]{article}
+\usepackage{graphicx}
+\graphicspath{{figures/}}
+
+\title{A Small Project}
+\author{Kim Okafor}
+
+\begin{document}
+\maketitle
+
+\input{sections/intro}
+
+\section{Results}
+The plot is in Figure~\ref{fig:plot}, as predicted by \cite{einstein1905, knuth84} and \cite{missingkey}.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.6\linewidth]{plot}
+  \caption{The plot.}
+  \label{fig:plot}
+\end{figure}
+
+% \input{sections/unused}
+\bibliographystyle{plain}
+\bibliography{refs}
+
+\end{document}

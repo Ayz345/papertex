@@ -1,0 +1,39 @@
+<!doctype html>
+<!-- Compiles test-document/damped-oscillator.tex with PaperTeX's own engine
+     (engine/siglum.js + engine/texlive) and saves the PDF back beside it.
+     Open http://localhost:8800/__lab/harness/make.html with harness/serve.py running. -->
+<meta charset="utf-8">
+<title>make pdf</title>
+<pre id="out">starting…</pre>
+<script src="/engine/siglum.js"></script>
+<script>
+(async function () {
+  const out = document.getElementById('out');
+  const log = s => { out.textContent += '\n' + s; };
+  try {
+    const c = new Siglum.SiglumCompiler({
+      wasmUrl: '/engine/texlive/busytex.wasm',
+      bundlesUrl: '/engine/texlive/bundles',
+      workerUrl: '/engine/siglum.worker.js',
+      onProgress: (st, d) => log('progress ' + st + ' ' + (d && d.message || ''))
+    });
+    await c.init();
+    const tex = await (await fetch('/__lab/test-document/damped-oscillator.tex')).text();
+    const bytes = async u => new Uint8Array(await (await fetch(u)).arrayBuffer());
+    const files = {
+      'fig1.png': await bytes('/__lab/test-document/fig1.png'),
+      'booktabs.sty': await (await fetch('/engine/texmf/booktabs.sty')).text()   // not in the engine's TeX Live
+    };
+    let r;
+    for (let pass = 1; pass <= 3; pass++) {   // labels, citations, cross-references
+      r = await c.compile(tex, { additionalFiles: files });
+      log('pass ' + pass + ' success=' + r.success);
+      if (!r.success) break;
+    }
+    if (!r.success) { log('FAILED\n' + (r.texLog || r.log || r.error || '')); window.done = 'fail'; return; }
+    await fetch('/__lab/save?name=damped-oscillator.pdf', { method: 'POST', body: r.pdf });
+    log('saved ' + r.pdf.length + ' bytes');
+    window.done = 'ok';
+  } catch (e) { log('ERROR ' + (e && e.stack || e)); window.done = 'error'; }
+})();
+</script>

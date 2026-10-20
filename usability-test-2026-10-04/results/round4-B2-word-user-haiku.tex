@@ -1,0 +1,65 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{hyperref}
+\hypersetup{pdftitle={Energy Decay in a Damped Harmonic Oscillator}, pdfauthor={Lena Ortiz}}
+
+\title{Energy Decay in a Damped Harmonic Oscillator}
+\author{Lena Ortiz\\ \small Department of Physics, Northfield College}
+\date{October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We study the free motion of a mass on a linear spring subject to viscous damping. We derive the closed-form solution in the underdamped regime, show that the mechanical energy decays monotonically, and compare the analytic solution with two simple numerical schemes.
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+
+The damped harmonic oscillator is the simplest model of a system that loses energy to its surroundings~\cite{ref1}. Its equation of motion is
+\begin{equation}
+  mx\ddot{}+cx\dot{}+kx=0
+  \label{eq:gauss}
+\end{equation}
+where $m>0$ is the mass, $c\geq0$ the damping coefficient and $k>0$ the spring constant.\footnote{All quantities are in SI units.} Dividing by $m$ and writing $\omega_{0}=\sqrt{\frac{k}{m}}$ and $\gamma=\frac{c}{(2m)}$ gives the \emph{standard form}
+\begin{equation}
+  \ddot{x}+2\gamma\dot{x}+\omega_{0}^{2x}=0
+  \label{eq:2}
+\end{equation}
+
+\section{Solution}
+
+Substituting $x=e^{\lambda t}$ into~\eqref{eq:2} gives the characteristic equation $\lambda^{2}+2\gamma\lambda+\omega_{0}^{2}=0$, whose roots are
+\begin{equation}
+  \lambda_{\pm}=-\gamma\pm\sqrt{\gamma^{2}-\omega_{0}^{2}}
+\end{equation}
+The behaviour depends on the sign of the discriminant:
+\begin{equation*}
+  \begin{cases}
+\text{underdamped,} & \gamma<\omega_{0}, \\
+\text{critically damped,} & \gamma=\omega_{0}, \\
+\text{overdamped,} & \gamma>\omega_{0.}
+\end{cases}
+\end{equation*}
+In the underdamped case let $\omega_{d}=\sqrt{\omega_{0}^{2}-\gamma^{2}}$. With $x(0)=x_{0}$ and $\dot{x}(0)=0$ the solution is
+\begin{equation}
+  x(t)=x_{0}e^{-\gamma t}\left( \left( \cos\omega_{d}t+\frac{\gamma}{\omega_{d}}\sin\omega_{d}t\right \right) \right)
+\end{equation}
+Equivalently, with $\mathbf{y}=(x,\dot{x})^{\mathsf T}$, equation~\eqref{eq:2} becomes the first-order system
+\begin{equation}
+  \begin{pmatrix}
+0	1
+-\omega_{0}^{2	-2\gamma} &  &  \\
+ &  &  \\
+ &  & 
+\end{pmatrix}
+\end{equation}
+
+\begin{thebibliography}{9}
+\bibitem{ref1} H. Goldstein, C. Poole and J. Safko, \emph{Classical Mechanics, 3rd ed.}, Addison-Wesley, 2002.
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,75 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{hyperref}
+\hypersetup{pdftitle={Energy Decay in a Damped Harmonic Oscillator}, pdfauthor={Lena Ortiz}}
+
+\title{Energy Decay in a Damped Harmonic Oscillator}
+\author{Lena Ortiz\\ \small Department of Physics, Northfield College}
+\date{October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We study the free motion of a mass on a linear spring subject to viscous damping. We derive the closed-form solution in the underdamped regime, show that the mechanical energy decays monotonically, and compare the analytic solution with two simple numerical schemes.
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+
+The damped harmonic oscillator is the simplest model of a system that loses energy to its surroundings~\cite{ref1}. Its equation of motion is
+\begin{equation}
+  m\ddot{x}+c\dot{x}+kx=0
+\end{equation}
+where $m>0$ is the mass, $c\geq0$ the damping coefficient and $k>0$ the spring constant. Dividing by $m$ gives the standard form
+\begin{equation}
+  \ddot{x}+2\gamma\dot{x}+\omega_{0}^{2x}=0
+\end{equation}
+
+\section{Solution}\label{sec:method}
+
+Substituting $x=e^{\lambda}t$ into (2) gives the characteristic equation $\lambda^{2}+2\gamma\lambda+\omega_{0}^{2}=0$, whose roots are
+\begin{equation}
+  \lambda_{\pm}=-\gamma\pm\sqrt{\gamma^{2}-\omega_{0}^{2}}
+\end{equation}
+The behaviour depends on the sign of the discriminant:
+\begin{align}
+  regime &=\begin{cases}
+underdamped, & \gamma<\omega_{0}, \\
+critically & damped,
+\end{cases}\gamma=\omega_{0}, \\
+  overdamped,
+\end{align}
+
+\section{Numerical check}\label{sec:results}
+
+We integrated (2) with $\omega_{0}=2$, $\gamma=0.2$ and $x_{0}=1$ on $t\in[0,10]$, using the explicit Euler method and the classical fourth-order Runge--Kutta method (RK4)~\cite{ref2}. For each step size $h$ we:
+\begin{enumerate}
+  \item integrated from t = 0 to t = 10 with 10/h steps;
+  \item compared every step with the exact solution (4);
+  \item recorded the largest absolute difference.
+\end{enumerate}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Table 1: Maximum absolute error on [0, 10].}
+  \label{tab:results}
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{Quantity} & \textbf{Value} & \textbf{Uncertainty} \\
+    \midrule
+    a & 1.00 & 0.02 \\
+    b & 2.50 & 0.05 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{thebibliography}{9}
+\bibitem{ref1} H. Goldstein, C. Poole and J. Safko, \emph{Classical Mechanics}, 3rd ed., Addison-Wesley, 2002.
+\bibitem{ref2} E. Hairer, S. P. Nørsett and G. Wanner, \emph{Solving Ordinary Differential Equations I}, 2nd ed., Springer, 1993.
+\end{thebibliography}
+
+\end{document}

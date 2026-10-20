@@ -10,7 +10,7 @@
 <link rel="icon" href="desktop/papertex.png">
 <style>
   :root {
-    --ink: #23262b; --ink-2: #4b5058; --muted: #7b818b; --line: #e1e4e9;
+    --ink: #23262b; --ink-2: #4b5058; --muted: #5f646d; --line: #e1e4e9;
     --paper: #fffefb; --desk: #e4e2de; --accent: #9a5b06; --accent-soft: #fdf3dd;
   }
   * { box-sizing: border-box; }
@@ -23,25 +23,40 @@
     border-radius: 3px; box-shadow: 0 0 0 1px rgba(30, 28, 24, .06), 0 18px 48px -16px rgba(30, 28, 24, .28);
   }
   @media (max-width: 760px) { .sheet { margin: 0; padding: 28px 20px 40px; border-radius: 0; } }
-  header { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
-  header img { width: 44px; height: 44px; }
+  .sheet > header { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
+  .sheet > header img { width: 44px; height: 44px; }
   h1 { font-size: 30px; margin: 0; letter-spacing: -.01em; }
   .tag { color: var(--muted); font-size: 15px; margin: 0 0 28px; }
   h2 {
     font: 600 11px/1 system-ui, "Segoe UI", sans-serif; letter-spacing: .12em; text-transform: uppercase;
     color: var(--muted); margin: 36px 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line);
   }
+  html { scroll-padding-top: 76px; }   /* anchors and focused links clear the sticky bar */
+  @media (max-width: 900px) { html { scroll-padding-top: 124px; } }
   p, li { color: var(--ink-2); }
   a { color: var(--accent); }
   .open {
-    display: inline-block; margin-top: 4px; padding: 10px 18px; border-radius: 7px; text-decoration: none;
+    display: inline-flex; align-items: center; min-height: 44px; margin-top: 4px; padding: 0 18px; border-radius: 8px; text-decoration: none;
     background: #7a4f10; color: #fff9ee; font: 600 14px system-ui, "Segoe UI", sans-serif;
+    transition: transform .18s cubic-bezier(.2,.7,.2,1), background-color .2s ease, box-shadow .25s ease;
   }
-  /* parts the author still has to write — impossible to miss */
-  .todo {
-    background: var(--accent-soft); border: 1px dashed #d9a441; border-radius: 6px; padding: 10px 14px;
-    color: #7a4f10; font: 14px/1.5 system-ui, "Segoe UI", sans-serif;
-  }
+  .open:hover { background: #5c3a0a; color: #fff9ee; transform: translateY(-2px); box-shadow: 0 12px 22px -12px rgba(92, 58, 10, .9); }
+  .open:active { transform: translateY(1px) scale(.97); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+  /* the same top bar as the home page, in plain CSS: this page runs no scripts */
+  .topnav { position: sticky; top: 0; z-index: 10; background: rgba(228, 226, 222, .9); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(30, 28, 24, .08); }
+  .topnav__in { max-width: 1200px; margin: 0 auto; padding: 8px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px; font: 15px system-ui, "Segoe UI", sans-serif; }
+  .topnav__brand { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; color: var(--ink); text-decoration: none; font: 700 21px Georgia, serif; }
+  .topnav__brand img { width: 30px; height: 30px; transition: transform .5s cubic-bezier(.3,1.4,.5,1); }
+  .topnav__brand:hover img { transform: rotate(-8deg) scale(1.06); }
+  .topnav__links { display: flex; flex-wrap: wrap; gap: 2px; flex: 1 1 auto; }
+  .topnav__links a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 7px; color: #3d4148; text-decoration: none; white-space: nowrap; transition: background-color .2s ease, color .2s ease; }
+  .topnav__links a:hover { background: rgba(255, 254, 251, .75); color: #1d1f23; }
+  .topnav__links a[aria-current] { color: #1d1f23; font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); border-radius: 7px 7px 0 0; }
+  .topnav .open { margin-top: 0; }
+  @media (max-width: 760px) { .topnav__in { padding: 6px 16px; } .topnav__links { order: 3; flex: 1 0 100%; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; } .topnav__links::-webkit-scrollbar { display: none; } .topnav__links a:focus-visible { outline-offset: -2px; } }
+  @media (prefers-reduced-motion: reduce) { * { transition-duration: .001ms !important; } }
   table { border-collapse: collapse; width: 100%; font-size: 14px; }
   td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--ink-2); }
   td:first-child { white-space: nowrap; color: var(--ink); }
@@ -49,6 +64,19 @@
 </style>
 </head>
 <body>
+<div class="topnav">
+  <div class="topnav__in">
+    <a class="topnav__brand" href="./"><img src="desktop/papertex.png" alt=""><span>PaperTeX</span></a>
+    <nav class="topnav__links" aria-label="Main">
+      <a href="./#try">Try it</a>
+      <a href="./#plot">Charts</a>
+      <a href="./#how">How it works</a>
+      <a href="./#templates">Templates</a>
+      <a href="about.html" aria-current="page">About</a>
+    </nav>
+    <a class="open" href="app.html">Open the editor</a>
+  </div>
+</div>
 <main class="sheet">
   <header>
     <img src="desktop/papertex.png" alt="">
@@ -59,30 +87,19 @@
   <p>PaperTeX is a free LaTeX editor that runs entirely in your browser. Headings, equations,
     tables and references are edited directly on a page that looks like the finished PDF, and a
     clean, compilable <code>.tex</code> file is written for you as you go. Type <code>int</code>
-    and you get an integral with the caret in its lower limit; <code>alpha</code> becomes α;
+    and you get an integral with the cursor in its lower limit; <code>alpha</code> becomes α;
     <code>x1</code> becomes x₁. When you are done, PaperTeX compiles the document with real
     LaTeX (TeX Live, running in your browser) or hands you the source for Overleaf, a journal,
     or your own TeX installation.</p>
-  <p><a class="open" href="./">Open the editor</a></p>
+  <p>It works the other way round too. Open a <code>.tex</code> file or a whole Overleaf project
+    (its <code>.zip</code>, with the images and the <code>.bib</code>), paste LaTeX onto the page, or type it
+    in the LaTeX pane beside the page: it becomes a document you can edit on the page.</p>
+  <p><a class="open" href="app.html">Open the editor</a></p>
 
-  <h2>Why I made it</h2>
-  <div class="todo">To write, in your own words: what made you build this — the moment LaTeX got
-    in your way, who you had in mind, what you wanted it to feel like. A short paragraph is plenty.</div>
+  <h2>Why</h2>
+  <p>One shouldn’t have to code for a document.</p>
 
-  <h2>Who made it</h2>
-  <p>PaperTeX is made by <strong>Ayaz Büyükterzi</strong>.</p>
-  <div class="todo">Optional: a sentence about yourself (school, what you study or want to), and a
-    way to reach you — a GitHub profile or an email address you are happy to publish.</div>
-
-  <h2>How it was built</h2>
-  <p>I designed PaperTeX and built it with an AI coding assistant (Claude, by Anthropic). I decided
-    what it should do and how it should feel, tested it against real LaTeX output, found what was
-    wrong, and chose what to fix and what to ship; much of the code itself was written by the
-    assistant under that direction.</p>
-  <div class="todo">Check this matches what you did, and add any part you built or worked out yourself.
-    Keep it accurate — it is the version of the story you will be asked about.</div>
-
-  <h2>Privacy</h2>
+  <h2 id="privacy">Privacy</h2>
   <ul>
     <li><strong>Nothing is uploaded.</strong> Your documents never leave your computer. Editing,
       exporting and compiling all happen in your browser.</li>
@@ -95,15 +112,18 @@
       servers and cached by your browser. Your document itself is not sent anywhere.</li>
   </ul>
 
-  <h2>Licence and credits</h2>
+  <h2 id="licence">Licence and credits</h2>
   <p>PaperTeX is open source under the MIT licence.</p>
   <table>
     <tr><td>Computer Modern fonts</td><td>from KaTeX, MIT licence</td></tr>
+    <tr><td>Accented letters</td><td>CMU Serif, SIL Open Font License</td></tr>
     <tr><td>LaTeX engine</td><td><a href="https://github.com/SiglumProject/siglum-engine">@siglum/engine</a> (TeX Live 2025 compiled to WebAssembly), MIT licence</td></tr>
+    <tr><td>Home page animation</td><td><a href="https://gsap.com">GSAP</a> and ScrollTrigger 3.15, GreenSock’s standard “no charge” licence (<a href="https://gsap.com/standard-license">terms</a>)</td></tr>
     <tr><td>TeX Live packages</td><td>each under its own licence, mostly the LaTeX Project Public License, kept inside the files</td></tr>
   </table>
 
-  <footer><a href="./">Open PaperTeX</a></footer>
+  <footer><a href="./">Home</a> · <a href="app.html">Open the editor</a><br>
+    Made by Ayaz Büyükterzi · <a href="mailto:ayaz.buyukterzi.hza@gmail.com">ayaz.buyukterzi.hza@gmail.com</a></footer>
 </main>
 </body>
 </html>

@@ -1,0 +1,59 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb}
+\usepackage{amsthm}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{hyperref}
+\hypersetup{pdftitle={Energy Decay in a Damped Harmonic Oscillator}}
+
+\newtheorem{theorem}{Theorem}
+
+\title{Energy Decay in a Damped Harmonic Oscillator}
+\date{October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The damped harmonic oscillator is the simplest model of a system that loses energy to its surroundings [1]. Its equation of motion is
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+
+Write straight onto the page. Press \textbf{/} on an empty line for sections, figures and tables, and \textbf{\$} anywhere in a sentence for a formula such as $\sigma_{x}^{2}=\langle x^{2}\rangle-\langle x\rangle^{2}$ --- click it to edit it again. The LaTeX on the right is written for you as you type.
+\begin{equation}
+  \int_{-\infty}^{\infty}e^{-x^{2}}\,dx=\sqrt{\pi}
+  \label{eq:gauss}
+\end{equation}
+m x'' + c x' + k x = 0
+
+where m \textgreater{} 0 is the mass, c \textgreater{}= 0 the damping coefficient and k \textgreater{} 0 the spring constant. [footnote]All quantities are in SI units.[/footnote] Dividing by m and writing omega\_0 = sqrt(k/m) and gamma = c/(2m) gives the standard form
+\begin{equation}
+  
+\end{equation}
+
+\begin{equation}
+  
+\end{equation}
+
+\section{Solution}
+
+Substituting x = e\textasciicircum{}(lambda*t) into equation (2) gives the characteristic equation lambda\textasciicircum{}2 + 2*gamma*lambda + omega\_0\textasciicircum{}2 = 0, whose roots are
+\begin{equation}
+  
+\end{equation}
+
+\begin{theorem}
+  Differentiate E and use equation (1): dE/dt = m*x'*x'' + k*x*x' = x'*(m*x'' + k*x) = -c*x'\textasciicircum{}2.
+\end{theorem}
+
+\begin{proof}
+  Numerical check
+\end{proof}
+
+We integrated equation (2) with omega\_0 = 2, gamma = 0.2 and x\_0 = 1 on t in [0, 10], using the explicit Euler method and the classical fourth-order Runge-Kutta method (RK4). For each step size h we: 1. integrated from t = 0 to t = 10 with 10/h steps; 2. compared every step with the exact solution; 3. recorded the largest absolute difference.
+
+\section{}
+
+\end{document}

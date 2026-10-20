@@ -86,6 +86,46 @@ fs.copyFileSync(
   path.join(out, 'LICENSE-siglum.txt')
 );
 
+/* 3. busytex.js from the site itself is loaded by its own address. The
+      engine always fetched it and ran it from a blob: URL, which the site's
+      Content-Security-Policy header refuses (script-src has no blob:), so
+      compiling failed on any host that sends the header. A copy on another
+      origin still goes through a blob (tools/build-web.js then allows
+      blob: for that build). */
+patch('siglum.worker.js', 'busytex.js by address',
+  '    if (!busytexScriptLoaded) {\n        const response = await fetch(jsUrl);',
+  '    if (!busytexScriptLoaded && new URL(jsUrl, self.location.href).origin === self.location.origin) {\n' +
+  '        importScripts(jsUrl);   /* PaperTeX patch: same origin, no blob: needed */\n' +
+  '        busytexScriptLoaded = true;\n' +
+  '    }\n' +
+  '    if (!busytexScriptLoaded) {\n        const response = await fetch(jsUrl);');
+
+/* 4. A package's own packages decide which bundles load, too. The engine
+      picks TeX Live bundles from the document's \usepackage lines and the
+      packages those need (package-deps.json), but read that file as if its
+      entries sat at the top level, when they are under "packages" — so it
+      never followed them, and \usepackage{hyperref} alone stopped at
+      "File `hycolor.sty' not found" (hycolor is in another bundle). */
+patch('siglum.js', 'follow package deps',
+  '        const pkgDeps = this.packageDeps?.[pkg] || [];',
+  '        const pkgDeps = (this.packageDeps?.packages || this.packageDeps)?.[pkg] || [];   /* PaperTeX patch */');
+
+/* 5. The format (the preamble, precompiled after a good compile) is built
+      with the document's own files too. It was built without them, so for a
+      document whose preamble loads a package handed over that way (babel's
+      languages, engine/texmf/pkg/) it failed, retried for some ten seconds,
+      and the next compile waited for it — every time. */
+patch('siglum.js', 'format: pass files',
+  '                this.generateFormat(source, { engine }).then(',
+  '                this.generateFormat(source, { engine, additionalFiles: options.additionalFiles }).then(');
+patch('siglum.js', 'format: use files',
+  '      const ctanFiles = this.ctanFetcher.getCachedFiles();\n      this._log("Generating format file...");',
+  '      const ctanFiles = this.ctanFetcher.getCachedFiles();\n' +
+  '      for (const [filename, content] of Object.entries(options.additionalFiles || {})) {   /* PaperTeX patch */\n' +
+  '        ctanFiles["/" + filename] = typeof content === "string" ? new TextEncoder().encode(content) : content;\n' +
+  '      }\n' +
+  '      this._log("Generating format file...");');
+
 const kb = (f) => (fs.statSync(path.join(out, f)).size / 1024).toFixed(0) + ' kB';
 console.log('engine/siglum.js         ' + kb('siglum.js'));
 console.log('engine/siglum.worker.js  ' + kb('siglum.worker.js'));

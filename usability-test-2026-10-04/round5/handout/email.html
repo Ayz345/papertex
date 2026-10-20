@@ -1,0 +1,16 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Inbox — Rod paper: can you finish it?</title><style>body{font:15px/1.6 system-ui,sans-serif;max-width:760px;margin:24px auto;padding:0 16px;color:#222;background:#f6f7f9}.mail{background:#fff;border:1px solid #ddd;border-radius:8px;padding:20px 28px}pre{background:#f2f2f2;border:1px solid #ddd;padding:12px;border-radius:6px;font:13px/1.5 Consolas,monospace;white-space:pre-wrap}.bar{font-size:12px;color:#666;margin-bottom:8px}</style></head><body><div class="bar">Webmail · Inbox</div><div class="mail"><p><b>From:</b> Mira Castellanos<br><b>To:</b> Sam Rivera<br><b>Subject:</b> Rod paper: can you finish it?</p>
+<p>Hi Sam,</p>
+<p>I started our rod paper on Overleaf, and you said you'd moved it into PaperTeX on your computer. It's open there now. Could you finish it? Here's what's left:</p>
+<p>1. <b>New title:</b> <i>Heat Conduction in a Thin Rod: Steady State and Stability</i><br>2. <b>Add yourself as second author:</b> Sam Rivera, Department of Mathematics, Lakeside University.<br>3. <b>Section 2 (Model):</b> after the boundary conditions and before the theorem, add this sentence: "As t → ∞ the temperature settles to the steady state". Follow it with the steady state as a new numbered equation,</p>
+<p>   u_s(x) = T_0 + (T_1 − T_0) x / L</p>
+<p>   with x/L written as a proper fraction. It should come out as equation (4).<br>4. <b>Section 3 (Results):</b> the sentence "Figure 1 shows how the temperature approaches the steady state" should say "…approaches the steady state (4)". Make the (4) a real reference to the new equation, so its number stays right if things move.<br>5. <b>Table 1:</b><br>   - The error for Δx = 0.05 is a typo: it should be <b>3.19</b>, not 3.91.<br>   - Add a last row: Δx = 0.0125, error 0.20.<br>6. <b>Figure 1 caption:</b> <i>Temperature along the rod at t = 0, 0.02, 0.05 and 0.2, with the steady state.</i><br>7. <b>A new section, "Discussion",</b> after Results and before the references. I wrote it already in LaTeX, so here it is:</p><pre>\section{Discussion}
+The explicit scheme is simple, but its time step must shrink like $\Delta x^2$,
+which makes fine grids expensive. Implicit schemes such as Crank--Nicolson
+\cite{crank1975} avoid this limit:\footnote{At the cost of solving a tridiagonal system at every step.}
+\begin{itemize}
+  \item they are stable for every $r &gt; 0$, and
+  \item they are second-order accurate in both $\Delta t$ and $\Delta x$.
+\end{itemize}
+</pre><p>The Crank reference is already in our .bib, so it should appear in the references once cited.</p>
+<p>Please make the PDF at the end and check that it looks right. The attached pages show what it should look like.</p>
+<p>Thanks!<br>Mira</p></div></body></html>

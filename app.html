@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- What this page may load and run. Scripts only from this site (the
+     single-file build adds the hashes of its inline scripts), plus
+     'wasm-unsafe-eval', which lets the compiler instantiate WebAssembly
+     without allowing eval() of JavaScript;
+     style attributes are how the maths is laid out; fonts and pasted images
+     are data: URLs; the compiled PDF is a blob:. connect-src names the
+     engine host — tools/build-web.js narrows it to this site alone when
+     TeX Live is deployed beside the page. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<!-- Where the compiler's wasm and TeX Live live, if not beside this page
+     (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
+<meta name="papertex-engine" content="">
+<title>PaperTeX — write on the page, get the LaTeX</title>
+<meta name="description" content="A free LaTeX editor in your browser: write on a page that looks like the PDF, and get clean, compilable LaTeX. No account, nothing uploaded.">
+<meta property="og:title" content="PaperTeX — write on the page, get the LaTeX">
+<meta property="og:description" content="A free LaTeX editor in your browser: write on a page that looks like the PDF, and get clean, compilable LaTeX. No account, nothing uploaded.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#e4e2de">
+<link rel="icon" href="desktop/papertex.png">
+<link rel="stylesheet" href="css/fonts.css">
+<link rel="stylesheet" href="css/app.css">
+<link rel="stylesheet" href="css/paper.css">
+</head>
+<body>
+
+<header class="top">
+  <a class="brand" href="./" title="PaperTeX home — templates, about, privacy"><img src="desktop/papertex.png" alt="" width="26" height="26"><b>PaperTeX</b><i>write on the paper</i></a>
+  <span class="savestate" id="saveState" role="status" aria-live="polite"></span>
+
+  <button class="tb" id="btnNew" title="New document"><span class="k">🗎</span>New</button>
+  <button class="tb" id="btnOpen" title="Open a saved PaperTeX project">Open</button>
+  <button class="tb" id="btnSave" title="Save the project so you can keep editing later">Save</button>
+
+  <span class="tsep"></span>
+  <button class="tb" id="btnUndo" title="Undo (Ctrl+Z)"><span class="k">↶</span></button>
+  <button class="tb" id="btnRedo" title="Redo (Ctrl+Shift+Z)"><span class="k">↷</span></button>
+
+  <span class="tsep"></span>
+  <button class="tb" id="btnPal" title="Show or hide the symbol palette"><span class="k">▤</span></button>
+  <button class="tb" id="btnPanel" title="Show or hide the LaTeX panel"><span class="k">▥</span></button>
+
+  <span class="spacer"></span>
+  <button class="tb ghost" id="btnPalette" title="Search every command, block and symbol">⌕ Commands</button>
+  <button class="tb ghost" id="btnHelp" title="Keyboard shortcuts and tips">? Shortcuts</button>
+  <button class="tb ghost" id="btnPrint" title="Print the page as it looks here — a quick copy. Make PDF makes the real typeset PDF.">Quick print</button>
+  <button class="tb ghost" id="btnCopy" title="Copy the generated LaTeX">Copy LaTeX</button>
+  <button class="tb ghost" id="btnTex" title="Download the .tex file (Ctrl+S)">Download .tex</button>
+  <!-- on a phone the buttons above fold into this menu (css/app.css shows it) -->
+  <button class="tb ghost tb-more" id="btnMore" title="More: commands, print, copy, export, panels" aria-haspopup="menu" aria-expanded="false">⋯</button>
+  <button class="tb primary" id="btnCompile" title="Typeset the document with LaTeX into the finished PDF, here in your browser">Make PDF</button>
+</header>
+<!-- saving problems, backup reminders: shown by app.js, never silently -->
+<div class="savebar" id="savebar" role="alert"></div>
+
+<div class="wrap">
+
+  <!-- symbol + block palette -->
+  <aside class="pal">
+    <div class="ptabs" id="ptabs"></div>
+    <div class="pbody" id="pbody"></div>
+  </aside>
+
+  <!-- the paper -->
+  <main class="stage" id="stage">
+    <div class="paper" id="paper"></div>
+    <div id="guides"></div>
+  </main>
+
+  <!-- LaTeX / outline / settings -->
+  <aside class="side">
+    <div class="rtabs">
+      <button class="rtab on" data-pane="pane-tex">LaTeX</button>
+      <button class="rtab" data-pane="pane-outline">Outline</button>
+      <button class="rtab" data-pane="pane-settings">Document</button>
+    </div>
+
+    <div class="rpane on" id="pane-tex">
+      <div class="texbar">
+        <button class="minib" id="btnCopy2">Copy</button>
+        <button class="minib" id="btnTex2">Download .tex</button>
+        <span class="texstat" id="texstat"></span>
+      </div>
+      <div class="texed" id="texed">
+        <pre id="texout" aria-hidden="true"></pre>
+        <textarea id="texin" spellcheck="false" autocomplete="off" autocapitalize="off" wrap="soft"
+          aria-label="The LaTeX. Edit it, and the page follows when you pause."></textarea>
+      </div>
+    </div>
+
+    <div class="rpane" id="pane-outline"><div id="outline"></div></div>
+    <div class="rpane" id="pane-settings"><div id="settings"></div></div>
+  </aside>
+</div>
+
+<div class="seltools" id="seltools"></div>
+<div class="toast" id="toast"></div>
+
+
+<div class="pdfview" id="pdfview">
+  <div class="pdfbox">
+    <div class="pdfbar">
+      <span class="pdftitle">Compiled PDF</span>
+      <span class="pdfstat" id="pdfstat"></span>
+      <button class="minib" id="pdfsave" disabled>Save PDF</button>
+      <button class="minib" id="pdfclose">Close</button>
+    </div>
+    <div class="pdfbody" id="pdfbody"></div>
+  </div>
+</div>
+
+<div class="help" id="help" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <div class="helpbox">
+    <h2 id="helpTitle">You edit the page. PaperTeX writes the LaTeX.</h2>
+    <div class="sub">Headings, equations, figures and tables are all edited directly on the sheet, and
+      the <b>.tex</b> file on the right updates as you go. If you would rather write LaTeX, type it in
+      that pane: the page follows.</div>
+
+    <h3>Getting around</h3>
+    <div class="helpgrid">
+      <kbd>/</kbd><span>On an empty paragraph, opens the block menu — section, equation, figure, table, list…</span>
+      <kbd>$</kbd><span>Inside any text, starts an inline formula right where the cursor is</span>
+      <kbd data-key="view.palette.cmd">Ctrl+K</kbd><span>The command palette: search every block, symbol, structure and command, and see its
+        shortcut. In running text <kbd>\</kbd> opens it too (press <kbd>\</kbd> twice for a backslash)</span>
+      <kbd data-key="block.eq">Ctrl+Enter</kbd><span>Drops a display equation below the current block</span>
+      <kbd>Enter</kbd><span>New paragraph · in a list, a new item · in an equation, a new aligned line —
+        on an empty last line, back to the text</span>
+      <kbd>Tab</kbd><span>Indents a list item, moves to the next table cell, steps to the next box of a formula</span>
+      <kbd>⋮</kbd><span>The dots beside a block: change its level, numbering, label, or move it</span>
+    </div>
+
+    <h3>Writing formulas — just type the name</h3>
+    <div class="helpgrid">
+      <kbd>int</kbd><span>Becomes ∫, with the cursor waiting in the lower limit. Same for
+        <code>sum</code>, <code>prod</code>, <code>lim</code>, <code>sqrt</code>, <code>frac</code>, <code>matrix</code>, <code>cases</code>, <code>vec</code>, <code>hat</code></span>
+      <kbd>Enter</kbd><span>Done with this part — on to the next one: lower limit → upper limit → the integrand,
+        numerator → denominator → after the fraction, out of an exponent. <kbd>Space</kbd> does the same.
+        Leave a lower limit empty and it skips straight past the limits. Only on the line itself
+        does Enter start a new equation line</span>
+      <kbd>↑ ↓</kbd><span>Go to what is drawn above or below: from the line, ↑ enters the exponent, upper limit or
+        numerator beside the cursor and ↓ the subscript, lower limit or denominator; from an exponent,
+        ↓ comes back down to the line</span>
+      <kbd>Tab</kbd><span>Steps through every box in turn, empty ones included. <kbd>Shift</kbd>+<kbd>Tab</kbd> goes back</span>
+      <kbd>^</kbd><span>From inside a lower limit, jumps up to the upper one — <kbd>_</kbd> jumps back down</span>
+      <kbd>alpha</kbd><span>Becomes α — every Greek letter, plus <code>inf</code> → ∞, <code>partial</code> → ∂,
+        <code>nabla</code> → ∇, <code>in</code> → ∈, <code>cdot</code> → ⋅</span>
+      <kbd>sin</kbd><span>Becomes an upright function name, as <code>\sin</code> should be</span>
+      <kbd>-&gt;</kbd><span>Becomes → &nbsp;·&nbsp; <kbd>&lt;=</kbd> ≤ &nbsp;·&nbsp; <kbd>&gt;=</kbd> ≥ &nbsp;·&nbsp; <kbd>!=</kbd> ≠ &nbsp;·&nbsp; <kbd>+-</kbd> ±</span>
+      <kbd>Backspace</kbd><span>Straight after one of those puts the plain letters back</span>
+      <kbd>/</kbd><span>Fraction — the term just before it becomes the numerator: <code>dy/dt</code>, <code>(a+b)/2</code>,
+        and in <code>(T_1-T_0)x/L</code> only the <code>x</code>. The Fraction button and <code>frac</code> give an empty one to fill in.
+        For a plain slash, as in k/m, type <kbd>/</kbd> twice (or Backspace straight after it)</span>
+      <kbd>^</kbd> <span>Superscript &nbsp;·&nbsp; <kbd>_</kbd> subscript &nbsp;·&nbsp; type both for a stacked pair.
+        <kbd>ü</kbd> also gives a superscript, for keyboards where <kbd>^</kbd> is a dead key</span>
+      <kbd>x1</kbd><span>A digit straight after a letter becomes an index: <code>x1</code> → x₁, <code>a12</code> → a₁₂, <code>alpha3</code> → α₃.
+        Only digits go on into it — <code>x1+x2</code> and <code>x1, x2</code> come out as you mean them, and
+        <code>x1^2</code> gives x₁². Backspace straight after puts the plain digit back</span>
+      <kbd>(</kbd><span>Brackets that grow with their contents — <kbd>|</kbd> gives absolute value</span>
+      <kbd>→</kbd><span>Out of an index, exponent, numerator or root, on along the line (<kbd>Space</kbd> too).
+        The part you are typing in is shaded</span>
+      <kbd>matrix</kbd><span>Typing <code>matrix</code> or <code>cases</code> asks how big, on a small grid. <kbd>Tab</kbd> goes on to the next
+        cell. Double-click a matrix to edit it large, with buttons for rows, columns and brackets</span>
+      <kbd>. , ;</kbd><span>Typed at the end of an exponent, index or root, they go after it: <code>x^2.</code> is x² followed by a full stop</span>
+      <kbd>Home</kbd><span>The start of the whole formula — in front of a matrix or cases brace too. <kbd>End</kbd> its end</span>
+      <kbd>Ctrl+B</kbd><span>Bold letters, for vectors — or type <code>bold</code></span>
+      <kbd>\</kbd><span>The long way round, if you know LaTeX: it is read as LaTeX reads it — <code>\frac12</code>, <code>\left( … \right)</code>,
+        <code>\begin{cases} … &amp; … \\ … \end{cases}</code>, <code>\,</code> for a thin space. A command PaperTeX does not know is shown
+        in red and written to the LaTeX as typed</span>
+      <kbd>Esc</kbd><span>Leaves the formula: back to the text, or on to a new line below an equation</span>
+    </div>
+
+    <h3>Good to know</h3>
+    <div class="helpgrid">
+      <kbd>Select</kbd><span>Highlighting text pops up bold, italic, code, cross-reference and “make this a formula”</span>
+      <kbd>Ctrl</kbd><span>+ <kbd>V</kbd> an image anywhere on the page drops in a figure — dragging one in works too</span>
+      <kbd>Paste</kbd><span>LaTeX pasted onto the page is read, not pasted as source: a sentence goes in at the cursor
+        with its formulas and citations, sections and equations come in as blocks, a whole document can open on its own.
+        Pasted into a formula, LaTeX becomes editable maths</span>
+      <kbd>References</kbd><span>To refer to an equation, table, figure or section, or to cite a work:
+        <kbd data-key="view.palette.cmd">Ctrl+K</kbd> → “reference” or “cite”, or the ↪ button on selected text.
+        Numbers keep up as things move</span>
+      <kbd>Footnote</kbd><span><kbd data-key="view.palette.cmd">Ctrl+K</kbd> → “footnote” puts one at the cursor; click its number to change it</span>
+      <kbd>Proofs</kbd><span><kbd data-key="block.eq">Ctrl+Enter</kbd> in a theorem or proof puts the equation inside it, before the □</span>
+      <kbd data-key="doc.export">Ctrl+S</kbd><span>Downloads the .tex — images come with it, keep them in the same folder</span>
+      <kbd data-key="doc.open">Ctrl+O</kbd><span>Opens a <b>.tex</b> file — or a whole Overleaf project: its “Download source” .zip, or the
+        .tex with its .bib and images picked together. Sections, equations, references and images become editable;
+        anything PaperTeX does not edit on the page stays as LaTeX code, still in the PDF</span>
+      <kbd>LaTeX pane</kbd><span>Type in the LaTeX on the right; when you pause, the page follows. A half-typed
+        <code>\begin{…}</code> waits for its <code>\end</code>. <kbd>Esc</kbd> gives the keys back to the page</span>
+      <kbd>Your keys</kbd><span>Every command, block and symbol can have a shortcut of your own, and so can any
+        LaTeX snippet — <button class="helplink" id="helpKeys">customize keyboard shortcuts</button></span>
+      <kbd>Compile</kbd><span>Typesets it with real LaTeX in your browser — nothing is uploaded. First run downloads the engine</span>
+    </div>
+
+    <p class="helpabout"><a href="about.html" target="_blank" rel="noopener">About PaperTeX</a> — who made it,
+      privacy (nothing you write is uploaded), and licences.</p>
+    <button class="helpclose" id="helpClose">Start writing</button>
+  </div>
+</div>
+
+<script src="js/symbols.js"></script>
+<script src="js/texmf.js"></script>
+<script src="js/math.js"></script>
+<script src="js/sanitize.js"></script>
+<script src="js/store.js"></script>
+<script src="js/chart.js"></script>
+<script src="js/latex.js"></script>
+<script src="js/doc.js"></script>
+<script src="js/texread.js"></script>
+<script src="js/unzip.js"></script>
+<script src="js/studio.js"></script>
+<script src="js/templates.js"></script>
+<script src="js/compile.js"></script>
+<script src="js/keys.js"></script>
+<script src="js/palette.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

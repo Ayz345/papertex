@@ -1886,7 +1886,7 @@ var Siglum = (() => {
         if (bundleName) {
           addBundle(bundleName);
         }
-        const pkgDeps = this.packageDeps?.[pkg] || [];
+        const pkgDeps = (this.packageDeps?.packages || this.packageDeps)?.[pkg] || [];   /* PaperTeX patch */
         for (const dep of pkgDeps) {
           resolvePackage(dep);
         }
@@ -3381,7 +3381,7 @@ var Siglum = (() => {
                 await saveAuxCache(auxCacheKey, result.auxFilesToCache);
               }
               if (!cachedFormat && preamble && engine !== "xelatex") {
-                this.generateFormat(source, { engine }).then(async () => {
+                this.generateFormat(source, { engine, additionalFiles: options.additionalFiles }).then(async () => {
                   await ensureFmtCacheMount();
                   const data = await fileSystem.readBinary("/" + getFmtPath(fmtKey)).catch(() => null);
                   if (data) this._fmtMemCache = { key: fmtKey, data: new Uint8Array(data) };
@@ -3472,6 +3472,9 @@ var Siglum = (() => {
       const allBundles = [.../* @__PURE__ */ new Set([...bundles, ...depBundles])];
       const bundleData = await this.bundleManager.loadBundles(allBundles);
       const ctanFiles = this.ctanFetcher.getCachedFiles();
+      for (const [filename, content] of Object.entries(options.additionalFiles || {})) {   /* PaperTeX patch */
+        ctanFiles["/" + filename] = typeof content === "string" ? new TextEncoder().encode(content) : content;
+      }
       this._log("Generating format file...");
       this.onProgress("format", "Generating format...");
       this.formatGenerationPromise = new Promise((resolve, reject) => {

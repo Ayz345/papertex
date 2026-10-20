@@ -23,6 +23,9 @@ contextBridge.exposeInMainWorld('papertexNative', {
   /* the user's current keys, so the menu can show them: {menuName: "Ctrl+S"} */
   setShortcuts: (map) => ipcRenderer.send('papertex:shortcuts', map),
 
+  /* the document's language ("en", "tr", …), for the spelling check */
+  setSpellLanguage: (code) => ipcRenderer.send('papertex:spellLang', code),
+
   onMenu: (handlers) => {
     Object.keys(handlers).forEach((k) => on('menu:' + k, handlers[k]));
   }

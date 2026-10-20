@@ -179,12 +179,15 @@
 
   /* -------------------------------------------------------------- dispatch */
   function inFormField(t) {
-    return t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName);
+    /* not the text box a formula keeps the focus in: undo there is the
+       document's */
+    return t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) && !(t.classList && t.classList.contains('mf-proxy'));
   }
   function onKeyDown(e) {
     if (recording || editor) return;                /* the shortcuts dialog has the keyboard */
     if (PT.palette && PT.palette.isOpen()) return;  /* so does the command palette */
     if (document.querySelector('.dlg-back')) return; /* an in-page confirm/prompt is open */
+    if (document.querySelector('.studio:not(.closing)')) return;   /* so is the chart or table editor */
     if (e.isComposing) return;
     /* AltGr+key types a character (@ \ { } on many layouts), never a shortcut */
     if (e.getModifierState && e.getModifierState('AltGraph')) return;
@@ -278,7 +281,7 @@
         seen[a.group].push(a);
       });
       if (groups.indexOf('My snippets') < 0) { groups.push('My snippets'); seen['My snippets'] = []; }
-      var shown = 0;
+      var shown = 0, formShown = false;
       groups.forEach(function (g) {
         var list = seen[g].filter(function (a) { return matches(a, q); });
         var isSnip = g === 'My snippets';
@@ -288,10 +291,10 @@
         var sec = h('div', 'kb-sec');
         sec.appendChild(h('div', 'kb-h', g));
         list.forEach(function (a) { sec.appendChild(row(a)); shown++; });
-        if (snipForm) sec.appendChild(snippetForm());
+        if (snipForm) { sec.appendChild(snippetForm()); formShown = true; }
         body.appendChild(sec);
       });
-      if (!shown && q) body.appendChild(h('div', 'kb-empty', 'Nothing matches “' + q + '”.'));
+      if (!shown && !formShown && q) body.appendChild(h('div', 'kb-empty', 'Nothing matches “' + q + '”.'));
       var n = Object.keys(user.bind).length;
       count.textContent = n ? n + ' changed from the defaults' : 'All defaults';
       body.scrollTop = keepScroll;
@@ -370,7 +373,7 @@
       add.onclick = go;
       inp.onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); go(); } };
       f.appendChild(prev); f.appendChild(inp); f.appendChild(add);
-      f.appendChild(h('div', 'kb-sniphint', 'An empty {} becomes a slot: the caret lands in the first one, so \\frac{}{} or x^{} work as templates.'));
+      f.appendChild(h('div', 'kb-sniphint', 'An empty {} becomes a box: the cursor lands in the first one, so \\frac{}{} or x^{} work as templates.'));
       return f;
     }
 

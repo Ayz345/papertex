@@ -87,6 +87,7 @@
         n.textContent = n.textContent;  /* text only */
       } else if (tag === 'span' && cls.indexOf(' ftnote ') >= 0) {
         keep['class'] = 'ftnote';
+        keep.contenteditable = 'false';   /* the mark is one thing, edited in its own box */
         keep['data-text'] = String(n.getAttribute('data-text') || '').slice(0, 5000);
         n.textContent = n.textContent;
       } else if (tag === 'span') {

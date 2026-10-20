@@ -55,7 +55,7 @@ function createWindow() {
     }
   });
 
-  win.loadURL('app://papertex/index.html');
+  win.loadURL('app://papertex/app.html');
   win.on('closed', () => { win = null; });
 
   /* Links to the outside world open in the real browser, not in the app. */
@@ -105,8 +105,8 @@ ipcMain.handle('papertex:exportProject', async (_e, { filename, tex, files }) =>
 
 ipcMain.handle('papertex:open', async () => {
   const res = await dialog.showOpenDialog(win, {
-    title: 'Open PaperTeX project',
-    filters: FILTERS['.json'],
+    title: 'Open a PaperTeX project or a .tex file',
+    filters: [{ name: 'PaperTeX project or LaTeX', extensions: ['json', 'tex'] }],
     properties: ['openFile']
   });
   if (res.canceled || !res.filePaths.length) return { status: 'declined' };
@@ -150,6 +150,21 @@ function toAccelerator(combo) {
   const mods = { Ctrl: 'CmdOrCtrl', Alt: 'Alt', Shift: 'Shift' };
   return parts.map((p) => mods[p] || p).concat(key).join('+');
 }
+
+/* Spelling is checked in the document's language. Left alone, Chromium
+   checks in the computer's language, so on a Turkish Windows every English
+   word came up red. Each language names the dictionaries to try, best first. */
+const SPELL = {
+  en: ['en-US', 'en-GB', 'en'], de: ['de-DE', 'de'], fr: ['fr-FR', 'fr'],
+  es: ['es-ES', 'es'], it: ['it-IT', 'it'], tr: ['tr-TR', 'tr'], pt: ['pt-PT', 'pt-BR', 'pt']
+};
+ipcMain.on('papertex:spellLang', (e, code) => {
+  const ses = e.sender.session;
+  const have = ses.availableSpellCheckerLanguages || [];
+  const pick = (SPELL[code] || []).find((l) => have.includes(l));
+  if (!pick) return;
+  try { ses.setSpellCheckerLanguages([pick]); } catch (err) { /* keep the current one */ }
+});
 
 ipcMain.on('papertex:shortcuts', (_e, map) => {
   if (map && typeof map === 'object') { menuKeys = Object.assign({}, menuKeys, map); buildMenu(); }

@@ -1,0 +1,1 @@
+A: 18/18 — LaTeX identical to the target except the label name and $0.02$ in maths in the caption. Crank entry typed in by hand (the .bib entry was not kept on import).

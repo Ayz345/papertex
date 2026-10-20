@@ -28,9 +28,16 @@ for (const f of fs.readdirSync(path.join(root, 'engine', 'texmf', 'babel'))) {
 }
 fs.copyFileSync(path.join(root, 'fonts', 'LICENSE-KaTeX.txt'), path.join(stage, 'LICENSE-KaTeX-fonts.txt'));
 fs.copyFileSync(path.join(root, 'LICENSE'), path.join(stage, 'LICENSE.txt'));
+/* The zip has no home page: the logo leads to About, and About back to the
+   editor, which here is papertex.html. */
 const icon = 'data:image/png;base64,' + fs.readFileSync(path.join(root, 'desktop', 'papertex.png')).toString('base64');
 fs.writeFileSync(path.join(stage, 'about.html'),
-  fs.readFileSync(path.join(root, 'about.html'), 'utf8').split('desktop/papertex.png').join(icon));
+  fs.readFileSync(path.join(root, 'about.html'), 'utf8').split('desktop/papertex.png').join(icon)
+    .split('href="app.html"').join('href="papertex.html"')
+    .replace(/href="\.\/(?:#[^"]*)?"/g, 'href="papertex.html"'));
+const page = path.join(stage, 'papertex.html');
+fs.writeFileSync(page, fs.readFileSync(page, 'utf8')
+  .replace(/<a\b[^>]*\bclass="brand"[^>]*>/, (tag) => tag.replace('href="./"', 'href="about.html"')));
 
 fs.rmSync(zip, { force: true });
 /* .NET's zip classes are always present on Windows and need no extra

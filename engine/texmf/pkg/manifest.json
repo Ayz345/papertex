@@ -1,0 +1,3088 @@
+{
+  "3parttable": {
+    "archive": "threeparttable",
+    "from": "texlive-2024-final",
+    "files": [
+      "3parttable.sty",
+      "threeparttable.sty"
+    ]
+  },
+  "abstract": {
+    "archive": "abstract",
+    "from": "texlive-2024-final",
+    "files": [
+      "abstract.sty"
+    ]
+  },
+  "accents": {
+    "archive": "accents",
+    "from": "texlive-2024-final",
+    "files": [
+      "accents.sty"
+    ]
+  },
+  "acronym": {
+    "archive": "acronym",
+    "from": "texlive-2024-final",
+    "files": [
+      "acronym.sty",
+      "relsize.sty",
+      "suffix.sty",
+      "type1cm.sty",
+      "xstring.sty",
+      "xstring.tex"
+    ],
+    "with": [
+      "bigfoot",
+      "relsize",
+      "type1cm",
+      "xstring"
+    ]
+  },
+  "adjcalc": {
+    "archive": "adjustbox",
+    "from": "texlive-2024-final",
+    "files": [
+      "adjcalc.sty",
+      "keyval.tex",
+      "pst-xkey.tex",
+      "tc-dvips.def",
+      "tc-luatex.def",
+      "tc-pdftex.def",
+      "tc-pgf.def",
+      "tc-xetex.def",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ],
+    "with": [
+      "xkeyval"
+    ],
+    "needs": [
+      "pgf"
+    ]
+  },
+  "adjustbox": {
+    "archive": "adjustbox",
+    "from": "texlive-2024-final",
+    "files": [
+      "adjcalc.sty",
+      "adjustbox.sty",
+      "collectbox.sty",
+      "ifoddpage.sty",
+      "keyval.tex",
+      "pst-xkey.tex",
+      "tc-dvips.def",
+      "tc-luatex.def",
+      "tc-pdftex.def",
+      "tc-pgf.def",
+      "tc-xetex.def",
+      "trimclip.sty",
+      "varwidth.sty",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ],
+    "with": [
+      "collectbox",
+      "ifoddpage",
+      "varwidth",
+      "xkeyval"
+    ],
+    "needs": [
+      "graphicx",
+      "pgf"
+    ]
+  },
+  "algc": {
+    "archive": "algorithmicx",
+    "from": "texlive-2024-final",
+    "files": [
+      "algc.sty",
+      "algorithmicx.sty"
+    ]
+  },
+  "algcompatible": {
+    "archive": "algorithmicx",
+    "from": "texlive-2024-final",
+    "files": [
+      "algcompatible.sty",
+      "algorithmicx.sty"
+    ]
+  },
+  "algmatlab": {
+    "archive": "algorithmicx",
+    "from": "texlive-2024-final",
+    "files": [
+      "algmatlab.sty",
+      "algorithmicx.sty"
+    ]
+  },
+  "algorithm": {
+    "archive": "algorithms",
+    "from": "texlive-2024-final",
+    "files": [
+      "algorithm.sty",
+      "float.sty"
+    ],
+    "with": [
+      "float"
+    ]
+  },
+  "algorithmic": {
+    "archive": "algorithms",
+    "from": "texlive-2024-final",
+    "files": [
+      "algorithmic.sty"
+    ],
+    "needs": [
+      "keyval"
+    ]
+  },
+  "algorithmicx": {
+    "archive": "algorithmicx",
+    "from": "texlive-2024-final",
+    "files": [
+      "algorithmicx.sty"
+    ]
+  },
+  "algpascal": {
+    "archive": "algorithmicx",
+    "from": "texlive-2024-final",
+    "files": [
+      "algorithmicx.sty",
+      "algpascal.sty"
+    ]
+  },
+  "algpseudocode": {
+    "archive": "algorithmicx",
+    "from": "texlive-2024-final",
+    "files": [
+      "algcompatible.sty",
+      "algorithmicx.sty",
+      "algpseudocode.sty"
+    ]
+  },
+  "aliasctr": {
+    "archive": "thmtools",
+    "from": "texlive-2024-final",
+    "files": [
+      "aliasctr.sty"
+    ],
+    "needs": [
+      "remreset"
+    ]
+  },
+  "appendix": {
+    "archive": "appendix",
+    "from": "texlive-2024-final",
+    "files": [
+      "appendix.sty"
+    ]
+  },
+  "arydshln": {
+    "archive": "arydshln",
+    "from": "texlive-2024-final",
+    "files": [
+      "arydshln.sty"
+    ]
+  },
+  "authblk": {
+    "archive": "preprint",
+    "from": "texlive-2024-final",
+    "files": [
+      "authblk.sty"
+    ]
+  },
+  "balance": {
+    "archive": "preprint",
+    "from": "texlive-2024-final",
+    "files": [
+      "balance.sty"
+    ]
+  },
+  "bigdelim": {
+    "archive": "multirow",
+    "from": "texlive-2024-final",
+    "files": [
+      "bigdelim.sty",
+      "multirow.sty"
+    ]
+  },
+  "bigstrut": {
+    "archive": "multirow",
+    "from": "texlive-2024-final",
+    "files": [
+      "bigstrut.sty"
+    ]
+  },
+  "blindtext": {
+    "archive": "blindtext",
+    "from": "texlive-2024-final",
+    "files": [
+      "blindtext.sty"
+    ]
+  },
+  "braket": {
+    "archive": "braket",
+    "from": "texlive-2024-final",
+    "files": [
+      "braket.sty"
+    ]
+  },
+  "cancel": {
+    "archive": "cancel",
+    "from": "texlive-2024-final",
+    "files": [
+      "cancel.sty"
+    ]
+  },
+  "cases": {
+    "archive": "cases",
+    "from": "texlive-2024-final",
+    "files": [
+      "cases.sty"
+    ]
+  },
+  "changepage": {
+    "archive": "changepage",
+    "from": "texlive-2024-final",
+    "files": [
+      "changepage.sty"
+    ]
+  },
+  "chapterbib": {
+    "archive": "cite",
+    "from": "texlive-2024-final",
+    "files": [
+      "chapterbib.sty"
+    ]
+  },
+  "chemfig": {
+    "archive": "chemfig",
+    "from": "texlive-2024-final",
+    "files": [
+      "chemfig-lewis.tex",
+      "chemfig.sty",
+      "chemfig.tex",
+      "simplekv.tex"
+    ],
+    "with": [
+      "simplekv"
+    ],
+    "needs": [
+      "tikz"
+    ]
+  },
+  "chemgreek": {
+    "archive": "chemgreek",
+    "from": "texlive-2024-final",
+    "files": [
+      "chemgreek.sty"
+    ],
+    "needs": [
+      "amstext"
+    ]
+  },
+  "chngcntr": {
+    "archive": "chngcntr",
+    "from": "texlive-2024-final",
+    "files": [
+      "chngcntr.sty"
+    ]
+  },
+  "chngpage": {
+    "archive": "changepage",
+    "from": "texlive-2024-final",
+    "files": [
+      "chngpage.sty"
+    ]
+  },
+  "cite": {
+    "archive": "cite",
+    "from": "texlive-2024-final",
+    "files": [
+      "cite.sty"
+    ]
+  },
+  "cleveref": {
+    "archive": "cleveref",
+    "from": "texlive-2024-final",
+    "files": [
+      "cleveref.sty"
+    ]
+  },
+  "collectbox": {
+    "archive": "collectbox",
+    "from": "texlive-2024-final",
+    "files": [
+      "collectbox.sty"
+    ]
+  },
+  "commath": {
+    "archive": "commath",
+    "from": "texlive-2024-final",
+    "files": [
+      "commath.sty"
+    ],
+    "needs": [
+      "amsmath"
+    ]
+  },
+  "comment": {
+    "archive": "comment",
+    "from": "texlive-2024-final",
+    "files": [
+      "comment.sty"
+    ]
+  },
+  "csquotes": {
+    "archive": "csquotes",
+    "from": "texlive-2024-final",
+    "files": [
+      "csq-compat.def",
+      "csquotes.cfg",
+      "csquotes.def",
+      "csquotes.sty",
+      "relsize.sty",
+      "type1cm.sty"
+    ],
+    "with": [
+      "relsize",
+      "type1cm"
+    ],
+    "needs": [
+      "etoolbox",
+      "keyval"
+    ]
+  },
+  "currfile": {
+    "archive": "currfile",
+    "from": "texlive-2024-final",
+    "files": [
+      "currfile-abspath.sty",
+      "currfile.sty"
+    ],
+    "needs": [
+      "filehook",
+      "kvoptions"
+    ]
+  },
+  "currfile-abspath": {
+    "archive": "currfile",
+    "from": "texlive-2024-final",
+    "files": [
+      "currfile-abspath.sty"
+    ]
+  },
+  "defpattern": {
+    "archive": "fp",
+    "from": "texlive-2024-final",
+    "files": [
+      "defpattern.sty",
+      "fp.tex"
+    ]
+  },
+  "diagbox": {
+    "archive": "diagbox",
+    "from": "texlive-2024-final",
+    "files": [
+      "defpattern.sty",
+      "diagbox.sty",
+      "fp-addons.sty",
+      "fp-basic.sty",
+      "fp-eqn.sty",
+      "fp-eval.sty",
+      "fp-exp.sty",
+      "fp-pas.sty",
+      "fp-random.sty",
+      "fp-snap.sty",
+      "fp-trigo.sty",
+      "fp-upn.sty",
+      "fp.sty",
+      "fp.tex",
+      "p2e-dvipdfm.def",
+      "p2e-dvipdfmx.def",
+      "p2e-dvips.def",
+      "p2e-luatex.def",
+      "p2e-pctex32.def",
+      "p2e-pctexps.def",
+      "p2e-pdftex.def",
+      "p2e-textures.def",
+      "p2e-vtex.def",
+      "p2e-xetex.def",
+      "pict2e.cfg",
+      "pict2e.sty"
+    ],
+    "with": [
+      "fp",
+      "pict2e"
+    ],
+    "needs": [
+      "keyval",
+      "trig"
+    ]
+  },
+  "dirtytalk": {
+    "archive": "dirtytalk",
+    "from": "texlive-2024-final",
+    "files": [
+      "dirtytalk.sty"
+    ],
+    "needs": [
+      "kvoptions"
+    ]
+  },
+  "drftcite": {
+    "archive": "cite",
+    "from": "texlive-2024-final",
+    "files": [
+      "drftcite.sty"
+    ]
+  },
+  "enumitem": {
+    "archive": "enumitem",
+    "from": "texlive-2024-final",
+    "files": [
+      "enumitem.sty"
+    ]
+  },
+  "epigraph": {
+    "archive": "epigraph",
+    "from": "texlive-2024-final",
+    "files": [
+      "epigraph.sty",
+      "nextpage.sty"
+    ],
+    "with": [
+      "nextpage"
+    ]
+  },
+  "everysel": {
+    "archive": "everysel",
+    "from": "texlive-2024-final",
+    "files": [
+      "everysel-2011-10-28.sty",
+      "everysel.sty"
+    ]
+  },
+  "everysel-2011-10-28": {
+    "archive": "everysel",
+    "from": "texlive-2024-final",
+    "files": [
+      "everysel-2011-10-28.sty"
+    ]
+  },
+  "fancyvrb": {
+    "archive": "fancyvrb",
+    "from": "texlive-2024-final",
+    "files": [
+      "fancyvrb.sty"
+    ],
+    "needs": [
+      "keyval"
+    ]
+  },
+  "fancyvrb-ex": {
+    "archive": "fancyvrb",
+    "from": "texlive-2024-final",
+    "files": [
+      "README.cfg",
+      "distiller.cfg",
+      "dvips.cfg",
+      "dvipsone.cfg",
+      "fancyvrb-ex.sty",
+      "fancyvrb.sty",
+      "gastex.cfg",
+      "hbaw.sty",
+      "hcolor.sty",
+      "keyval.tex",
+      "pst-calculate.sty",
+      "pst-doc.cls",
+      "pst-fp.tex",
+      "pst-key.tex",
+      "pst-xkey.tex",
+      "pstricks-arrows.tex",
+      "pstricks-color.tex",
+      "pstricks-dots.tex",
+      "pstricks-tex.def",
+      "pstricks-xetex.def",
+      "pstricks.sty",
+      "pstricks.tex",
+      "pstricks97.tex",
+      "textures.cfg",
+      "vtex.cfg",
+      "xdvipdfmx.cfg",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ],
+    "with": [
+      "pst-calculate",
+      "pstricks",
+      "xkeyval"
+    ],
+    "needs": [
+      "keyval",
+      "pgffor",
+      "siunitx",
+      "xcolor"
+    ]
+  },
+  "figcaps": {
+    "archive": "preprint",
+    "from": "texlive-2024-final",
+    "files": [
+      "figcaps.sty"
+    ]
+  },
+  "filemod": {
+    "archive": "filemod",
+    "from": "texlive-2024-final",
+    "files": [
+      "filemod-expmin.sty",
+      "filemod-expmin.tex",
+      "filemod.sty",
+      "filemod.tex"
+    ],
+    "needs": [
+      "pdftexcmds"
+    ]
+  },
+  "filemod-expmin": {
+    "archive": "filemod",
+    "from": "texlive-2024-final",
+    "files": [
+      "filemod-expmin.sty",
+      "filemod-expmin.tex",
+      "filemod.tex"
+    ],
+    "needs": [
+      "pdftexcmds"
+    ]
+  },
+  "fixmath": {
+    "archive": "fixmath",
+    "from": "texlive-2024-final",
+    "files": [
+      "fixmath.sty"
+    ]
+  },
+  "float": {
+    "archive": "float",
+    "from": "texlive-2024-final",
+    "files": [
+      "float.sty"
+    ]
+  },
+  "footmisc": {
+    "archive": "footmisc",
+    "from": "texlive-2024-final",
+    "files": [
+      "footmisc-2011-06-06.sty",
+      "footmisc.sty",
+      "perpage.sty"
+    ],
+    "with": [
+      "bigfoot"
+    ]
+  },
+  "footmisc-2011-06-06": {
+    "archive": "footmisc",
+    "from": "texlive-2024-final",
+    "files": [
+      "footmisc-2011-06-06.sty"
+    ]
+  },
+  "fp": {
+    "archive": "fp",
+    "from": "texlive-2024-final",
+    "files": [
+      "defpattern.sty",
+      "fp-addons.sty",
+      "fp-basic.sty",
+      "fp-eqn.sty",
+      "fp-eval.sty",
+      "fp-exp.sty",
+      "fp-pas.sty",
+      "fp-random.sty",
+      "fp-snap.sty",
+      "fp-trigo.sty",
+      "fp-upn.sty",
+      "fp.sty",
+      "fp.tex"
+    ]
+  },
+  "fp-addons": {
+    "archive": "fp",
+    "from": "texlive-2024-final",
+    "files": [
+      "fp-addons.sty",
+      "fp.tex"
+    ]
+  },
+  "fp-basic": {
+    "archive": "fp",
+    "from": "texlive-2024-final",
+    "files": [
+      "fp-basic.sty",
+      "fp.tex"
+    ]
+  },
+  "fp-eqn": {
+    "archive": "fp",
+    "from": "texlive-2024-final",
+    "files": [
+      "defpattern.sty",
+      "fp-addons.sty",
+      "fp-basic.sty",
+      "fp-eqn.sty",
+      "fp-eval.sty",
+      "fp-exp.sty",
+      "fp-pas.sty",
+      "fp-random.sty",
+      "fp-snap.sty",
+      "fp-trigo.sty",
+      "fp-upn.sty",
+      "fp.sty",
+      "fp.tex"
+    ]
+  },
+  "fp-eval": {
+    "archive": "fp",
+    "from": "texlive-2024-final",
+    "files": [
+      "defpattern.sty",
+      "fp-addons.sty",
+      "fp-basic.sty",
+      "fp-eqn.sty",
+      "fp-eval.sty",
+      "fp-exp.sty",
+      "fp-pas.sty",
+      "fp-random.sty",
+      "fp-snap.sty",
+      "fp-trigo.sty",
+      "fp-upn.sty",
+      "fp.sty",
+      "fp.tex"
+    ]
+  },
+  "fp-exp": {
+    "archive": "fp",
+    "from": "texlive-2024-final",
+    "files": [
+      "fp-basic.sty",
+      "fp-exp.sty",
+      "fp.tex"
+    ]
+  },
+  "fp-pas": {
+    "archive": "fp",
+    "from": "texlive-2024-final",
+    "files": [
+      "fp-basic.sty",
+      "fp-pas.sty",
+      "fp.tex"
+    ]
+  },
+  "fp-random": {
+    "archive": "fp",
+    "from": "texlive-2024-final",
+    "files": [
+      "fp-basic.sty",
+      "fp-random.sty",
+      "fp.tex"
+    ]
+  },
+  "fp-snap": {
+    "archive": "fp",
+    "from": "texlive-2024-final",
+    "files": [
+      "fp-basic.sty",
+      "fp-snap.sty",
+      "fp.tex"
+    ]
+  },
+  "fp-trigo": {
+    "archive": "fp",
+    "from": "texlive-2024-final",
+    "files": [
+      "fp-basic.sty",
+      "fp-trigo.sty",
+      "fp.tex"
+    ]
+  },
+  "fp-upn": {
+    "archive": "fp",
+    "from": "texlive-2024-final",
+    "files": [
+      "defpattern.sty",
+      "fp-addons.sty",
+      "fp-basic.sty",
+      "fp-eqn.sty",
+      "fp-eval.sty",
+      "fp-exp.sty",
+      "fp-pas.sty",
+      "fp-random.sty",
+      "fp-snap.sty",
+      "fp-trigo.sty",
+      "fp-upn.sty",
+      "fp.sty",
+      "fp.tex"
+    ]
+  },
+  "framed": {
+    "archive": "framed",
+    "from": "texlive-2024-final",
+    "files": [
+      "framed.sty"
+    ]
+  },
+  "gensymb": {
+    "archive": "gensymb",
+    "from": "texlive-2024-final",
+    "files": [
+      "gensymb.sty"
+    ]
+  },
+  "gincltex": {
+    "archive": "gincltex",
+    "from": "texlive-2024-final",
+    "files": [
+      "adjcalc.sty",
+      "adjustbox.sty",
+      "collectbox.sty",
+      "gincltex.sty",
+      "ifoddpage.sty",
+      "keyval.tex",
+      "pst-xkey.tex",
+      "svn-prov.sty",
+      "tc-dvips.def",
+      "tc-luatex.def",
+      "tc-pdftex.def",
+      "tc-pgf.def",
+      "tc-xetex.def",
+      "trimclip.sty",
+      "varwidth.sty",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ],
+    "with": [
+      "adjustbox",
+      "collectbox",
+      "ifoddpage",
+      "svn-prov",
+      "varwidth",
+      "xkeyval"
+    ],
+    "needs": [
+      "graphicx",
+      "pgf"
+    ]
+  },
+  "greekctr": {
+    "archive": "jknapltx",
+    "from": "texlive-2024-final",
+    "files": [
+      "greekctr.sty",
+      "latin1jk.def",
+      "latin2jk.def",
+      "latin3jk.def",
+      "ursfs.fd",
+      "ustmary.fd"
+    ]
+  },
+  "hbaw": {
+    "archive": "fancyvrb",
+    "from": "texlive-2024-final",
+    "files": [
+      "hbaw.sty"
+    ]
+  },
+  "hcolor": {
+    "archive": "fancyvrb",
+    "from": "texlive-2024-final",
+    "files": [
+      "hcolor.sty"
+    ]
+  },
+  "holtpolt": {
+    "archive": "jknapltx",
+    "from": "texlive-2024-final",
+    "files": [
+      "holtpolt.sty",
+      "latin1jk.def",
+      "latin2jk.def",
+      "latin3jk.def",
+      "ursfs.fd",
+      "ustmary.fd"
+    ]
+  },
+  "hpstatement": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement.sty"
+    ],
+    "needs": [
+      "iflang"
+    ]
+  },
+  "hpstatement-bg.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-bg.inc.sty"
+    ]
+  },
+  "hpstatement-cs.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-cs.inc.sty"
+    ]
+  },
+  "hpstatement-da.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-da.inc.sty"
+    ]
+  },
+  "hpstatement-de.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-de.inc.sty"
+    ]
+  },
+  "hpstatement-el.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-el.inc.sty"
+    ]
+  },
+  "hpstatement-en.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-en.inc.sty"
+    ]
+  },
+  "hpstatement-es.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-es.inc.sty"
+    ]
+  },
+  "hpstatement-et.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-et.inc.sty"
+    ]
+  },
+  "hpstatement-fi.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-fi.inc.sty"
+    ]
+  },
+  "hpstatement-fr.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-fr.inc.sty"
+    ]
+  },
+  "hpstatement-ga.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-ga.inc.sty"
+    ]
+  },
+  "hpstatement-hr.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-hr.inc.sty"
+    ]
+  },
+  "hpstatement-hu.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-hu.inc.sty"
+    ]
+  },
+  "hpstatement-it.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-it.inc.sty"
+    ]
+  },
+  "hpstatement-lt.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-lt.inc.sty"
+    ]
+  },
+  "hpstatement-lv.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-lv.inc.sty"
+    ]
+  },
+  "hpstatement-mt.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-mt.inc.sty"
+    ]
+  },
+  "hpstatement-nl.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-nl.inc.sty"
+    ]
+  },
+  "hpstatement-pl.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-pl.inc.sty"
+    ]
+  },
+  "hpstatement-pt.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-pt.inc.sty"
+    ]
+  },
+  "hpstatement-ro.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-ro.inc.sty"
+    ]
+  },
+  "hpstatement-sk.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-sk.inc.sty"
+    ]
+  },
+  "hpstatement-sl.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-sl.inc.sty"
+    ]
+  },
+  "hpstatement-sv.inc": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "hpstatement-sv.inc.sty"
+    ]
+  },
+  "hyphenat": {
+    "archive": "hyphenat",
+    "from": "texlive-2024-final",
+    "files": [
+      "hyphenat.sty"
+    ]
+  },
+  "icomma": {
+    "archive": "was",
+    "from": "texlive-2024-final",
+    "files": [
+      "icomma.sty"
+    ]
+  },
+  "ifoddpage": {
+    "archive": "ifoddpage",
+    "from": "texlive-2024-final",
+    "files": [
+      "ifoddpage.sty"
+    ]
+  },
+  "import": {
+    "archive": "import",
+    "from": "texlive-2024-final",
+    "files": [
+      "import.sty"
+    ]
+  },
+  "lettrine": {
+    "archive": "lettrine",
+    "from": "texlive-2024-final",
+    "files": [
+      "keyval.tex",
+      "lettrine-2006-03-17.sty",
+      "lettrine-2015-08-31.sty",
+      "lettrine-2018-08-18.sty",
+      "lettrine-2022-09-25.sty",
+      "lettrine-2023-04-18.sty",
+      "lettrine-optfile.cfl",
+      "lettrine-pacl.cfl",
+      "lettrine-padl.cfl",
+      "lettrine-pzc2.cfl",
+      "lettrine-pzc3.cfl",
+      "lettrine.cfg",
+      "lettrine.sty",
+      "mfpextra.tex",
+      "minifp.sty",
+      "pst-xkey.tex",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ],
+    "with": [
+      "minifp",
+      "xkeyval"
+    ],
+    "needs": [
+      "keyval"
+    ]
+  },
+  "lettrine-2006-03-17": {
+    "archive": "lettrine",
+    "from": "texlive-2024-final",
+    "files": [
+      "keyval.tex",
+      "lettrine-2006-03-17.sty",
+      "lettrine-2015-08-31.sty",
+      "lettrine-2018-08-18.sty",
+      "lettrine-2022-09-25.sty",
+      "lettrine-2023-04-18.sty",
+      "lettrine-optfile.cfl",
+      "lettrine-pacl.cfl",
+      "lettrine-padl.cfl",
+      "lettrine-pzc2.cfl",
+      "lettrine-pzc3.cfl",
+      "lettrine.cfg",
+      "lettrine.sty",
+      "mfpextra.tex",
+      "minifp.sty",
+      "pst-xkey.tex",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ],
+    "with": [
+      "minifp",
+      "xkeyval"
+    ],
+    "needs": [
+      "keyval"
+    ]
+  },
+  "lettrine-2015-08-31": {
+    "archive": "lettrine",
+    "from": "texlive-2024-final",
+    "files": [
+      "keyval.tex",
+      "lettrine-2006-03-17.sty",
+      "lettrine-2015-08-31.sty",
+      "lettrine-2018-08-18.sty",
+      "lettrine-2022-09-25.sty",
+      "lettrine-2023-04-18.sty",
+      "lettrine-optfile.cfl",
+      "lettrine-pacl.cfl",
+      "lettrine-padl.cfl",
+      "lettrine-pzc2.cfl",
+      "lettrine-pzc3.cfl",
+      "lettrine.cfg",
+      "lettrine.sty",
+      "mfpextra.tex",
+      "minifp.sty",
+      "pst-xkey.tex",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ],
+    "with": [
+      "minifp",
+      "xkeyval"
+    ],
+    "needs": [
+      "keyval"
+    ]
+  },
+  "lettrine-2018-08-18": {
+    "archive": "lettrine",
+    "from": "texlive-2024-final",
+    "files": [
+      "keyval.tex",
+      "lettrine-2006-03-17.sty",
+      "lettrine-2015-08-31.sty",
+      "lettrine-2018-08-18.sty",
+      "lettrine-2022-09-25.sty",
+      "lettrine-2023-04-18.sty",
+      "lettrine-optfile.cfl",
+      "lettrine-pacl.cfl",
+      "lettrine-padl.cfl",
+      "lettrine-pzc2.cfl",
+      "lettrine-pzc3.cfl",
+      "lettrine.cfg",
+      "lettrine.sty",
+      "mfpextra.tex",
+      "minifp.sty",
+      "pst-xkey.tex",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ],
+    "with": [
+      "minifp",
+      "xkeyval"
+    ],
+    "needs": [
+      "keyval"
+    ]
+  },
+  "lettrine-2022-09-25": {
+    "archive": "lettrine",
+    "from": "texlive-2024-final",
+    "files": [
+      "keyval.tex",
+      "lettrine-2006-03-17.sty",
+      "lettrine-2015-08-31.sty",
+      "lettrine-2018-08-18.sty",
+      "lettrine-2022-09-25.sty",
+      "lettrine-2023-04-18.sty",
+      "lettrine-optfile.cfl",
+      "lettrine-pacl.cfl",
+      "lettrine-padl.cfl",
+      "lettrine-pzc2.cfl",
+      "lettrine-pzc3.cfl",
+      "lettrine.cfg",
+      "lettrine.sty",
+      "mfpextra.tex",
+      "minifp.sty",
+      "pst-xkey.tex",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ],
+    "with": [
+      "minifp",
+      "xkeyval"
+    ],
+    "needs": [
+      "keyval"
+    ]
+  },
+  "lettrine-2023-04-18": {
+    "archive": "lettrine",
+    "from": "texlive-2024-final",
+    "files": [
+      "keyval.tex",
+      "lettrine-2006-03-17.sty",
+      "lettrine-2015-08-31.sty",
+      "lettrine-2018-08-18.sty",
+      "lettrine-2022-09-25.sty",
+      "lettrine-2023-04-18.sty",
+      "lettrine-optfile.cfl",
+      "lettrine-pacl.cfl",
+      "lettrine-padl.cfl",
+      "lettrine-pzc2.cfl",
+      "lettrine-pzc3.cfl",
+      "lettrine.cfg",
+      "lettrine.sty",
+      "mfpextra.tex",
+      "minifp.sty",
+      "pst-xkey.tex",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ],
+    "with": [
+      "minifp",
+      "xkeyval"
+    ],
+    "needs": [
+      "keyval"
+    ]
+  },
+  "lfp": {
+    "archive": "fp",
+    "from": "texlive-2024-final",
+    "files": [
+      "defpattern.sty",
+      "fp-addons.sty",
+      "fp-basic.sty",
+      "fp-eqn.sty",
+      "fp-eval.sty",
+      "fp-exp.sty",
+      "fp-pas.sty",
+      "fp-random.sty",
+      "fp-snap.sty",
+      "fp-trigo.sty",
+      "fp-upn.sty",
+      "fp.sty",
+      "fp.tex",
+      "lfp.sty"
+    ]
+  },
+  "linegoal": {
+    "archive": "linegoal",
+    "from": "texlive-2024-final",
+    "files": [
+      "linegoal.sty",
+      "makerobust.sty",
+      "zref-base.sty",
+      "zref-savepos.sty",
+      "zref.sty"
+    ],
+    "with": [
+      "makerobust",
+      "zref"
+    ],
+    "needs": [
+      "auxhook",
+      "etex",
+      "etexcmds",
+      "infwarerr",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "lipsum": {
+    "archive": "lipsum",
+    "from": "texlive-2024-final",
+    "files": [
+      "cicero.ltd.tex",
+      "lipsum-cs.ltd.tex",
+      "lipsum.ltd.tex",
+      "lipsum.sty"
+    ],
+    "needs": [
+      "babel"
+    ]
+  },
+  "listings": {
+    "archive": "listings",
+    "from": "texlive-2024-final",
+    "files": [
+      "listings-acm.prf",
+      "listings-bash.prf",
+      "listings-fortran.prf",
+      "listings-hansl.prf",
+      "listings-lua.prf",
+      "listings-python.prf",
+      "listings-rexx.prf",
+      "listings.cfg",
+      "listings.sty",
+      "lstlang1.sty",
+      "lstlang2.sty",
+      "lstlang3.sty",
+      "lstmisc.sty",
+      "lstpatch.sty"
+    ],
+    "needs": [
+      "keyval"
+    ]
+  },
+  "lstlang1": {
+    "archive": "listings",
+    "from": "texlive-2024-final",
+    "files": [
+      "listings-acm.prf",
+      "listings-bash.prf",
+      "listings-fortran.prf",
+      "listings-hansl.prf",
+      "listings-lua.prf",
+      "listings-python.prf",
+      "listings-rexx.prf",
+      "listings.cfg",
+      "lstlang1.sty"
+    ]
+  },
+  "lstlang2": {
+    "archive": "listings",
+    "from": "texlive-2024-final",
+    "files": [
+      "listings-acm.prf",
+      "listings-bash.prf",
+      "listings-fortran.prf",
+      "listings-hansl.prf",
+      "listings-lua.prf",
+      "listings-python.prf",
+      "listings-rexx.prf",
+      "listings.cfg",
+      "lstlang2.sty"
+    ]
+  },
+  "lstlang3": {
+    "archive": "listings",
+    "from": "texlive-2024-final",
+    "files": [
+      "listings-acm.prf",
+      "listings-bash.prf",
+      "listings-fortran.prf",
+      "listings-hansl.prf",
+      "listings-lua.prf",
+      "listings-python.prf",
+      "listings-rexx.prf",
+      "listings.cfg",
+      "lstlang3.sty"
+    ]
+  },
+  "lstmisc": {
+    "archive": "listings",
+    "from": "texlive-2024-final",
+    "files": [
+      "listings-acm.prf",
+      "listings-bash.prf",
+      "listings-fortran.prf",
+      "listings-hansl.prf",
+      "listings-lua.prf",
+      "listings-python.prf",
+      "listings-rexx.prf",
+      "listings.cfg",
+      "listings.sty",
+      "lstlang1.sty",
+      "lstlang2.sty",
+      "lstlang3.sty",
+      "lstmisc.sty",
+      "lstpatch.sty"
+    ],
+    "needs": [
+      "keyval"
+    ]
+  },
+  "lstpatch": {
+    "archive": "listings",
+    "from": "texlive-2024-final",
+    "files": [
+      "listings-acm.prf",
+      "listings-bash.prf",
+      "listings-fortran.prf",
+      "listings-hansl.prf",
+      "listings-lua.prf",
+      "listings-python.prf",
+      "listings-rexx.prf",
+      "listings.cfg",
+      "lstpatch.sty"
+    ]
+  },
+  "ltablex": {
+    "archive": "ltablex",
+    "from": "texlive-2024-final",
+    "files": [
+      "ltablex.sty"
+    ],
+    "needs": [
+      "longtable",
+      "tabularx"
+    ]
+  },
+  "makecell": {
+    "archive": "makecell",
+    "from": "texlive-2024-final",
+    "files": [
+      "makecell.sty"
+    ]
+  },
+  "makerobust": {
+    "archive": "makerobust",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty"
+    ]
+  },
+  "mathbbol": {
+    "archive": "jknapltx",
+    "from": "texlive-2024-final",
+    "files": [
+      "latin1jk.def",
+      "latin2jk.def",
+      "latin3jk.def",
+      "mathbbol.sty",
+      "ursfs.fd",
+      "ustmary.fd"
+    ]
+  },
+  "mathrsfs": {
+    "archive": "jknapltx",
+    "from": "texlive-2024-final",
+    "files": [
+      "latin1jk.def",
+      "latin2jk.def",
+      "latin3jk.def",
+      "mathrsfs.sty",
+      "ursfs.fd",
+      "ustmary.fd"
+    ]
+  },
+  "mhchem": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "chemgreek.sty",
+      "mhchem.sty"
+    ],
+    "with": [
+      "chemgreek"
+    ],
+    "needs": [
+      "amsmath",
+      "amstext",
+      "graphics",
+      "pgf",
+      "tikz"
+    ]
+  },
+  "minifp": {
+    "archive": "minifp",
+    "from": "texlive-2024-final",
+    "files": [
+      "mfpextra.tex",
+      "minifp.sty"
+    ]
+  },
+  "multido": {
+    "archive": "multido",
+    "from": "texlive-2024-final",
+    "files": [
+      "multido.sty",
+      "multido.tex"
+    ]
+  },
+  "multirow": {
+    "archive": "multirow",
+    "from": "texlive-2024-final",
+    "files": [
+      "multirow.sty"
+    ]
+  },
+  "mwe": {
+    "archive": "mwe",
+    "from": "texlive-2024-final",
+    "files": [
+      "blindtext.sty",
+      "cicero.ltd.tex",
+      "example-grid-100x100bp.eps",
+      "example-grid-100x100bp.jpg",
+      "example-grid-100x100bp.pdf",
+      "example-grid-100x100bp.png",
+      "example-grid-100x100bp.tex",
+      "example-grid-100x100pt.eps",
+      "example-grid-100x100pt.jpg",
+      "example-grid-100x100pt.pdf",
+      "example-grid-100x100pt.png",
+      "example-grid-100x100pt.tex",
+      "example-image-10x16.eps",
+      "example-image-10x16.jpg",
+      "example-image-10x16.pdf",
+      "example-image-10x16.png",
+      "example-image-10x16.tex",
+      "example-image-16x10.eps",
+      "example-image-16x10.jpg",
+      "example-image-16x10.pdf",
+      "example-image-16x10.png",
+      "example-image-16x10.tex",
+      "example-image-16x9.eps",
+      "example-image-16x9.jpg",
+      "example-image-16x9.pdf",
+      "example-image-16x9.png",
+      "example-image-16x9.tex",
+      "example-image-1x1.eps",
+      "example-image-1x1.jpg",
+      "example-image-1x1.pdf",
+      "example-image-1x1.png",
+      "example-image-1x1.tex",
+      "example-image-4x3.eps",
+      "example-image-4x3.jpg",
+      "example-image-4x3.pdf",
+      "example-image-4x3.png",
+      "example-image-4x3.tex",
+      "example-image-9x16.eps",
+      "example-image-9x16.jpg",
+      "example-image-9x16.pdf",
+      "example-image-9x16.png",
+      "example-image-9x16.tex",
+      "example-image-a.eps",
+      "example-image-a.jpg",
+      "example-image-a.pdf",
+      "example-image-a.png",
+      "example-image-a.tex",
+      "example-image-a3-landscape.pdf",
+      "example-image-a3-landscape.tex",
+      "example-image-a3.pdf",
+      "example-image-a3.tex",
+      "example-image-a4-landscape.pdf",
+      "example-image-a4-landscape.tex",
+      "example-image-a4-numbered.pdf",
+      "example-image-a4-numbered.tex",
+      "example-image-a4.pdf",
+      "example-image-a4.tex",
+      "example-image-a5-landscape.pdf",
+      "example-image-a5-landscape.tex",
+      "example-image-a5.pdf",
+      "example-image-a5.tex",
+      "example-image-b.eps",
+      "example-image-b.jpg",
+      "example-image-b.pdf",
+      "example-image-b.png",
+      "example-image-b.tex",
+      "example-image-c.eps",
+      "example-image-c.jpg",
+      "example-image-c.pdf",
+      "example-image-c.png",
+      "example-image-c.tex",
+      "example-image-empty.pdf",
+      "example-image-empty.tex",
+      "example-image-golden-upright.pdf",
+      "example-image-golden-upright.tex",
+      "example-image-golden.pdf",
+      "example-image-golden.tex",
+      "example-image-letter-landscape.pdf",
+      "example-image-letter-landscape.tex",
+      "example-image-letter-numbered.pdf",
+      "example-image-letter-numbered.tex",
+      "example-image-letter.pdf",
+      "example-image-letter.tex",
+      "example-image-plain.pdf",
+      "example-image-plain.tex",
+      "example-image.eps",
+      "example-image.jpg",
+      "example-image.pdf",
+      "example-image.png",
+      "example-image.tex",
+      "example-movie.pdf",
+      "example-movie.tex",
+      "lipsum-cs.ltd.tex",
+      "lipsum.ltd.tex",
+      "lipsum.sty",
+      "mwe.sty"
+    ],
+    "with": [
+      "blindtext",
+      "lipsum"
+    ],
+    "needs": [
+      "babel",
+      "graphicx"
+    ]
+  },
+  "needspace": {
+    "archive": "needspace",
+    "from": "texlive-2024-final",
+    "files": [
+      "needspace.sty"
+    ]
+  },
+  "nextpage": {
+    "archive": "nextpage",
+    "from": "texlive-2024-final",
+    "files": [
+      "nextpage.sty"
+    ]
+  },
+  "nicefrac": {
+    "archive": "units",
+    "from": "texlive-2024-final",
+    "files": [
+      "nicefrac.sty"
+    ]
+  },
+  "overcite": {
+    "archive": "cite",
+    "from": "texlive-2024-final",
+    "files": [
+      "cite.sty",
+      "overcite.sty"
+    ]
+  },
+  "paralist": {
+    "archive": "paralist",
+    "from": "texlive-2024-final",
+    "files": [
+      "paralist.sty"
+    ]
+  },
+  "parboxx": {
+    "archive": "jknapltx",
+    "from": "texlive-2024-final",
+    "files": [
+      "latin1jk.def",
+      "latin2jk.def",
+      "latin3jk.def",
+      "parboxx.sty",
+      "ursfs.fd",
+      "ustmary.fd"
+    ]
+  },
+  "parseargs": {
+    "archive": "thmtools",
+    "from": "texlive-2024-final",
+    "files": [
+      "parseargs.sty"
+    ]
+  },
+  "parskip": {
+    "archive": "parskip",
+    "from": "texlive-2024-final",
+    "files": [
+      "parskip-2001-04-09.sty",
+      "parskip.sty"
+    ],
+    "needs": [
+      "etoolbox",
+      "kvoptions"
+    ]
+  },
+  "parskip-2001-04-09": {
+    "archive": "parskip",
+    "from": "texlive-2024-final",
+    "files": [
+      "parskip-2001-04-09.sty"
+    ]
+  },
+  "pdflscape": {
+    "archive": "pdflscape",
+    "from": "texlive-2024-final",
+    "files": [
+      "pdflscape-nometadata.sty",
+      "pdflscape.sty"
+    ],
+    "needs": [
+      "lscape"
+    ]
+  },
+  "pdflscape-nometadata": {
+    "archive": "pdflscape",
+    "from": "texlive-2024-final",
+    "files": [
+      "pdflscape-nometadata.sty"
+    ],
+    "needs": [
+      "lscape"
+    ]
+  },
+  "perpage": {
+    "archive": "bigfoot",
+    "from": "texlive-2024-final",
+    "files": [
+      "perpage.sty"
+    ]
+  },
+  "physics": {
+    "archive": "physics",
+    "from": "texlive-2024-final",
+    "files": [
+      "physics.sty"
+    ],
+    "needs": [
+      "amsmath"
+    ]
+  },
+  "pict2e": {
+    "archive": "pict2e",
+    "from": "texlive-2024-final",
+    "files": [
+      "p2e-dvipdfm.def",
+      "p2e-dvipdfmx.def",
+      "p2e-dvips.def",
+      "p2e-luatex.def",
+      "p2e-pctex32.def",
+      "p2e-pctexps.def",
+      "p2e-pdftex.def",
+      "p2e-textures.def",
+      "p2e-vtex.def",
+      "p2e-xetex.def",
+      "pict2e.cfg",
+      "pict2e.sty"
+    ],
+    "needs": [
+      "trig"
+    ]
+  },
+  "placeins": {
+    "archive": "placeins",
+    "from": "texlive-2024-final",
+    "files": [
+      "placeins.sty"
+    ]
+  },
+  "preview": {
+    "archive": "preview",
+    "from": "texlive-2024-final",
+    "files": [
+      "prauctex.cfg",
+      "prauctex.def",
+      "prcounters.def",
+      "preview.sty",
+      "prfootnotes.def",
+      "prlyx.def",
+      "prshowbox.def",
+      "prshowlabels.def",
+      "prtightpage.def",
+      "prtracingall.def"
+    ],
+    "needs": [
+      "luatex85"
+    ]
+  },
+  "pst-calculate": {
+    "archive": "pst-calculate",
+    "from": "texlive-2024-final",
+    "files": [
+      "keyval.tex",
+      "pst-calculate.sty",
+      "pst-xkey.tex",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ],
+    "with": [
+      "xkeyval"
+    ],
+    "needs": [
+      "siunitx"
+    ]
+  },
+  "pst-key": {
+    "archive": "pstricks",
+    "from": "texlive-2024-final",
+    "files": [
+      "README.cfg",
+      "distiller.cfg",
+      "dvips.cfg",
+      "dvipsone.cfg",
+      "gastex.cfg",
+      "keyval.tex",
+      "pst-calculate.sty",
+      "pst-doc.cls",
+      "pst-fp.tex",
+      "pst-key.sty",
+      "pst-key.tex",
+      "pst-xkey.tex",
+      "pstricks-arrows.tex",
+      "pstricks-color.tex",
+      "pstricks-dots.tex",
+      "pstricks-tex.def",
+      "pstricks-xetex.def",
+      "pstricks.sty",
+      "pstricks.tex",
+      "pstricks97.tex",
+      "textures.cfg",
+      "vtex.cfg",
+      "xdvipdfmx.cfg",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ],
+    "with": [
+      "pst-calculate",
+      "xkeyval"
+    ],
+    "needs": [
+      "pgffor",
+      "siunitx"
+    ]
+  },
+  "pst-xkey": {
+    "archive": "xkeyval",
+    "from": "texlive-2024-final",
+    "files": [
+      "keyval.tex",
+      "pst-xkey.sty",
+      "pst-xkey.tex",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ]
+  },
+  "pstcol": {
+    "archive": "pstricks",
+    "from": "texlive-2024-final",
+    "files": [
+      "README.cfg",
+      "distiller.cfg",
+      "dvips.cfg",
+      "dvipsone.cfg",
+      "gastex.cfg",
+      "keyval.tex",
+      "pst-calculate.sty",
+      "pst-doc.cls",
+      "pst-fp.tex",
+      "pst-key.tex",
+      "pst-xkey.tex",
+      "pstcol.sty",
+      "pstricks-arrows.tex",
+      "pstricks-color.tex",
+      "pstricks-dots.tex",
+      "pstricks-tex.def",
+      "pstricks-xetex.def",
+      "pstricks.sty",
+      "pstricks.tex",
+      "pstricks97.tex",
+      "textures.cfg",
+      "vtex.cfg",
+      "xdvipdfmx.cfg",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ],
+    "with": [
+      "pst-calculate",
+      "xkeyval"
+    ],
+    "needs": [
+      "pgffor",
+      "siunitx"
+    ]
+  },
+  "pstricks": {
+    "archive": "pstricks",
+    "from": "texlive-2024-final",
+    "files": [
+      "README.cfg",
+      "distiller.cfg",
+      "dvips.cfg",
+      "dvipsone.cfg",
+      "gastex.cfg",
+      "keyval.tex",
+      "pst-calculate.sty",
+      "pst-doc.cls",
+      "pst-fp.tex",
+      "pst-key.tex",
+      "pst-xkey.tex",
+      "pstricks-arrows.tex",
+      "pstricks-color.tex",
+      "pstricks-dots.tex",
+      "pstricks-tex.def",
+      "pstricks-xetex.def",
+      "pstricks.sty",
+      "pstricks.tex",
+      "pstricks97.tex",
+      "textures.cfg",
+      "vtex.cfg",
+      "xdvipdfmx.cfg",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ],
+    "with": [
+      "pst-calculate",
+      "xkeyval"
+    ],
+    "needs": [
+      "pgffor",
+      "siunitx"
+    ]
+  },
+  "ragged2e": {
+    "archive": "ragged2e",
+    "from": "texlive-2024-final",
+    "files": [
+      "everysel-2011-10-28.sty",
+      "everysel.sty",
+      "footmisc-2011-06-06.sty",
+      "footmisc.sty",
+      "perpage.sty",
+      "ragged2e.sty"
+    ],
+    "with": [
+      "bigfoot",
+      "everysel",
+      "footmisc"
+    ]
+  },
+  "relsize": {
+    "archive": "relsize",
+    "from": "texlive-2024-final",
+    "files": [
+      "relsize.sty",
+      "type1cm.sty"
+    ],
+    "with": [
+      "type1cm"
+    ]
+  },
+  "rsphrase": {
+    "archive": "mhchem",
+    "from": "texlive-2024-final",
+    "files": [
+      "rsphrase.sty"
+    ]
+  },
+  "sans": {
+    "archive": "jknapltx",
+    "from": "texlive-2024-final",
+    "files": [
+      "latin1jk.def",
+      "latin2jk.def",
+      "latin3jk.def",
+      "sans.sty",
+      "ursfs.fd",
+      "ustmary.fd"
+    ]
+  },
+  "sectsty": {
+    "archive": "sectsty",
+    "from": "texlive-2024-final",
+    "files": [
+      "sectsty.sty"
+    ]
+  },
+  "semtrans": {
+    "archive": "jknapltx",
+    "from": "texlive-2024-final",
+    "files": [
+      "latin1jk.def",
+      "latin2jk.def",
+      "latin3jk.def",
+      "semtrans.sty",
+      "ursfs.fd",
+      "ustmary.fd"
+    ],
+    "needs": [
+      "graphicx"
+    ]
+  },
+  "sgmlcmpt": {
+    "archive": "jknapltx",
+    "from": "texlive-2024-final",
+    "files": [
+      "latin1jk.def",
+      "latin2jk.def",
+      "latin3jk.def",
+      "sgmlcmpt.sty",
+      "ursfs.fd",
+      "ustmary.fd"
+    ]
+  },
+  "sidecap": {
+    "archive": "sidecap",
+    "from": "texlive-2024-final",
+    "files": [
+      "everysel-2011-10-28.sty",
+      "everysel.sty",
+      "footmisc-2011-06-06.sty",
+      "footmisc.sty",
+      "perpage.sty",
+      "ragged2e.sty",
+      "sidecap.sty"
+    ],
+    "with": [
+      "bigfoot",
+      "everysel",
+      "footmisc",
+      "ragged2e"
+    ]
+  },
+  "simplekv": {
+    "archive": "simplekv",
+    "from": "texlive-2024-final",
+    "files": [
+      "simplekv.sty",
+      "simplekv.tex"
+    ]
+  },
+  "smartmn": {
+    "archive": "jknapltx",
+    "from": "texlive-2024-final",
+    "files": [
+      "latin1jk.def",
+      "latin2jk.def",
+      "latin3jk.def",
+      "smartmn.sty",
+      "ursfs.fd",
+      "ustmary.fd"
+    ]
+  },
+  "standalone": {
+    "archive": "standalone",
+    "from": "texlive-2024-final",
+    "files": [
+      "README.cfg",
+      "adjcalc.sty",
+      "adjustbox.sty",
+      "collectbox.sty",
+      "currfile-abspath.sty",
+      "currfile.sty",
+      "distiller.cfg",
+      "dvips.cfg",
+      "dvipsone.cfg",
+      "filemod-expmin.sty",
+      "filemod-expmin.tex",
+      "filemod.tex",
+      "gastex.cfg",
+      "gincltex.sty",
+      "ifoddpage.sty",
+      "keyval.tex",
+      "multido.sty",
+      "multido.tex",
+      "prauctex.cfg",
+      "prauctex.def",
+      "prcounters.def",
+      "preview.sty",
+      "prfootnotes.def",
+      "prlyx.def",
+      "prshowbox.def",
+      "prshowlabels.def",
+      "prtightpage.def",
+      "prtracingall.def",
+      "pst-calculate.sty",
+      "pst-doc.cls",
+      "pst-fp.tex",
+      "pst-key.tex",
+      "pst-xkey.tex",
+      "pstricks-arrows.tex",
+      "pstricks-color.tex",
+      "pstricks-dots.tex",
+      "pstricks-tex.def",
+      "pstricks-xetex.def",
+      "pstricks.sty",
+      "pstricks.tex",
+      "pstricks97.tex",
+      "standalone.cfg",
+      "standalone.cls",
+      "standalone.sty",
+      "standalone.tex",
+      "svn-prov.sty",
+      "tc-dvips.def",
+      "tc-luatex.def",
+      "tc-pdftex.def",
+      "tc-pgf.def",
+      "tc-xetex.def",
+      "textures.cfg",
+      "trimclip.sty",
+      "varwidth.sty",
+      "vtex.cfg",
+      "xdvipdfmx.cfg",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ],
+    "with": [
+      "adjustbox",
+      "collectbox",
+      "currfile",
+      "filemod",
+      "gincltex",
+      "ifoddpage",
+      "multido",
+      "preview",
+      "pst-calculate",
+      "pstricks",
+      "svn-prov",
+      "varwidth",
+      "xkeyval"
+    ],
+    "needs": [
+      "filehook",
+      "graphicx",
+      "kvoptions",
+      "luatex85",
+      "pdftexcmds",
+      "pgf",
+      "pgffor",
+      "siunitx",
+      "tikz"
+    ]
+  },
+  "subfig": {
+    "archive": "subfig",
+    "from": "texlive-2024-final",
+    "files": [
+      "altsf.cfg",
+      "subfig.sty"
+    ],
+    "needs": [
+      "caption",
+      "caption3",
+      "keyval"
+    ]
+  },
+  "subfiles": {
+    "archive": "subfiles",
+    "from": "texlive-2024-final",
+    "files": [
+      "import.sty",
+      "subfiles.cls",
+      "subfiles.sty",
+      "xpatch.sty"
+    ],
+    "with": [
+      "import",
+      "xpatch"
+    ],
+    "needs": [
+      "etoolbox"
+    ]
+  },
+  "sublabel": {
+    "archive": "preprint",
+    "from": "texlive-2024-final",
+    "files": [
+      "sublabel.sty"
+    ]
+  },
+  "suffix": {
+    "archive": "bigfoot",
+    "from": "texlive-2024-final",
+    "files": [
+      "suffix.sty"
+    ]
+  },
+  "svn-prov": {
+    "archive": "svn-prov",
+    "from": "texlive-2024-final",
+    "files": [
+      "svn-prov.sty"
+    ]
+  },
+  "tabu": {
+    "archive": "tabu",
+    "from": "texlive-2024-final",
+    "files": [
+      "linegoal.sty",
+      "makerobust.sty",
+      "tabu.sty",
+      "varwidth.sty",
+      "zref-base.sty",
+      "zref-savepos.sty",
+      "zref.sty"
+    ],
+    "with": [
+      "linegoal",
+      "makerobust",
+      "varwidth",
+      "zref"
+    ],
+    "needs": [
+      "auxhook",
+      "etex",
+      "etexcmds",
+      "infwarerr",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "tccompat": {
+    "archive": "jknapltx",
+    "from": "texlive-2024-final",
+    "files": [
+      "latin1jk.def",
+      "latin2jk.def",
+      "latin3jk.def",
+      "tccompat.sty",
+      "ursfs.fd",
+      "ustmary.fd"
+    ]
+  },
+  "tensor": {
+    "archive": "tensor",
+    "from": "texlive-2024-final",
+    "files": [
+      "tensor.sty"
+    ]
+  },
+  "thm-amsthm": {
+    "archive": "thmtools",
+    "from": "texlive-2024-final",
+    "files": [
+      "thm-amsthm.sty"
+    ]
+  },
+  "thm-autoref": {
+    "archive": "thmtools",
+    "from": "texlive-2024-final",
+    "files": [
+      "aliasctr.sty",
+      "parseargs.sty",
+      "thm-autoref.sty",
+      "thm-patch.sty"
+    ],
+    "needs": [
+      "keyval",
+      "remreset"
+    ]
+  },
+  "thm-beamer": {
+    "archive": "thmtools",
+    "from": "texlive-2024-final",
+    "files": [
+      "thm-beamer.sty"
+    ]
+  },
+  "thm-kv": {
+    "archive": "thmtools",
+    "from": "texlive-2024-final",
+    "files": [
+      "parseargs.sty",
+      "thm-kv.sty",
+      "thm-patch.sty",
+      "unique.sty"
+    ],
+    "needs": [
+      "etex",
+      "keyval",
+      "kvsetkeys"
+    ]
+  },
+  "thm-listof": {
+    "archive": "thmtools",
+    "from": "texlive-2024-final",
+    "files": [
+      "parseargs.sty",
+      "thm-listof.sty",
+      "thm-patch.sty"
+    ],
+    "needs": [
+      "keyval",
+      "kvsetkeys"
+    ]
+  },
+  "thm-llncs": {
+    "archive": "thmtools",
+    "from": "texlive-2024-final",
+    "files": [
+      "thm-llncs.sty"
+    ]
+  },
+  "thm-ntheorem": {
+    "archive": "thmtools",
+    "from": "texlive-2024-final",
+    "files": [
+      "thm-ntheorem.sty"
+    ]
+  },
+  "thm-patch": {
+    "archive": "thmtools",
+    "from": "texlive-2024-final",
+    "files": [
+      "parseargs.sty",
+      "thm-patch.sty"
+    ]
+  },
+  "thm-restate": {
+    "archive": "thmtools",
+    "from": "texlive-2024-final",
+    "files": [
+      "aliasctr.sty",
+      "parseargs.sty",
+      "thm-amsthm.sty",
+      "thm-autoref.sty",
+      "thm-beamer.sty",
+      "thm-kv.sty",
+      "thm-listof.sty",
+      "thm-llncs.sty",
+      "thm-ntheorem.sty",
+      "thm-patch.sty",
+      "thm-restate.sty",
+      "thmtools.sty",
+      "unique.sty"
+    ],
+    "needs": [
+      "etex",
+      "keyval",
+      "kvsetkeys",
+      "remreset"
+    ]
+  },
+  "thmdef-mdframed": {
+    "archive": "thmtools",
+    "from": "texlive-2024-final",
+    "files": [
+      "parseargs.sty",
+      "thm-patch.sty",
+      "thmdef-mdframed.sty"
+    ],
+    "needs": [
+      "mdframed"
+    ]
+  },
+  "thmtools": {
+    "archive": "thmtools",
+    "from": "texlive-2024-final",
+    "files": [
+      "aliasctr.sty",
+      "parseargs.sty",
+      "thm-amsthm.sty",
+      "thm-autoref.sty",
+      "thm-beamer.sty",
+      "thm-kv.sty",
+      "thm-listof.sty",
+      "thm-llncs.sty",
+      "thm-ntheorem.sty",
+      "thm-patch.sty",
+      "thm-restate.sty",
+      "thmtools.sty",
+      "unique.sty"
+    ],
+    "needs": [
+      "etex",
+      "keyval",
+      "kvsetkeys",
+      "remreset"
+    ]
+  },
+  "threeparttable": {
+    "archive": "threeparttable",
+    "from": "texlive-2024-final",
+    "files": [
+      "threeparttable.sty"
+    ]
+  },
+  "tikz-cd": {
+    "archive": "tikz-cd",
+    "from": "texlive-2024-final",
+    "files": [
+      "tikz-cd.sty",
+      "tikzlibrarycd.code.tex"
+    ],
+    "needs": [
+      "tikz"
+    ]
+  },
+  "titleps": {
+    "archive": "titlesec",
+    "from": "texlive-2024-final",
+    "files": [
+      "titleps.sty"
+    ],
+    "needs": [
+      "etex"
+    ]
+  },
+  "titlesec": {
+    "archive": "titlesec",
+    "from": "texlive-2024-final",
+    "files": [
+      "titleps.sty",
+      "titlesec.sty"
+    ],
+    "needs": [
+      "etex",
+      "keyval"
+    ]
+  },
+  "titletoc": {
+    "archive": "titlesec",
+    "from": "texlive-2024-final",
+    "files": [
+      "titletoc.sty"
+    ]
+  },
+  "titling": {
+    "archive": "titling",
+    "from": "texlive-2024-final",
+    "files": [
+      "titling.sty"
+    ]
+  },
+  "tocbibind": {
+    "archive": "tocbibind",
+    "from": "texlive-2024-final",
+    "files": [
+      "tocbibind.sty"
+    ]
+  },
+  "tocloft": {
+    "archive": "tocloft",
+    "from": "texlive-2024-final",
+    "files": [
+      "tocloft.sty"
+    ]
+  },
+  "todonotes": {
+    "archive": "todonotes",
+    "from": "texlive-2024-final",
+    "files": [
+      "keyval.tex",
+      "pst-xkey.tex",
+      "todonotes.sty",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ],
+    "with": [
+      "xkeyval"
+    ],
+    "needs": [
+      "tikz",
+      "xcolor"
+    ]
+  },
+  "trimclip": {
+    "archive": "adjustbox",
+    "from": "texlive-2024-final",
+    "files": [
+      "adjcalc.sty",
+      "collectbox.sty",
+      "keyval.tex",
+      "pst-xkey.tex",
+      "tc-dvips.def",
+      "tc-luatex.def",
+      "tc-pdftex.def",
+      "tc-pgf.def",
+      "tc-xetex.def",
+      "trimclip.sty",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ],
+    "with": [
+      "collectbox",
+      "xkeyval"
+    ],
+    "needs": [
+      "graphicx",
+      "pgf"
+    ]
+  },
+  "type1cm": {
+    "archive": "type1cm",
+    "from": "texlive-2024-final",
+    "files": [
+      "type1cm.sty"
+    ]
+  },
+  "unique": {
+    "archive": "thmtools",
+    "from": "texlive-2024-final",
+    "files": [
+      "unique.sty"
+    ]
+  },
+  "units": {
+    "archive": "units",
+    "from": "texlive-2024-final",
+    "files": [
+      "nicefrac.sty",
+      "units.sty"
+    ]
+  },
+  "upgreek": {
+    "archive": "was",
+    "from": "texlive-2024-final",
+    "files": [
+      "upgreek.sty"
+    ]
+  },
+  "varwidth": {
+    "archive": "varwidth",
+    "from": "texlive-2024-final",
+    "files": [
+      "varwidth.sty"
+    ]
+  },
+  "wrapfig": {
+    "archive": "wrapfig",
+    "from": "texlive-2024-final",
+    "files": [
+      "wrapfig.sty"
+    ]
+  },
+  "xkeyval": {
+    "archive": "xkeyval",
+    "from": "texlive-2024-final",
+    "files": [
+      "keyval.tex",
+      "pst-xkey.tex",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ]
+  },
+  "xkvltxp": {
+    "archive": "xkeyval",
+    "from": "texlive-2024-final",
+    "files": [
+      "keyval.tex",
+      "pst-xkey.tex",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex"
+    ]
+  },
+  "xkvview": {
+    "archive": "xkeyval",
+    "from": "texlive-2024-final",
+    "files": [
+      "keyval.tex",
+      "pst-xkey.tex",
+      "xkeyval.sty",
+      "xkeyval.tex",
+      "xkvltxp.sty",
+      "xkvtxhdr.tex",
+      "xkvutils.tex",
+      "xkvview.sty"
+    ],
+    "needs": [
+      "longtable"
+    ]
+  },
+  "xltabular": {
+    "archive": "xltabular",
+    "from": "texlive-2024-final",
+    "files": [
+      "ltablex.sty",
+      "xltabular.sty"
+    ],
+    "with": [
+      "ltablex"
+    ],
+    "needs": [
+      "etoolbox",
+      "longtable",
+      "tabularx"
+    ]
+  },
+  "xpatch": {
+    "archive": "xpatch",
+    "from": "texlive-2024-final",
+    "files": [
+      "xpatch.sty"
+    ],
+    "needs": [
+      "etoolbox"
+    ]
+  },
+  "xstring": {
+    "archive": "xstring",
+    "from": "texlive-2024-final",
+    "files": [
+      "xstring.sty",
+      "xstring.tex"
+    ]
+  },
+  "xurl": {
+    "archive": "xurl",
+    "from": "texlive-2024-final",
+    "files": [
+      "xurl.sty"
+    ],
+    "needs": [
+      "url"
+    ]
+  },
+  "young": {
+    "archive": "jknapltx",
+    "from": "texlive-2024-final",
+    "files": [
+      "latin1jk.def",
+      "latin2jk.def",
+      "latin3jk.def",
+      "ursfs.fd",
+      "ustmary.fd",
+      "young.sty"
+    ]
+  },
+  "zref": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-base.sty",
+      "zref.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "auxhook",
+      "etexcmds",
+      "infwarerr",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "zref-abspage": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-abspage.sty",
+      "zref-base.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "auxhook",
+      "etexcmds",
+      "infwarerr",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "zref-abspos": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-abspage.sty",
+      "zref-abspos.sty",
+      "zref-base.sty",
+      "zref-pagelayout.sty",
+      "zref-savepos.sty",
+      "zref-thepage.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "atbegshi",
+      "auxhook",
+      "etexcmds",
+      "infwarerr",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "zref-base": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-base.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "auxhook",
+      "etexcmds",
+      "infwarerr",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "zref-counter": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-base.sty",
+      "zref-counter.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "auxhook",
+      "etexcmds",
+      "infwarerr",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "zref-dotfill": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-base.sty",
+      "zref-dotfill.sty",
+      "zref-savepos.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "auxhook",
+      "etexcmds",
+      "infwarerr",
+      "keyval",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "zref-env": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-base.sty",
+      "zref-env.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "auxhook",
+      "etexcmds",
+      "infwarerr",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "zref-hyperref": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-base.sty",
+      "zref-hyperref.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "auxhook",
+      "etexcmds",
+      "infwarerr",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "zref-lastpage": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-abspage.sty",
+      "zref-base.sty",
+      "zref-lastpage.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "auxhook",
+      "etexcmds",
+      "infwarerr",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "zref-marks": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-base.sty",
+      "zref-marks.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "auxhook",
+      "etexcmds",
+      "infwarerr",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "zref-nextpage": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-abspage.sty",
+      "zref-base.sty",
+      "zref-lastpage.sty",
+      "zref-nextpage.sty",
+      "zref-thepage.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "atbegshi",
+      "auxhook",
+      "etexcmds",
+      "infwarerr",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds",
+      "uniquecounter"
+    ]
+  },
+  "zref-pageattr": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-abspage.sty",
+      "zref-base.sty",
+      "zref-lastpage.sty",
+      "zref-pageattr.sty",
+      "zref-thepage.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "atbegshi",
+      "auxhook",
+      "etexcmds",
+      "infwarerr",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "zref-pagelayout": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-abspage.sty",
+      "zref-base.sty",
+      "zref-pagelayout.sty",
+      "zref-thepage.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "atbegshi",
+      "auxhook",
+      "etexcmds",
+      "infwarerr",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "zref-perpage": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-abspage.sty",
+      "zref-base.sty",
+      "zref-perpage.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "auxhook",
+      "etexcmds",
+      "infwarerr",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "zref-runs": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "zref-runs.sty"
+    ]
+  },
+  "zref-savepos": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-base.sty",
+      "zref-savepos.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "auxhook",
+      "etexcmds",
+      "infwarerr",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "zref-thepage": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-abspage.sty",
+      "zref-base.sty",
+      "zref-thepage.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "atbegshi",
+      "auxhook",
+      "etexcmds",
+      "infwarerr",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "zref-titleref": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-base.sty",
+      "zref-titleref.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "auxhook",
+      "etexcmds",
+      "gettitlestring",
+      "infwarerr",
+      "keyval",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "zref-totpages": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-abspage.sty",
+      "zref-base.sty",
+      "zref-lastpage.sty",
+      "zref-totpages.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "auxhook",
+      "etexcmds",
+      "infwarerr",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "zref-user": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-base.sty",
+      "zref-user.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "auxhook",
+      "etexcmds",
+      "infwarerr",
+      "kvdefinekeys",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  },
+  "zref-xr": {
+    "archive": "zref",
+    "from": "texlive-2024-final",
+    "files": [
+      "makerobust.sty",
+      "zref-base.sty",
+      "zref-xr.sty"
+    ],
+    "with": [
+      "makerobust"
+    ],
+    "needs": [
+      "auxhook",
+      "etexcmds",
+      "infwarerr",
+      "keyval",
+      "kvdefinekeys",
+      "kvoptions",
+      "kvsetkeys",
+      "ltxcmds",
+      "pdftexcmds"
+    ]
+  }
+}

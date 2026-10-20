@@ -1,0 +1,122 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb}
+\usepackage{amsthm}
+\usepackage{booktabs}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{hyperref}
+\hypersetup{pdftitle={Energy Decay in a Damped Harmonic Oscillator}, pdfauthor={Lena Ortiz}}
+
+\newtheorem{theorem}{Theorem}
+
+\title{Energy Decay in a Damped Harmonic Oscillator}
+\author{Lena Ortiz\\ \small Department of Physics, Northfield College}
+\date{October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We study the free motion of a mass on a linear spring subject to viscous damping. We derive the closed-form solution in the underdamped regime, show that the mechanical energy decays monotonically, and compare the analytic solution with two simple numerical schemes.
+\end{abstract}
+
+\section{Introduction}\label{sec:intro}
+
+The damped harmonic oscillator is the simplest model of a system that loses energy to its surroundings~\cite{knuth1984}. Its equation of motion is
+\begin{equation}
+  m\ddot{x}+c\dot{x}+kx=0,
+  \label{eq:motion}
+\end{equation}
+where $m>0$ is the mass, $c\geq0$ the damping coefficient and $k>0$ the spring constant. Dividing by $m$ and writing $\omega_{0}=\sqrt{\frac{k}{m}}$ and $\gamma=\frac{c}{(2m)}$ gives the \emph{standard form}
+\begin{equation}
+  \ddot{x}+2\gamma\dot{x}+\omega_{0}^{2}x=0.
+  \label{eq:std}
+\end{equation}
+
+\section{Solution}\label{sec:method}
+
+Substituting $x=e^{\lambda t}$ into ~\eqref{eq:std} gives the characteristic equation $\lambda^{2}+2\gamma\lambda+\omega_{0}^{2}=0$, whose roots are
+\begin{equation}
+  \lambda_{\pm}=-\gamma\pm\sqrt{\gamma^{2}-\omega_{0}^{2}}.
+\end{equation}
+The behaviour depends on the sign of the discriminant:
+\begin{equation*}
+  \text{regime}=\begin{cases}
+\text{underdamped,}\gamma<\omega_{0}, &  \\
+\text{critically damped,}\gamma=\omega_{0}, & 
+\end{cases}
+\end{equation*}
+In the underdamped case let $\omega_{d}=\sqrt{\omega_{0}^{2}-\gamma^{2}}$. With $x(0)=x_{0}$ and $\dot{x}(0)=0$ the solution is
+\begin{equation}
+  x(t)=x_{0}e^{-\gamma t}\left( \cos\omega_{d}t+\frac{\gamma}{\omega_{d}}\sin\omega_{d}t \right).
+\end{equation}
+Equivalently, with $y=(x,\dot{x})^{T}$, equation~\eqref{eq:std}becomes the first-order system
+\begin{equation}
+  \dot{y}=\begin{pmatrix}
+0 & 1 \\
+-\omega_{0}^{2} & -2\gamma
+\end{pmatrix}y.
+\end{equation}
+
+\begin{theorem}
+  The energy $E(t)=\frac{1}{2}m\dot{x}^{2}+\frac{1}{2}kx^{2}$ never increases. More precisely, $\frac{dE}{dt}=-c\dot{x}^{2}\leq0$.
+\end{theorem}
+
+\begin{proof}
+  Differentiate E and use~\eqref{eq:motion}::
+\end{proof}
+
+\begin{align}
+  \frac{dE}{dt} &=m\dot{x}\ddot{x}+kx\dot{x} \\
+   &=\dot{x}(m\ddot{x}+kx)=-c\dot{x}^{2}.
+\end{align}
+
+\section{Numerical check}\label{sec:results}
+
+We integrated~\eqref{eq:std}with $\omega_{0}=2,\gamma=0.2$ and the classical fourth-order Runge--Kutta method (RK4)~\cite{ref2}. Nørsett. . For each step size $h$ we:
+
+\begin{itemize}
+  \item Euler's error is large because the method \textbf{adds} energy at every step, which works against the physical damping.
+\end{itemize}
+
+\begin{figure}[htbp]
+  \centering
+  \fbox{\parbox[c][0.42\linewidth][c]{0.7\linewidth}{\centering\small\itshape Image not chosen yet}}
+  \caption{The exact solution for gamma = 0.2 and omega\_0 = 2 and its envelope.Caption text.}
+\end{figure}
+
+\begin{enumerate}
+  \item integrated from t = 0 to t = 10 with 10/h steps;
+  \item compared every step with the exact solution (4);
+  \item recorded the largest absolute difference.
+\end{enumerate}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Main results.}
+  \label{tab:results}
+  \begin{tabular}{lcc}
+    \toprule
+    \textbf{Quantity} & \textbf{Value} & \textbf{Uncertainty} \\
+    \midrule
+    a & 1.00 & 0.02 \\
+    b & 2.50 & 0.05 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Discussion}
+
+What the results mean, their limits, and what should come next.
+
+\section{Conclusion}
+
+The answer to the question in the introduction, in two or three sentences.
+
+\begin{thebibliography}{9}
+\bibitem{knuth1984} H. Goldstein, C. Poole and J. Safko, \emph{Classical Mechanics}, 3rd ed., Addison-Wesley, 2002.
+\bibitem{ref2} E. Hairer, S. P. Nørsett and G. Wanner, \emph{Solving Ordinary Differential Equations I}, 2nd ed., Springer, 1993.
+\end{thebibliography}
+
+\end{document}

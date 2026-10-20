@@ -26,6 +26,13 @@
   function list(items, ordered) {
     return { id: D.uid(), t: 'list', ordered: !!ordered, items: items.map(function (h) { return { html: h, level: 0 }; }) };
   }
+  function chart(kind, o) {
+    var b = D.blockFactory(kind === 'function' ? 'plot' : 'chart');
+    b.kind = kind;
+    if (o.from) b.data = '';
+    Object.keys(o).forEach(function (k) { b[k] = o[k]; });
+    return b;
+  }
   function thm(kind, title, html, label) { return { id: D.uid(), t: 'theorem', kind: kind, title: title || '', html: html, label: label || '' }; }
   function base(title, overrides) {
     var d = D.newDoc();
@@ -99,6 +106,10 @@
       id: 'lab', name: 'Lab report', icon: '⚗', desc: 'Theory, method, data table, error analysis',
       build: function () {
         var d = base('Lab Report: Measuring g with a Pendulum');
+        var labData = { id: D.uid(), t: 'table', rows: [['L (m)', 'T (s)', 'g (m/s²)'], ['0.25', '1.01', '9.67'], ['0.50', '1.42', '9.79'], ['0.75', '1.74', '9.78'],
+          ['1.00', '2.01', '9.77'], ['1.25', '2.24', '9.84']],
+          align: ['c', 'c', 'c'], header: true, booktabs: true, rules: false,
+          caption: 'Measured periods and the resulting values of g.', label: 'tab:data', placement: 'htbp' };
         d.meta.abstract = 'What was measured, how, the result with its uncertainty, and how it compares with the accepted value.';
         d.blocks = [
           sec('Introduction'),
@@ -113,15 +124,151 @@
                 'Repeat for five different lengths.'], true),
           { id: D.uid(), t: 'figure', src: '', filename: '', caption: 'The experimental setup.', width: 0.6, label: 'fig:setup', placement: 'htbp' },
           sec('Results'),
-          { id: D.uid(), t: 'table', rows: [['L (m)', 'T (s)', 'g (m/s²)'], ['0.50', '1.42', '9.79'], ['0.75', '1.74', '9.78'], ['1.00', '2.01', '9.77']],
-            align: ['c', 'c', 'c'], header: true, booktabs: true, rules: false,
-            caption: 'Measured periods and the resulting values of g.', label: 'tab:data', placement: 'htbp' },
+          labData,
+          chart('scatter', {
+            from: labData.id, xcol: 0, ycols: [1], xlabel: 'Length $L$ (m)', ylabel: 'Period $T$ (s)', xmin: '0', xmax: '1.4', ymin: '0',
+            fns: [{ expr: '2pi sqrt(x/9.81)', name: 'theory, $g = 9.81$' }],
+            caption: 'Measured periods against the length, with the curve ' + im('T = 2\\pi\\sqrt{L/g}') + '.', label: 'fig:periods'
+          }),
           para('The uncertainty follows from propagating the errors in ' + im('L') + ' and ' + im('T') + ':'),
           eq(['\\frac{\\delta g}{g} = \\sqrt{\\left(\\frac{\\delta L}{L}\\right)^2 + \\left(2\\frac{\\delta T}{T}\\right)^2}'], ['eq:error']),
           sec('Discussion'),
           para('Compare with the accepted value, and name the largest sources of error.'),
           sec('Conclusion'),
           para('The result, with its uncertainty, in one or two sentences.')
+        ];
+        return d;
+      }
+    },
+    {
+      id: 'data', name: 'Data report', icon: '📊', desc: 'A table of measurements, charts drawn from it, a fitted model',
+      build: function () {
+        var d = base('How Fast Does Coffee Cool?');
+        d.meta.abstract = 'The question, the measurements, the model fitted to them, and what it predicts.';
+        var cooling = { id: D.uid(), t: 'table',
+          rows: [['Time (min)', 'Mug (°C)', 'Thermos (°C)'], ['0', '90', '90'], ['2', '79', '88'], ['4', '70', '86'], ['6', '63', '85'],
+            ['8', '57', '83'], ['10', '52', '82'], ['15', '43', '78'], ['20', '36', '75']],
+          align: ['c', 'c', 'c'], header: true, booktabs: true, rules: false,
+          caption: 'Temperature of the coffee, read every few minutes.', label: 'tab:cooling', placement: 'htbp' };
+        var cost = { id: D.uid(), t: 'table',
+          rows: [['Cup', 'Price', 'Still hot after 1 h'], ['Paper', '0.10', '0'], ['Ceramic', '6', '1'], ['Steel', '18', '4'], ['Thermos', '25', '6']],
+          align: ['l', 'r', 'r'], header: true, booktabs: true, rules: false,
+          caption: 'Cups tested: price and hours the coffee stayed above 60 °C.', label: 'tab:cups', placement: 'htbp' };
+        d.blocks = [
+          sec('Question'),
+          para('What is being measured, and why it is interesting.'),
+          sec('Measurements'),
+          para('Two cups were filled at the same moment and their temperature read every few minutes (Table ' + ref('tab:cooling') + ').'),
+          cooling,
+          chart('scatter', {
+            from: cooling.id, xcol: 0, ycols: [1, 2], xlabel: 'Time $t$ (min)', ylabel: 'Temperature (°C)',
+            fns: [{ expr: '21 + 69e^(-0.075x)', name: 'model for the mug' }],
+            caption: 'Both cups, with the cooling law fitted to the mug.', label: 'fig:cooling'
+          }),
+          sec('Model'),
+          para('Newton’s law of cooling says the temperature difference to the room decays exponentially:'),
+          eq(['T(t) = T_{\\text{room}} + \\left(T_0 - T_{\\text{room}}\\right) e^{-kt}'], ['eq:cooling']),
+          para('With ' + im('T_{\\text{room}} = 21') + ' and ' + im('T_0 = 90') + ', the mug fits ' + im('k \\approx 0.075') +
+            ' per minute (Figure ' + ref('fig:cooling') + '). The curve in a chart is typed as a formula, ' +
+            'and the same formula goes into the LaTeX.'),
+          chart('function', {
+            fns: [{ expr: '69e^(-0.075x)', name: 'mug' }, { expr: '69e^(-0.009x)', name: 'thermos' }],
+            xmin: '0', xmax: '120', ymin: '0', axes: 'box', xlabel: 'Time $t$ (min)', ylabel: '$T - T_{\\text{room}}$ (°C)',
+            caption: 'What the model predicts over two hours.', label: 'fig:model'
+          }),
+          sec('Which cup?'),
+          cost,
+          chart('bar', { from: cost.id, xcol: 0, ycols: [2], ylabel: 'Hours above 60 °C', legend: false,
+            caption: 'Hours each cup kept the coffee hot.', label: 'fig:cups' }),
+          sec('Conclusion'),
+          para('The answer to the question, and how sure the data let you be.')
+        ];
+        return d;
+      }
+    },
+    {
+      id: 'gallery', name: 'Chart gallery', icon: '◔', desc: 'One of every chart: areas, log scales, bars, a histogram, a pie, polar and 3D',
+      build: function () {
+        var d = base('Every Kind of Chart');
+        d.meta.abstract = 'Each chart below is drawn on the page and written into the LaTeX as pgfplots or TikZ. ' +
+          'Click one to open it, change anything, and see the PDF follow.';
+        var chips = { id: D.uid(), t: 'table',
+          rows: [['Year', 'Chip', 'Transistors'], ['1971', 'Intel 4004', '2300'], ['1978', 'Intel 8086', '29000'], ['1985', 'Intel 386', '275000'],
+            ['1993', 'Pentium', '3100000'], ['2000', 'Pentium 4', '42000000'], ['2008', 'Core i7', '731000000'],
+            ['2016', 'Xeon E5', '7200000000'], ['2021', 'Apple M1 Max', '57000000000']],
+          align: ['c', 'l', 'r'], header: true, booktabs: true, rules: false,
+          caption: 'Transistors on one chip (approximate figures).', label: 'tab:chips', placement: 'htbp' };
+        d.blocks = [
+          sec('Areas under and between curves'),
+          para('The area between ' + im('y = x') + ' and ' + im('y = x^2') + ' is ' + im('\\int_0^1 (x - x^2)\\,dx = \\tfrac{1}{6}') +
+            '. A curve can be shaded down to the axis or up to another curve.'),
+          chart('function', {
+            fns: [{ expr: 'x', name: '$y = x$', fill: 'f1' }, { expr: 'x^2', name: '$y = x^2$', dash: 'dashed' }],
+            xmin: '0', xmax: '1', ymin: '0', ymax: '1', axes: 'left', xlabel: '$x$', ylabel: '$y$', width: 0.6, aspect: 0.8,
+            caption: 'The region between the two curves, shaded.', label: 'fig:area'
+          }),
+          sec('Series, integrals and limits'),
+          para('A formula is written as on the page, so it can be a sum to infinity: the Fourier series ' +
+            im('\\sum_{n=1}^{\\infty} \\frac{\\sin nx}{n}') + ' adds up to a sawtooth, and its first terms already show the shape. ' +
+            'Integrals and limits work the same way.'),
+          chart('function', {
+            fns: [{ m: M.parseTex('\\sum_{n=1}^{\\infty} \\frac{\\sin(nx)}{n}'), name: 'the whole series' },
+              { m: M.parseTex('\\sum_{n=1}^{4} \\frac{\\sin(nx)}{n}'), name: 'its first four terms', dash: 'dashed' }],
+            xmin: '-2pi', xmax: '2pi', axes: 'middle', xlabel: '$x$', ylabel: '$y$',
+            caption: 'A Fourier series and one of its partial sums.', label: 'fig:fourier'
+          }),
+          chart('function', {
+            fns: [{ m: M.parseTex('\\int_0^x e^{-t^2}\\,dt'), name: '' }],
+            xmin: '-3', xmax: '3', axes: 'middle', xlabel: '$x$', ylabel: '$y$', width: 0.6,
+            caption: 'The area under the bell curve up to ' + im('x') + ', computed point by point.', label: 'fig:erf'
+          }),
+          sec('A trendline'),
+          para('Give a series a trendline and the best straight line, parabola or exponential is fitted to it, with its equation and ' +
+            im('R^2') + ' ready to put in the text.'),
+          chart('scatter', {
+            data: 'Mass (kg)\tStretch (cm)\n0.1\t2.1\n0.2\t3.9\n0.3\t6.2\n0.4\t7.8\n0.5\t10.1\n0.6\t11.9',
+            style: { 1: { fit: 'linear', fitR2: true } }, xlabel: 'Mass $m$ (kg)', ylabel: 'Stretch $x$ (cm)', xmin: '0', ymin: '0',
+            caption: 'A spring obeys Hooke’s law: the stretch grows in proportion to the mass.', label: 'fig:spring'
+          }),
+          sec('A logarithmic scale'),
+          para('Numbers that grow by a factor each step lie on a straight line when the axis is logarithmic (Table ' + ref('tab:chips') + ').'),
+          chips,
+          chart('line', {
+            from: chips.id, xcol: 0, ycols: [2], ylog: true, xlabel: 'Year', ylabel: 'Transistors per chip', legend: false,
+            caption: 'Moore’s law: a doubling roughly every two years.', label: 'fig:moore'
+          }),
+          sec('Bars lying down'),
+          para('Long names read better beside bars than under them.'),
+          chart('bar', {
+            data: 'Subject\tStudents\nMathematics\t31\nPhysics\t24\nComputer science\t38\nBiology\t17\nHistory\t12',
+            horizontal: true, values: true, legend: false, ylabel: 'Students', width: 0.7,
+            caption: 'Favourite subject, out of 122 students.', label: 'fig:subjects'
+          }),
+          sec('A histogram'),
+          para('Heights are counted into bins; the curve is the normal distribution with the same mean and spread.'),
+          chart('hist', {
+            data: 'Height (cm)\n162\n171\n158\n180\n167\n174\n169\n177\n165\n172\n183\n160\n175\n168\n179\n170\n164\n173\n186\n166\n171\n176\n161\n169\n178\n174\n168\n163\n181\n172',
+            ycols: [0], normal: true, xlabel: 'Height (cm)', ylabel: 'Students',
+            caption: 'Heights of 30 students.', label: 'fig:heights'
+          }),
+          sec('A pie'),
+          chart('pie', {
+            data: 'Activity\tHours\nSleep\t8\nSchool\t7\nHomework\t3\nSport\t2\nMeals\t1.5\nOther\t2.5',
+            donut: true, width: 0.8, caption: 'A school day, hour by hour.', label: 'fig:day'
+          }),
+          sec('Polar curves'),
+          para('A rose ' + im('r = \\cos 3\\theta') + ' and a cardioid ' + im('r = 1 + \\cos\\theta') + ', on a grid in radians.'),
+          chart('polar', {
+            fns: [{ expr: '1 + cos θ', name: 'cardioid', fill: 'axis' }, { expr: 'cos(3θ)', name: 'rose' }],
+            angles: 'rad', width: 0.6, caption: 'Two curves in polar coordinates.', label: 'fig:polar'
+          }),
+          sec('A surface'),
+          para('The saddle ' + im('z = x^2 - y^2') + ' rises along one axis and falls along the other.'),
+          chart('surface', {
+            fns: [{ expr: 'x^2 - y^2', name: '' }], xmin: '-2', xmax: '2', ymin: '-2', ymax: '2', colorbar: true,
+            xlabel: '$x$', ylabel: '$y$', zlabel: '$z$', aspect: 0.75,
+            caption: 'A saddle surface.', label: 'fig:saddle'
+          })
         ];
         return d;
       }
