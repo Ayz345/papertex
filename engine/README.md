@@ -1,7 +1,7 @@
 # engine/
 
 The in-browser LaTeX compiler. Not needed to write or export `.tex` — only to
-press **Compile PDF**.
+press **Make PDF**.
 
 | file | what it is |
 |---|---|

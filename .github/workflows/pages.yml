@@ -1,0 +1,77 @@
+# Publishes the website to GitHub Pages on every push to main.
+#
+# One-time setup, in the repository's Settings → Pages: set "Source" to
+# "GitHub Actions". The site then lives at the address in SITE below; if it
+# moves (a custom domain, another repository name), change SITE to match —
+# canonical links, link previews and the sitemap are built from it.
+#
+# TeX Live (about 220 MB) is not in the repository. It is downloaded once
+# from cdn.siglum.org and kept in the Actions cache, so the published site
+# serves its own copy and does not depend on that CDN staying up.
+name: Publish the site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# one deployment at a time; a newer push waits for the running one
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  SITE: https://ayz345.github.io/papertex
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # none of the build scripts has dependencies, so there is no npm install
+      - name: Read LaTeX back in (tests)
+        run: npm run check:texread
+
+      - name: TeX Live from the cache
+        id: texlive
+        uses: actions/cache@v6
+        with:
+          path: engine/texlive
+          # change the key when tools/fetch-texlive.js points at a new TeX Live
+          key: texlive-tl2025-bundles-v0.1.0
+
+      - name: Download TeX Live
+        if: steps.texlive.outputs.cache-hit != 'true'
+        run: npm run fetch-texlive
+
+      - name: Build the site
+        run: npm run build:web -- --with-texlive --site="$SITE"
+
+      - name: Is it a launch build?
+        run: npm run check:launch
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

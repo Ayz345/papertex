@@ -1,74 +1,101 @@
 # PaperTeX
 
-A LaTeX editor with no LaTeX in it. You write on the page — headings, equations,
-figures, tables, citations — and the `.tex` source is generated from what you
-did. There is no compile step and no source pane to type into: the document
-model is the truth, LaTeX is the output.
+**You write on the page. It writes the LaTeX.**
 
-## Run it
+![A page with a typeset equation, and the LaTeX PaperTeX writes for it](img/og-card.png)
 
-Double-click **`start-papertex.cmd`**. It serves the folder and opens the page.
+A LaTeX editor with no LaTeX in it. You write on a page that looks like the
+finished PDF — headings, equations, figures, tables, charts, citations — and
+the `.tex` source is generated from what you did. The document model is the
+truth; LaTeX is the output. If you do know LaTeX, the pane beside the page is
+editable, and a `.tex` file or a whole Overleaf project opens back into a page
+you can edit.
 
-Opening `papertex.html` straight off disk also works for writing, exporting and
-printing — but **not for Compile PDF**. The compiler runs in a Web Worker, and
-no browser will start one on a `file://` page, whose origin is `null`. That is
-a browser rule with no workaround; serving the folder is the fix. A published
-site is served over https, so it never arises there.
+It runs entirely in the browser. There is no account and no server: documents
+stay in the browser's storage, and the PDF is typeset by TeX Live compiled to
+WebAssembly, on your own machine.
 
-## Desktop app
+**Use it:** <https://ayz345.github.io/papertex/> — nothing to install.
 
-```bash
-npm install
-npm run desktop
-```
+## Run it from this repository
 
-Electron, with a native menu, real Save dialogs and no browser restrictions.
-Worth having for three reasons the browser build cannot match:
-
-- **Compiling just works.** The window is served over an `app://` origin, not
-  `file://`, so the compiler's Web Worker starts normally.
-- **Export writes a folder.** One dialog puts the `.tex` and every figure side
-  by side, so `\includegraphics` resolves — no per-image downloads, no
-  extension allowlist, a real `.tex` rather than `.tex.txt`.
-- **It can work offline.** Run `npm run fetch-texlive` once (~220 MB) and the
-  app compiles with no network at all; it detects `engine/texlive/` and uses it
-  in preference to the CDN.
-
-`npm run dist` builds an installer with electron-builder (NSIS and portable on
-Windows, dmg on macOS, AppImage on Linux), using the PaperTeX icon in
-`desktop/`. electron-builder is not a dependency yet — install it once with
-`npm install --save-dev electron-builder`. If `engine/texlive/` is present it
-goes into the installer (about 220 MB more) and the installed app compiles
-fully offline. An unsigned Windows installer makes SmartScreen warn on first
-run; sign it before handing it out widely.
-
-To publish the web version, see [DEPLOY.md](DEPLOY.md): `npm run build:web`
-assembles a ready-to-upload `dist/web/`.
-
-The renderer gets no Node access: `contextIsolation` is on, `nodeIntegration`
-is off, and `desktop/preload.js` exposes exactly six operations — save, export,
-open, reveal, engine-assets and menu events. Nothing else crosses the bridge.
-
-To work on the source instead:
+Node or Python is enough; there is nothing to install first.
 
 ```bash
-python -m http.server 8777 --directory .
+git clone https://github.com/Ayz345/papertex.git
+cd papertex
+python -m http.server 8777
 ```
 
-then open `http://localhost:8777/` for the home page or
-`http://localhost:8777/app.html` for the editor, and run `node build.js` to
-regenerate the bundle.
+Then open <http://localhost:8777/> for the home page, or
+<http://localhost:8777/app.html> for the editor. On Windows, double-clicking
+**`start-papertex.cmd`** does the same and opens the single-file build,
+`papertex.html`.
 
-The site has three pages: `index.html` (home), `app.html` (the editor) and
-`about.html`. The home page reads saved documents and templates through
-`js/home.js` and links into the editor with `app.html#new=<template>` and
-`app.html#doc=<id>`.
+The folder has to be served. Opening `papertex.html` straight off disk works
+for writing, exporting and printing, but **not for Make PDF**: the compiler
+runs in a Web Worker, and no browser starts one on a `file://` page.
+
+**Make PDF in a clone** fetches the engine (a 29 MB wasm file and the TeX Live
+bundles a document needs) from `cdn.siglum.org` the first time, and the
+browser caches it. To compile with no network, download TeX Live once into
+`engine/texlive/` (about 220 MB, not kept in this repository); the editor
+finds it there and uses it instead:
+
+```bash
+npm run fetch-texlive
+```
+
+## Build and check
+
+None of these needs `npm install`:
+
+| command | what it does |
+|---|---|
+| `node build.js` | regenerates `papertex.html`, the editor as one self-contained file |
+| `npm run build:web` | assembles the website in `dist/web/` — see [DEPLOY.md](DEPLOY.md) |
+| `npm run check:texread` | reads PaperTeX's own LaTeX, a hand-written paper and an Overleaf project back in, and compares |
+| `npm run check:dist` | fails if `dist/web/` is older than its sources |
+| `npm run check:launch` | fails if `dist/web/` is not fit to go live |
+
+`npm install` is only for rebuilding the engine bundle (`npm run build:engine`,
+esbuild), redrawing the link-preview picture (`npm run og-image`) and the
+desktop shell below; the last two bring in Electron.
 
 `http://localhost:8777/tools/mathcheck.html` sets a list of formulas with
 PaperTeX beside KaTeX, in display and inline style; in its console,
 `compare('display')` and `compare('inline')` list every glyph whose position
 differs from KaTeX's by more than a few hundredths of an em. Run it after
 touching the math layout in `js/math.js`.
+
+[.github/workflows/pages.yml](.github/workflows/pages.yml) publishes the site
+to GitHub Pages on every push to `main`: it runs the checks, downloads TeX
+Live, builds with `--with-texlive` and uploads `dist/web/`.
+
+### Desktop shell
+
+`desktop/` holds an Electron shell from before PaperTeX became a website
+(`npm install`, then `npm run desktop`). It is not maintained or tested any
+more. The folder also holds the icon the site uses.
+
+## How it was built
+
+PaperTeX is Ayaz Büyükterzi's project: the idea, what it does and how it
+should feel to use. The code was co-authored with Claude, Anthropic's AI
+coding assistant, and the commit history says so on each commit.
+
+First-time use was tested in five rounds with AI agents standing in for new
+users, each given a writing task and no information about the editor. The
+method, the scores and everything that went wrong are in
+[usability-test-2026-10-04/](usability-test-2026-10-04/REPORT.md). Those
+testers are not people; a round with human users has not been done yet.
+
+## Pages and files
+
+The site has three pages: `index.html` (home), `app.html` (the editor) and
+`about.html`. The home page reads saved documents and templates through
+`js/home.js` and links into the editor with `app.html#new=<template>` and
+`app.html#doc=<id>`.
 
 ## How it works
 
@@ -78,6 +105,13 @@ touching the math layout in `js/math.js`.
 | `js/doc.js` | The document model (blocks) and the on-paper editor — numbering, block menus, inline formulas, tables, figures, lists. |
 | `js/latex.js` | Turns the model into a `.tex` file, collecting the packages it actually needs. |
 | `js/chart.js` | Function plots, charts of data, histograms, pies, polar plots and 3D surfaces: a formula parser (no `eval`), the SVG drawn on the page, and the pgfplots code for the `.tex`. Axis limits, ticks and the legend corner are decided here and written into both, so the PDF matches the page. |
+| `js/texread.js` | The other way round from `latex.js`: reads a `.tex` file back into a document. What PaperTeX wrote comes back as the blocks it was written from. `js/unzip.js` opens an Overleaf project's `.zip` for it. |
+| `js/studio.js` | The chart and table editor: a chart or table opened to fill the window, with every setting beside it. |
+| `js/compile.js` | Make PDF: loads the engine only when a PDF is asked for, and hands it the source, the figures and the packages the document uses. |
+| `js/store.js` | Where documents live between sessions: IndexedDB, several documents, saves that are checked. |
+| `js/sanitize.js` | The gate stored rich text passes through, so HTML from a project file never reaches the page as it is. |
+| `js/keys.js`, `js/palette.js` | One registry of everything a key can do, and the `Ctrl+K` command palette that searches it. |
+| `js/templates.js` | The starting documents under **New**. |
 | `js/home.js` | What the home page needs without loading the editor: recent documents and templates. |
 | `js/symbols.js` | Symbol and structure tables driving the palette and the `\command` autocomplete. |
 | `js/app.js` | Chrome: palettes, LaTeX pane, outline, settings, undo, storage, export. |
@@ -185,28 +219,37 @@ punctuation come from CMU Serif, the same design (SIL OFL, see
 `tools/subset-cmu.py`. `node tools/genfonts.js` regenerates `css/fonts.css`
 from `fonts/`.
 
+## LaTeX in
+
+**Open** takes a `.tex` file, or an Overleaf project — its `.zip`, or the
+`.tex` with its `.bib` and images — and turns it into a page you can edit.
+LaTeX pasted onto the page is read the same way. The LaTeX pane beside the
+page is editable too: type LaTeX there and the page follows when you pause.
+LaTeX that PaperTeX cannot turn into a block is kept as a LaTeX-code block.
+
 ## Output
 
-**Export .tex** writes the source; if the document has figures, the image files
-are downloaded alongside it — keep them in the same folder as the `.tex` so
-`\includegraphics` resolves. **Print / PDF** prints the page as shown, which is
-useful for a quick look but is *not* a LaTeX-typeset PDF — run the `.tex`
-through your own engine (pdflatex, tectonic, Overleaf) for that.
+**Download .tex** writes the source; if the document has figures, the image
+files are downloaded alongside it — keep them in the same folder as the `.tex`
+so `\includegraphics` resolves. **Quick print** prints the page as shown, which
+is useful for a quick look but is *not* a LaTeX-typeset PDF.
 
-**Compile PDF** typesets the document with real LaTeX — TeX Live 2025 built to
+**Make PDF** typesets the document with real LaTeX — TeX Live 2025 built to
 WebAssembly ([@siglum/engine](https://github.com/SiglumProject/siglum-engine),
 MIT) — running in your browser. Nothing is uploaded: the engine is fetched as
-static files and cached. A cold first compile takes a few seconds while the
-wasm downloads; after that it is around a second. The result opens in a viewer
+static files and cached. The first PDF takes ten seconds or more while the
+engine downloads; later ones skip the download. The result opens in a viewer
 with **Save PDF**.
 
 Figures are handed to the compiler alongside the source, so `\includegraphics`
-resolves. See [engine/README.md](engine/README.md) for self-hosting the wasm
-and TeX Live bundles — which you should do before launching anything — and for
-the packages that need a CTAN proxy.
+resolves. See [engine/README.md](engine/README.md) for the packages the engine
+has, and [DEPLOY.md](DEPLOY.md) for serving TeX Live from your own site — which
+a published copy must do.
 
-**Save** stores the project as JSON so you can keep editing later; the current
-document also autosaves to the browser.
+**Save** stores the project as a file so you can keep editing later; the
+current document also autosaves to the browser. Browser storage can be cleared,
+and Safari deletes it after seven days without a visit, so **Save** is the copy
+that lasts.
 
 ### Running inside a sandboxed viewer
 
@@ -227,3 +270,11 @@ downloads and a normal print dialog.
 - Pasting LaTeX into a formula understands the common constructs, not the whole
   language. Anything unrecognised is kept verbatim, and the *Raw LaTeX* block is
   there as a deliberate escape hatch.
+- On a phone you can read a document and make small edits; writing one needs
+  a keyboard.
+
+## Licence
+
+MIT — see [LICENSE](LICENSE). Fonts, the LaTeX engine and the TeX Live packages
+keep their own licences, listed in
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
