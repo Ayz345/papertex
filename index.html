@@ -1,570 +1,160 @@
 <!DOCTYPE html>
-<html lang="en" class="no-js">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- The home page. Scripts only from this site (GSAP is self-hosted in
-     js/vendor), no inline scripts; inline style attributes are allowed
-     because the animations write transforms through element styles.
-     Fonts are the editor's own Computer Modern faces (css/fonts.css, data:). -->
+<!-- The home page. Scripts only from this site, no inline scripts; inline
+     style attributes are allowed because the page places its marks and the
+     script moves things through element styles. Fonts are the editor's own
+     Computer Modern faces (css/fonts.css, data:). -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; base-uri 'none'; form-action 'none'">
-<title>PaperTeX — write on the page, get the LaTeX</title>
+<title>PaperTeX — write the paper, not the code</title>
 <meta name="description" content="A free LaTeX editor in your browser: write on a page that looks like the PDF, and get clean, compilable LaTeX. No account, nothing uploaded.">
-<meta property="og:title" content="PaperTeX — write on the page, get the LaTeX">
+<meta property="og:title" content="PaperTeX — write the paper, not the code">
 <meta property="og:description" content="A free LaTeX editor in your browser: write on a page that looks like the PDF, and get clean, compilable LaTeX. No account, nothing uploaded.">
 <meta property="og:type" content="website">
-<meta name="theme-color" content="#e4e2de">
+<meta name="theme-color" content="#111111">
 <link rel="icon" href="desktop/papertex.png">
-<link rel="stylesheet" href="css/fonts.css">
-<link rel="stylesheet" href="css/paper.css">
-<link rel="stylesheet" href="css/landing.css">
-<script src="js/landing-boot.js"></script>
+<link rel="stylesheet" href="css/fonts.css?v=20261110c">
+<link rel="stylesheet" href="css/landing.css?v=20261110c">
 </head>
 <body>
-<a class="skip" href="#main">Skip to content</a>
-<div class="progress" aria-hidden="true"><span class="progress__bar"></span></div>
+<a class="skip" href="app.html">Skip to the editor</a>
 
-<!-- ================================================================ nav -->
-<header class="nav" id="top">
-  <div class="nav__in">
-    <a class="brand" href="./" aria-label="PaperTeX home">
-      <img src="desktop/papertex.png" alt="" width="32" height="32">
-      <span>PaperTeX</span>
-    </a>
-    <nav class="nav__links" aria-label="Main">
-      <a href="#try">Try it</a>
-      <a href="#plot">Charts</a>
-      <a href="#how">How it works</a>
-      <a href="#templates">Templates</a>
-      <a href="about.html">About</a>
-      <span class="nav__ind" aria-hidden="true"></span>
-    </nav>
-    <a class="btn btn--solid btn--sm" href="app.html" data-magnetic>
-      <span>Open the editor</span>
-      <svg class="btn__arrow" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-    </a>
-  </div>
-</header>
+<main class="stage" data-v="open">
+  <div class="far-drift"><div class="far" id="far" aria-hidden="true"></div></div>
+  <div class="shade"></div><div class="grain"></div>
 
-<main id="main">
+  <p class="stock" aria-hidden="true">TEX LIVE 2025 · A4 · 11PT</p>
+  <span class="tick" aria-hidden="true" style="left:25%;top:2.6%">+</span><span class="tick" aria-hidden="true" style="left:75%;top:2.6%">+</span>
+  <span class="tick" aria-hidden="true" style="left:2%;top:26%">+</span><span class="tick" aria-hidden="true" style="right:1.3%;top:26%">+</span>
+  <span class="tick" aria-hidden="true" style="left:2%;top:74%">+</span><span class="tick" aria-hidden="true" style="right:1.3%;top:74%">+</span>
+  <span class="tick" aria-hidden="true" style="left:25%;bottom:3%">+</span><span class="tick" aria-hidden="true" style="left:75%;bottom:3%">+</span>
+  <a class="brand" href="./" aria-label="PaperTeX home">PaperTeX</a>
 
-<!-- =============================================================== hero -->
-<section class="hero">
-  <div class="wrap hero__grid">
-    <div class="hero__copy">
-      <p class="pill" data-hero><span>Free</span><i aria-hidden="true">·</i><span>Runs in your browser</span><i aria-hidden="true">·</i><span>Nothing uploaded</span></p>
-      <h1 class="hero__title" data-split>You write on the page. <em>It writes the LaTeX.</em></h1>
-      <p class="hero__lead" data-hero>A LaTeX editor with no LaTeX in it. Headings, equations, charts, tables and citations are edited on a page that looks like the finished PDF — and clean, compilable <code>.tex</code> is written for you as you go.</p>
-      <div class="hero__cta" data-hero>
-        <a class="btn btn--solid btn--lg" href="app.html" data-magnetic>
-          <span>Start writing — it’s free</span>
-          <svg class="btn__arrow" width="17" height="17" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-        </a>
-        <a class="btn btn--ghost btn--lg" href="#try"><span>Try a formula first</span></a>
-      </div>
-      <p class="hero__note" data-hero>No account, no sign-up. Your documents stay on your computer.</p>
+  <!-- ============================================================ the opening -->
+  <section class="open" id="open" aria-label="PaperTeX">
+    <div class="lead">
+      <span class="slab" aria-hidden="true"></span><span class="brk" aria-hidden="true"></span>
+      <h1>Write the<br>paper, not<br>the code <i>/</i></h1>
+      <p><b>PAPERTEX</b> is a LaTeX editor with no LaTeX in it. You edit the page. It writes the source.</p>
+      <a class="go" id="go" href="app.html">Open the editor →</a>
     </div>
-
-    <div class="hero__demo" id="heroDemo">
-      <div class="tilt" id="heroTilt">
-        <article class="sheet hero__sheet" data-hero-sheet>
-          <header class="doc__head">
-            <div class="doc__title">On the Gaussian Integral</div>
-            <div class="doc__author">A. Student</div>
-            <div class="doc__date">October 2026</div>
-          </header>
-          <div class="doc__h"><span>1</span> Introduction</div>
-          <p class="doc__p">The integral of a Gaussian over the whole real line has a closed form, which we state in equation (1) and prove in Section 2.</p>
-
-          <div class="eqbox" id="eqbox">
-            <div class="eqbox__tag">
-              <span class="eqbox__state" id="eqState">Editing</span>
-              <kbd class="eqbox__keys" id="eqKeys"></kbd>
-            </div>
-            <div class="eq" aria-hidden="true">
-              <span class="eq__int" id="eqInt">
-                <span class="eq__lim"><span class="slot" id="slotUp"></span><span class="lim" id="limUp">∞</span></span>
-                <span class="eq__sign">∫</span>
-                <span class="eq__lim"><span class="slot" id="slotLo"></span><span class="lim" id="limLo">−∞</span></span>
-              </span>
-              <span class="eq__body" id="eqBody"><i class="hmi">e</i><span class="eq__sup"><span>−</span><i class="hmi">x</i><span class="eq__sup2">2</span></span></span>
-              <span class="eq__rest" id="eqRest">
-                <span class="eq__dx"><i class="hmi">dx</i></span>
-                <span class="eq__rel">=</span>
-                <span class="eq__sqrt"><span>√</span><span class="eq__rad" id="eqRad"><i class="hmi">π</i></span></span>
-              </span>
-              <span class="caret" id="eqCaret"></span>
-              <span class="eq__num">(1)</span>
-            </div>
-            <p class="sr-only">Equation 1: the integral of e to the minus x squared, from minus infinity to infinity, equals the square root of pi.</p>
-          </div>
-
-          <p class="doc__p">Squaring both sides turns the problem into a double integral over the plane, which polar coordinates make elementary.</p>
-        </article>
-
-        <div class="code hero__code" data-hero-code>
-          <div class="code__bar">
-            <span class="code__file">main.tex</span>
-            <span class="code__live"><i></i>written as you type</span>
-          </div>
-          <pre class="code__body" role="region" tabindex="0" aria-label="LaTeX source of the sample page"><span class="k">\section</span>{Introduction}
-The integral of a Gaussian over the whole
-real line has a closed form, which we state
-in equation~<span class="k">\eqref</span>{eq:gauss} and prove in ...
-<span class="k">\begin</span>{equation}
-<span class="code__hl">  <span id="tx0"></span><span id="tx1"></span><span id="tx2"></span><span id="tx3"></span><span id="tx4"></span><span id="tx5"></span><span id="tx6"></span><span class="caret caret--code"></span></span>
-  <span class="k">\label</span>{eq:gauss}
-<span class="k">\end</span>{equation}</pre>
-        </div>
-      </div>
-
+    <div class="invite">
+      <svg viewBox="0 0 300 440" id="invite">
+        <path class="arc" id="arc" d="M70 40C307 40 307 400 70 400"/>
+        <circle class="endfill" cx="70" cy="400" r="34"/>
+        <circle class="end" cx="70" cy="400" r="34"/><circle class="enddot" cx="70" cy="400" r="4"/>
+        <g class="handle" id="handle" tabindex="0" role="button" aria-label="Explore the page" transform="translate(70 40)">
+          <circle class="hit" r="52"/><circle class="teeth" r="44"/><circle class="ring" r="34"/><circle class="glow" r="11"/><circle class="core" r="4"/>
+        </g>
+      </svg>
     </div>
-  </div>
-</section>
+    <p class="say" aria-hidden="true">drag to explore<br>the page_</p>
+  </section>
 
-<!-- ======================================== recent documents (if any) -->
-<section class="recent" id="recent" aria-labelledby="recentTitle" hidden>
-  <div class="wrap">
-    <div class="recent__head">
-      <h2 id="recentTitle">Continue where you left off</h2>
-      <span>Saved in this browser — only you can see these. Safari deletes them after 7 days without a visit: use Save project to keep a copy.</span>
-    </div>
-    <div class="recent__list" id="recentList"></div>
-  </div>
-</section>
+  <!-- ============================================== the map and its five ways -->
+  <div class="world" id="world">
 
-<!-- ============================================================ try it -->
-<section class="band try" id="try">
-  <div class="wrap try__grid">
-    <div class="try__copy">
-      <p class="eyebrow" data-reveal>Try it here</p>
-      <h2 class="h2" data-split>Type the name of what you want.</h2>
-      <p class="lead" data-reveal>This is the editor’s own equation box. Type <code>int</code> and an integral appears with empty bounds — fill them in, <kbd>Tab</kbd> moves on. <code>/</code> makes a fraction, <code>^</code> a power, <code>alpha</code> becomes α. The LaTeX writes itself underneath.</p>
-      <ul class="try__keys-help" data-reveal>
-        <li><kbd>Tab</kbd> next box</li>
-        <li><kbd>Space</kbd> done with this part</li>
-        <li><kbd>←</kbd><kbd>→</kbd> move</li>
-        <li><kbd>Backspace</kbd> undo a conversion</li>
-      </ul>
-    </div>
-
-    <div class="try__box" data-reveal>
-      <div class="try__bar" role="toolbar" aria-label="Insert into the formula" id="tryBar">
-        <button type="button" data-build="frac" title="Fraction (or type /)" aria-label="Fraction"><span class="tb-frac"><i>a</i><i>b</i></span></button>
-        <button type="button" data-build="sup" title="Power (or type ^)" aria-label="Power"><span class="tb-m">x<sup>2</sup></span></button>
-        <button type="button" data-build="sub" title="Index (or type _)" aria-label="Index"><span class="tb-m">x<sub>i</sub></span></button>
-        <button type="button" data-build="sqrt" title="Square root (or type sqrt)" aria-label="Square root"><span class="tb-m">√<span class="tb-ovl">x</span></span></button>
-        <button type="button" data-build="int" title="Integral with bounds (or type int)" aria-label="Integral with bounds"><span class="tb-big">∫</span></button>
-        <button type="button" data-build="sum" title="Sum with limits (or type sum)" aria-label="Sum"><span class="tb-big">∑</span></button>
-        <button type="button" data-build="lim" title="Limit (or type lim)" aria-label="Limit"><span class="tb-t">lim</span></button>
-        <button type="button" data-build="paren" title="Brackets that grow (or type a bracket)" aria-label="Brackets"><span class="tb-t">( )</span></button>
-        <button type="button" data-build="matrix2" title="2 × 2 matrix (or type matrix)" aria-label="Matrix"><span class="tb-mat"><i></i><i></i><i></i><i></i></span></button>
-        <span class="try__sep" aria-hidden="true"></span>
-        <button type="button" data-sym="alpha" title="alpha" aria-label="alpha"><span class="tb-m tb-i">α</span></button>
-        <button type="button" data-sym="pi" title="pi" aria-label="pi"><span class="tb-m tb-i">π</span></button>
-        <button type="button" data-sym="infty" title="inf" aria-label="infinity"><span class="tb-m">∞</span></button>
-        <button type="button" data-sym="to" title="-&gt;" aria-label="arrow"><span class="tb-m">→</span></button>
-        <button type="button" data-sym="leq" title="&lt;=" aria-label="less or equal"><span class="tb-m">≤</span></button>
-        <button type="button" data-sym="pm" title="+-" aria-label="plus or minus"><span class="tb-m">±</span></button>
+    <section class="room hub" data-r="hub" aria-label="Where to go">
+      <svg class="rays" id="rays" viewBox="-300 -300 600 600" aria-hidden="true"></svg>
+      <div class="hub__mid">
+        <h2>Let’s have<br>a look <i>/</i></h2>
+        <p>Four ways show what it does. The fifth takes you to the page.</p>
       </div>
+      <button class="dir" type="button" data-to="eq" data-a="72"><svg class="node" viewBox="-40 -40 80 80" aria-hidden="true"><circle class="n-teeth" r="30"/><circle class="n-fill" r="22"/><circle class="n-ring" r="22"/><path class="n-chev" d="M-5 -8L5 0L-5 8"/></svg><span><small>072°</small>Equations</span></button>
+      <button class="dir" type="button" data-to="ch" data-a="144"><svg class="node" viewBox="-40 -40 80 80" aria-hidden="true"><circle class="n-teeth" r="30"/><circle class="n-fill" r="22"/><circle class="n-ring" r="22"/><path class="n-chev" d="M-5 -8L5 0L-5 8"/></svg><span><small>144°</small>Charts</span></button>
+      <button class="dir" type="button" data-to="da" data-a="216"><svg class="node" viewBox="-40 -40 80 80" aria-hidden="true"><circle class="n-teeth" r="30"/><circle class="n-fill" r="22"/><circle class="n-ring" r="22"/><path class="n-chev" d="M-5 -8L5 0L-5 8"/></svg><span><small>216°</small>Data</span></button>
+      <button class="dir" type="button" data-to="pdf" data-a="288"><svg class="node" viewBox="-40 -40 80 80" aria-hidden="true"><circle class="n-teeth" r="30"/><circle class="n-fill" r="22"/><circle class="n-ring" r="22"/><path class="n-chev" d="M-5 -8L5 0L-5 8"/></svg><span><small>288°</small>The PDF</span></button>
+      <a class="dir dir--go" href="app.html" data-to="go" data-a="0"><svg class="node" viewBox="-40 -40 80 80" aria-hidden="true"><circle class="n-teeth" r="30"/><circle class="n-fill" r="22"/><circle class="n-ring" r="22"/><path class="n-chev" d="M-5 -8L5 0L-5 8"/></svg><span><small>000°</small>Start writing</span></a>
+    </section>
 
-      <div class="try__sheet" id="trySheet">
-        <button class="try__clear" type="button" id="tryClear" title="Clear" aria-label="Clear the formula">
-          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>
-        </button>
-        <div class="try__eq">
-          <div class="try__mf" id="tryField" role="textbox" aria-multiline="false" aria-label="Formula. Type int for an integral, / for a fraction, Tab to move to the next box." aria-describedby="tryTex"></div>
-          <span class="try__num" aria-hidden="true">(1)</span>
-        </div>
-        <p class="try__typed" id="tryTyped" aria-hidden="true"><span class="try__typed-l">Click the formula and type</span></p>
+    <section class="room" data-r="eq" data-a="72" aria-label="Equations">
+      <div class="lead c-tr">
+        <span class="slab" aria-hidden="true"></span><span class="brk" aria-hidden="true"></span>
+        <h2>Type its name <i>/</i></h2>
+        <p><b>INT, SUM, SQRT.</b> Type the word and the symbol appears, with its slots waiting.</p>
       </div>
-
-      <div class="try__tex">
-        <span class="try__texlabel">LaTeX</span>
-        <code id="tryTex"></code>
-        <button class="btn btn--tiny" type="button" id="tryCopy"><span>Copy</span></button>
-        <span class="sr-only" role="status" id="tryStatus"></span>
-      </div>
-      <div class="chips" id="tryChips">
-        <span class="chips__label">Watch it typed</span>
-        <button class="chip chip--math" type="button" data-ex="int01">∫<sub>0</sub><sup>1</sup> x<sup>2</sup> dx</button>
-        <button class="chip chip--math" type="button" data-ex="gauss">∫ e<sup>−x²</sup> = √π</button>
-        <button class="chip chip--math" type="button" data-ex="basel">∑ 1/k<sup>2</sup></button>
-        <button class="chip chip--math" type="button" data-ex="lim">lim (1 + 1/n)<sup>n</sup></button>
-        <button class="chip chip--math" type="button" data-ex="matrix">matrix</button>
-        <button class="chip chip--math" type="button" data-ex="pyth">√(a<sup>2</sup> + b<sup>2</sup>)</button>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ============================== function plot, typed as you scroll -->
-<section class="plot" id="plot">
-  <div class="wrap plot__head">
-    <p class="eyebrow" data-reveal>Charts</p>
-    <h2 class="h2" data-split>Type a function. Watch it draw.</h2>
-    <p class="lead" data-reveal>A <b>Function plot</b> takes what you’d write on paper and draws it on the page — then exports real pgfplots, so the PDF matches. Watch a few examples type themselves.</p>
-  </div>
-
-  <div class="plot__stage" id="plotStage">
-    <div class="wrap plot__grid">
-      <div class="plot__side">
-        <div class="fp">
-          <div class="fp__head"><span class="fp__badge">Function plot</span><span class="fp__hint">as you’d write it</span></div>
-          <div class="fp__row is-active" id="fpRow1">
-            <span class="fp__y">y =</span>
-            <span class="fp__in"><span id="fpText1"></span><span class="caret"></span></span>
-          </div>
-          <div class="fp__row" id="fpRow2">
-            <span class="fp__y">y =</span>
-            <span class="fp__in"><span id="fpText2"></span><span class="caret"></span></span>
-            <span class="fp__tag">dashed</span>
-          </div>
-          <div class="fp__math" id="fpMath" aria-hidden="true"></div>
-        </div>
-
-
-        <pre class="code code__body plot__tex" id="plotTex" role="region" tabindex="0" aria-label="pgfplots LaTeX for Figure 2"></pre>
-      </div>
-
-      <figure class="sheet plot__paper">
-        <svg class="plot__svg" viewBox="0 0 520 320" role="img" aria-labelledby="plotCap">
-          <defs>
-            <clipPath id="clipCurve"><rect id="clipCurveRect" x="0" y="0" width="0" height="320"/></clipPath>
-            <clipPath id="clipEnv"><rect id="clipEnvRect" x="0" y="0" width="0" height="320"/></clipPath>
-          </defs>
-          <g class="plot__grid-lines" id="plotGridLines"></g>
-          <g class="plot__axes">
-            <path d="M50 160H500"/>
-            <path d="M50 30V290"/>
-          </g>
-          <g class="plot__ticks" id="plotTicks"></g>
-          <g clip-path="url(#clipEnv)">
-            <path class="plot__env" id="fpEnv" d=""/>
-            <path class="plot__env" id="fpEnvNeg" d=""/>
-          </g>
-          <g clip-path="url(#clipCurve)">
-            <path class="plot__curve" id="fpCurve" d=""/>
-          </g>
-          <circle class="plot__pen" id="fpPen" r="5" cx="50" cy="160"/>
-        </svg>
-        <figcaption id="plotCap">Figure 2: <span id="plotCapText">A damped wave, <i>y</i> = sin 2<i>x</i> · <i>e</i><sup>−<i>x</i>/4</sup>, inside its envelope.</span></figcaption>
-      </figure>
-    </div>
-  </div>
-</section>
-
-<!-- ============================ chart gallery: seven kinds, each one reacts -->
-<section class="gallery" id="gallery">
-  <div class="wrap">
-    <div class="sec-head">
-      <div>
-        <p class="eyebrow" data-reveal>Chart gallery</p>
-        <h2 class="h2" data-split>Pies, polar roses, 3D surfaces — in real LaTeX.</h2>
-        <p class="lead" data-reveal>Seven more kinds of chart, each drawn on the page and written out as pgfplots or TikZ that compiles. Point, drag and click: every one of these answers.</p>
-      </div>
-      <a class="link-arrow" href="app.html#new=gallery" data-reveal><span>See every chart in the editor</span><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
-    </div>
-
-    <div class="gal">
-      <!-- pie -->
-      <article class="gc" id="gcPie" data-reveal>
-        <div class="gc__head"><span class="fp__badge">Pie</span><span class="gc__hint">Point at a slice</span></div>
-        <svg class="gc__svg" viewBox="0 0 260 170" role="img" aria-label="Pie chart of a week of study: lectures 34%, labs 26%, reading 22%, exams 18%.">
-          <g id="pieSlices"></g>
-          <g class="gc__legend" id="pieLegend"></g>
-        </svg>
-        <pre class="gc__tex code__body" id="pieTex"></pre>
+      <article class="sheet" aria-label="A page with an equation">
+        <h3>1&ensp;Introduction</h3>
+        <p>The integral of a Gaussian over the whole real line has a closed form,</p>
+        <div class="eqn">∫<sub>−∞</sub><sup>∞</sup> <i>e</i><sup>−<i>x</i>²</sup> <i>dx</i> = √<span class="bar">π</span><span class="no">(1)</span></div>
+        <p>which we prove in Section 2.</p>
+        <button class="hot" type="button" style="left:50%;top:56%" aria-expanded="false" aria-label="Show the LaTeX for this equation"></button>
+        <pre class="code" style="left:8%;top:70%"><b>\begin</b>{equation}
+  <b>\int</b>_{-<b>\infty</b>}^{<b>\infty</b>} e^{-x^{2}}\,dx = <b>\sqrt</b>{<b>\pi</b>}
+  <b>\label</b>{eq:gauss}
+<b>\end</b>{equation}</pre>
+        <button class="hot" type="button" style="left:16%;top:27%" aria-expanded="false" aria-label="Show the LaTeX for this heading"></button>
+        <pre class="code" style="left:8%;top:35%"><b>\section</b>{Introduction}<b>\label</b>{sec:intro}</pre>
       </article>
+      <button class="back" type="button"><svg class="node" viewBox="-40 -40 80 80" aria-hidden="true"><circle class="n-teeth" r="30"/><circle class="n-fill" r="22"/><circle class="n-ring" r="22"/><path class="n-chev" d="M-5 -8L5 0L-5 8"/></svg><span>back_</span></button>
+    </section>
 
-      <!-- histogram -->
-      <article class="gc" id="gcHist" data-reveal>
-        <div class="gc__head"><span class="fp__badge">Histogram</span><span class="gc__hint">120 heights, in cm</span></div>
-        <svg class="gc__svg" viewBox="0 0 260 170" role="img" aria-label="Histogram of 120 heights between 150 and 195 cm, peaked near 172 cm.">
-          <g class="plot__axes"><path d="M32 12V140H250"/></g>
-          <g class="plot__ticks" id="histTicks"></g>
-          <g id="histBars"></g>
-        </svg>
-        <div class="gc__ctrl" role="group" aria-label="Number of bins">
-          <span class="gc__label">Bins</span>
-          <button class="chip chip--sm" type="button" data-bins="6" aria-pressed="false">6</button>
-          <button class="chip chip--sm is-on" type="button" data-bins="9" aria-pressed="true">9</button>
-          <button class="chip chip--sm" type="button" data-bins="15" aria-pressed="false">15</button>
-        </div>
-        <pre class="gc__tex code__body" id="histTex"></pre>
+    <section class="room room--flip" data-r="ch" data-a="144" aria-label="Charts">
+      <div class="lead c-bl">
+        <span class="slab" aria-hidden="true"></span><span class="brk" aria-hidden="true"></span>
+        <h2>Type a function <i>/</i></h2>
+        <p><b>IT DRAWS ITSELF.</b> On the page, and again in the PDF as real pgfplots.</p>
+      </div>
+      <article class="sheet" aria-label="A page with a plotted function">
+        <svg viewBox="0 0 520 220" role="img" aria-label="A damped wave inside its envelope"><path class="ax" d="M30 14V206M30 110H500"/><path class="cv2" id="env" d=""/><path class="cv" id="wave" d=""/></svg>
+        <p class="cap">Figure 1: <i>y</i> = sin 2<i>x</i> · <i>e</i><sup>−<i>x</i>/4</sup>, inside its envelope.</p>
+        <button class="hot" type="button" style="left:34%;top:34%" aria-expanded="false" aria-label="Show the LaTeX for this plot"></button>
+        <pre class="code" style="left:10%;top:70%"><b>\begin</b>{axis}[axis lines=middle, domain=0:12]
+  <b>\addplot</b>[thick] {sin(deg(2*x))*exp(-x/4)};
+  <b>\addplot</b>[dashed] {exp(-x/4)};
+<b>\end</b>{axis}</pre>
       </article>
+      <button class="back" type="button"><svg class="node" viewBox="-40 -40 80 80" aria-hidden="true"><circle class="n-teeth" r="30"/><circle class="n-fill" r="22"/><circle class="n-ring" r="22"/><path class="n-chev" d="M-5 -8L5 0L-5 8"/></svg><span>back_</span></button>
+    </section>
 
-      <!-- polar -->
-      <article class="gc" id="gcPolar" data-reveal>
-        <div class="gc__head"><span class="fp__badge">Polar</span><span class="gc__hint">r = cos(kθ)</span></div>
-        <svg class="gc__svg" viewBox="0 0 260 170" role="img" aria-label="Polar plot of the rose r = cos(k theta).">
-          <g class="gc__polar-grid" id="polarGrid"></g>
-          <path class="plot__curve" id="polarCurve" d=""/>
-          <circle class="plot__pen" id="polarPen" r="4" cx="130" cy="85"/>
-        </svg>
-        <div class="gc__ctrl" role="group" aria-label="Petal number k">
-          <span class="gc__label">k</span>
-          <button class="chip chip--sm" type="button" data-k="2" aria-pressed="false">2</button>
-          <button class="chip chip--sm is-on" type="button" data-k="3" aria-pressed="true">3</button>
-          <button class="chip chip--sm" type="button" data-k="4" aria-pressed="false">4</button>
-          <button class="chip chip--sm" type="button" data-k="5" aria-pressed="false">5</button>
+    <section class="room room--flip" data-r="da" data-a="216" aria-label="Data">
+      <div class="lead c-tl">
+        <span class="slab" aria-hidden="true"></span><span class="brk" aria-hidden="true"></span>
+        <h2>Paste your data <i>/</i></h2>
+        <p><b>FROM EXCEL OR SHEETS.</b> One click charts the table and fits a model.</p>
+      </div>
+      <article class="sheet" aria-label="A page with a table and a fitted curve">
+        <div class="two">
+          <table class="t"><thead><tr><th>t</th><th>T</th></tr></thead><tbody><tr><td>0</td><td>80</td></tr><tr><td>2</td><td>67</td></tr><tr><td>4</td><td>57</td></tr><tr><td>6</td><td>48</td></tr><tr><td>8</td><td>43</td></tr></tbody></table>
+          <svg viewBox="0 0 300 180" role="img" aria-label="The measured points and the fitted curve"><path class="ax" d="M20 10V165H290"/><path class="cv" d="M20 20C70 68 150 122 290 148"/><circle class="pt" cx="20" cy="20" r="4"/><circle class="pt" cx="88" cy="68" r="4"/><circle class="pt" cx="155" cy="104" r="4"/><circle class="pt" cx="222" cy="130" r="4"/><circle class="pt" cx="290" cy="148" r="4"/></svg>
         </div>
-        <pre class="gc__tex code__body" id="polarTex"></pre>
+        <p class="cap">Table 1 and Figure 2: cooling of water.</p>
+        <button class="hot" type="button" style="left:66%;top:44%" aria-expanded="false" aria-label="Show the LaTeX for the fitted curve"></button>
+        <pre class="code" style="left:22%;top:66%"><b>\addplot</b>[only marks] <b>table</b> {cooling.dat};
+<b>\addplot</b>[domain=0:10] {20 + 60*exp(-x/11)};</pre>
       </article>
+      <button class="back" type="button"><svg class="node" viewBox="-40 -40 80 80" aria-hidden="true"><circle class="n-teeth" r="30"/><circle class="n-fill" r="22"/><circle class="n-ring" r="22"/><path class="n-chev" d="M-5 -8L5 0L-5 8"/></svg><span>back_</span></button>
+    </section>
 
-      <!-- horizontal bars -->
-      <article class="gc" id="gcHbar" data-reveal>
-        <div class="gc__head"><span class="fp__badge">Horizontal bars</span><span class="gc__hint">Hours of code</span></div>
-        <svg class="gc__svg" viewBox="0 0 260 170" role="img" aria-label="Horizontal bar chart: Python 42 hours, Excel 31, R 23, MATLAB 17, Julia 9.">
-          <g class="plot__axes"><path d="M66 10V156"/></g>
-          <g id="hbarRows"></g>
-        </svg>
-        <div class="gc__ctrl">
-          <button class="chip chip--sm chip--word" type="button" id="hbarSort" aria-pressed="true">Sorted by value</button>
-        </div>
-        <pre class="gc__tex code__body" id="hbarTex"></pre>
+    <section class="room" data-r="pdf" data-a="288" aria-label="The PDF">
+      <div class="lead c-br">
+        <span class="slab" aria-hidden="true"></span><span class="brk" aria-hidden="true"></span>
+        <h2>Get the real PDF <i>/</i></h2>
+        <p><b>REAL TEX LIVE.</b> It runs in your browser, so nothing is uploaded. Take the .tex to Overleaf, or bring a project back.</p>
+      </div>
+      <article class="sheet sheet--pdf" aria-label="The compiled PDF">
+        <div class="pdfbar" aria-hidden="true"><span>main.pdf</span><span>Save PDF</span></div>
+        <h3>2&ensp;Proof</h3>
+        <p>Squaring both sides turns the problem into a double integral over the plane, which polar coordinates make elementary.</p>
+        <div class="eqn eqn--sm"><i>I</i><sup>2</sup> = ∫<sub>0</sub><sup>2π</sup> ∫<sub>0</sub><sup>∞</sup> <i>e</i><sup>−<i>r</i>²</sup> <i>r dr dθ</i> = π<span class="no">(2)</span></div>
+        <button class="hot" type="button" style="left:80%;top:9%" aria-expanded="false" aria-label="Show how the PDF is made"></button>
+        <pre class="code" style="left:30%;top:16%">Running <b>pdflatex</b>, here in your browser…
+Output written on <b>main.pdf</b>.</pre>
       </article>
-
-      <!-- 3D surface -->
-      <article class="gc gc--wide" id="gcSurf" data-reveal>
-        <div class="gc__head"><span class="fp__badge">3D surface</span><span class="gc__hint">Drag to turn it · arrow keys too</span></div>
-        <svg class="gc__svg gc__svg--surf" id="surfSvg" viewBox="0 0 540 300" role="img" tabindex="0" aria-label="3D surface plot of z = f(x, y). Drag or use the arrow keys to turn it.">
-          <g id="surfQuads"></g>
-        </svg>
-        <div class="gc__ctrl" role="group" aria-label="Surface">
-          <button class="chip chip--sm is-on" type="button" data-surf="0" aria-pressed="true">sin x · cos y</button>
-          <button class="chip chip--sm" type="button" data-surf="1" aria-pressed="false">e^(−(x²+y²)/2)</button>
-          <button class="chip chip--sm" type="button" data-surf="2" aria-pressed="false">saddle (x² − y²)/9</button>
-        </div>
-        <pre class="gc__tex code__body" id="surfTex"></pre>
-      </article>
-
-      <!-- log axis -->
-      <article class="gc" id="gcLog" data-reveal>
-        <div class="gc__head"><span class="fp__badge">Log axis</span><span class="gc__hint">Bacteria, doubling hourly</span></div>
-        <svg class="gc__svg" viewBox="0 0 260 170" role="img" aria-label="Bacteria count doubling every hour from 10 to about 10,000 over 10 hours, on a linear or logarithmic y axis.">
-          <g class="plot__grid-lines" id="logGrid"></g>
-          <g class="plot__axes"><path d="M40 12V140H250"/></g>
-          <g class="plot__ticks" id="logTicks"></g>
-          <polyline class="plot__curve" id="logLine" points=""/>
-          <g id="logPts"></g>
-        </svg>
-        <div class="gc__ctrl" role="group" aria-label="y axis">
-          <span class="gc__label">y axis</span>
-          <button class="chip chip--sm chip--word" type="button" data-ymode="lin" aria-pressed="false">linear</button>
-          <button class="chip chip--sm chip--word is-on" type="button" data-ymode="log" aria-pressed="true">log</button>
-        </div>
-        <pre class="gc__tex code__body" id="logTex"></pre>
-      </article>
-
-      <!-- filled area -->
-      <article class="gc" id="gcArea" data-reveal>
-        <div class="gc__head"><span class="fp__badge">Filled area</span><span class="gc__hint">Drag across the plot</span></div>
-        <svg class="gc__svg gc__svg--area" id="areaSvg" viewBox="0 0 260 170" role="img" aria-label="The area under y = x e^(−x/2) from 0 to b, shaded.">
-          <g class="plot__axes"><path d="M24 12V140H250"/></g>
-          <g class="plot__ticks" id="areaTicks"></g>
-          <path class="gc__fill" id="areaFill" d=""/>
-          <path class="plot__curve" id="areaCurve" d=""/>
-          <path class="gc__bound" id="areaBound" d=""/>
-          <text class="gc__val" id="areaVal" x="246" y="28" text-anchor="end"></text>
-        </svg>
-        <div class="gc__ctrl range">
-          <label for="areaRange">Upper bound <i>b</i></label>
-          <input id="areaRange" type="range" min="0.2" max="10" step="0.1" value="5">
-          <output id="areaOut" for="areaRange">5.0</output>
-        </div>
-        <pre class="gc__tex code__body" id="areaTex"></pre>
-      </article>
-    </div>
+      <button class="back" type="button"><svg class="node" viewBox="-40 -40 80 80" aria-hidden="true"><circle class="n-teeth" r="30"/><circle class="n-fill" r="22"/><circle class="n-ring" r="22"/><path class="n-chev" d="M-5 -8L5 0L-5 8"/></svg><span>back_</span></button>
+    </section>
   </div>
-</section>
 
-<!-- ===================================== chart from a table, live model -->
-<section class="data" id="data">
-  <div class="wrap data__grid">
-    <div class="data__copy">
-      <p class="eyebrow" data-reveal>Tables &amp; data</p>
-      <h2 class="h2" data-split>Paste the data. Fit the model.</h2>
-      <p class="lead" data-reveal>Paste cells from Excel or Sheets, import a CSV, then make a line, scatter or bar chart from the table — with a fitted curve on top. Switch the type or tune the model and the LaTeX follows.</p>
-      <ul class="ticks" data-reveal>
-        <li>Spreadsheet paste and CSV import</li>
-        <li>One click from a table to a chart</li>
-        <li><b>A full-window editor for every chart and table</b> — series colours, error bars, fits, axes and legend; sorting, totals and table styles. Every change shows on the page and in the LaTeX at once.</li>
-      </ul>
-    </div>
-
-    <div class="data__demo" data-reveal>
-      <div class="data__controls">
-        <div class="seg" role="group" aria-label="Chart type" id="chartSeg">
-          <span class="seg__thumb" aria-hidden="true"></span>
-          <button type="button" data-mode="fit" aria-pressed="true">Scatter + fit</button>
-          <button type="button" data-mode="line" aria-pressed="false">Line</button>
-          <button type="button" data-mode="bar" aria-pressed="false">Bar</button>
-        </div>
-        <div class="range" id="kWrap">
-          <label for="kRange">Time constant</label>
-          <input id="kRange" type="range" min="4" max="14" step="0.5" value="11">
-          <output id="kOut" for="kRange">11 min</output>
-        </div>
-      </div>
-
-      <div class="sheet data__sheet">
-        <div class="data__table">
-          <div class="data__cap">Table 1: Cooling of water.</div>
-          <table>
-            <thead><tr><th><i>t</i> (min)</th><th><i>T</i> (°C)</th></tr></thead>
-            <tbody id="dataRows">
-              <tr><td>0</td><td>80</td></tr>
-              <tr><td>2</td><td>67</td></tr>
-              <tr><td>4</td><td>57</td></tr>
-              <tr><td>6</td><td>48</td></tr>
-              <tr><td>8</td><td>43</td></tr>
-              <tr><td>10</td><td>37</td></tr>
-            </tbody>
-          </table>
-          <div class="rms" id="rmsBox">
-            <span>Fit error (RMS)</span>
-            <b id="rmsVal">—</b>
-            <em id="rmsNote">Drag the slider to fit</em>
-          </div>
-        </div>
-        <figure class="data__fig">
-          <svg class="data__svg" viewBox="0 0 360 230" role="img" aria-labelledby="dataCap">
-            <defs><clipPath id="clipFit"><rect id="clipFitRect" x="50" y="0" width="0" height="230"/></clipPath></defs>
-            <g class="plot__axes"><path d="M44 20V190H344"/></g>
-            <g class="plot__ticks" id="dataTicks"></g>
-            <g id="dataBars"></g>
-            <polyline class="data__line" id="dataLine" points=""/>
-            <g clip-path="url(#clipFit)"><polyline class="data__fit" id="dataFit" points=""/></g>
-            <g id="dataPts"></g>
-            <g class="data__legend" id="dataLegend">
-              <circle cx="232" cy="38" r="3"/><text x="242" y="42">measured</text>
-              <path d="M224 58h16"/><text x="246" y="62">20 + 60<tspan class="it">e</tspan><tspan dy="-5" font-size="8.5">−<tspan class="it">t</tspan>/<tspan id="legendK">11</tspan></tspan></text>
-            </g>
-          </svg>
-          <figcaption id="dataCap">Figure 1: <span id="dataCapText">Measured temperature and the fitted model.</span></figcaption>
-        </figure>
-      </div>
-
-      <pre class="code code__body data__tex" id="dataTex" role="region" tabindex="0" aria-label="pgfplots LaTeX for Figure 1"></pre>
-    </div>
-  </div>
-</section>
-
-<!-- ======================================================= how it works -->
-<section class="how" id="how">
-  <div class="wrap">
-    <p class="eyebrow" data-reveal>How it works</p>
-    <h2 class="h2" data-split>The document is the truth. LaTeX is the output.</h2>
-    <ol class="how__steps" id="howSteps">
-      <li class="how__line" aria-hidden="true"><span id="howLine"></span></li>
-      <li class="how__step">
-        <span class="how__num">1</span>
-        <h3>Write on the page</h3>
-        <p>Headings, equations, figures, tables and citations are edited directly on a sheet set in Computer Modern — exactly what the PDF will look like. Know LaTeX already? Type it in the pane beside the page, or paste it in: the page follows.</p>
-      </li>
-      <li class="how__step">
-        <span class="how__num">2</span>
-        <h3>The LaTeX writes itself</h3>
-        <p>A clean <code>.tex</code> file is generated from what you do — labels, environments and references, the way you would write them by hand.</p>
-      </li>
-      <li class="how__step">
-        <span class="how__num">3</span>
-        <h3>Compile, or take it anywhere</h3>
-        <p>Typeset with real TeX Live, running in your browser. Or hand the source to Overleaf, a journal, or your own TeX installation — and bring a <code>.tex</code> or a whole Overleaf project back in to keep editing it here.</p>
-      </li>
-    </ol>
-  </div>
-</section>
-
-<!-- ========================================================= templates -->
-<section class="templates" id="templates">
-  <div class="wrap">
-    <div class="sec-head">
-      <div>
-        <p class="eyebrow" data-reveal>Templates</p>
-        <h2 class="h2" data-split>Start from something that already works.</h2>
-      </div>
-      <a class="link-arrow" href="app.html#new=blank" data-reveal><span>Or start with a blank page</span><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
-    </div>
-    <div class="tpl-grid" id="tplGrid">
-      <!-- filled from PT.home.templates(); these links are the no-script fallback -->
-      <a class="tpl" href="app.html#new=article"><span class="tpl__name">Article</span></a>
-      <a class="tpl" href="app.html#new=homework"><span class="tpl__name">Homework</span></a>
-      <a class="tpl" href="app.html#new=lab"><span class="tpl__name">Lab report</span></a>
-      <a class="tpl" href="app.html#new=data"><span class="tpl__name">Data report</span></a>
-      <a class="tpl" href="app.html#new=notes"><span class="tpl__name">Lecture notes</span></a>
-    </div>
-  </div>
-</section>
-
-<!-- =========================================================== privacy -->
-<section class="privacy" id="privacy">
-  <div class="privacy__glow" aria-hidden="true"></div>
-  <div class="wrap">
-    <div class="sec-head">
-      <h2 class="h2" data-split>Your documents never leave your computer.</h2>
-      <a class="link-arrow link-arrow--light" href="about.html#privacy" data-reveal><span>Read the privacy details</span><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
-    </div>
-    <div class="privacy__grid">
-      <div class="privacy__item" data-reveal>
-        <svg class="draw" width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6l7-3z"/><path pathLength="1" d="M9 12l2 2 4-4"/></svg>
-        <h3>Nothing is uploaded</h3>
-        <p>Editing, exporting and compiling all happen in your browser. When you compile, the engine is downloaded to you — your document isn’t sent anywhere.</p>
-      </div>
-      <div class="privacy__item" data-reveal>
-        <svg class="draw" width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><circle pathLength="1" cx="12" cy="8" r="4"/><path pathLength="1" d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/><path pathLength="1" d="M3 3l18 18"/></svg>
-        <h3>No account, no cookies, no tracking</h3>
-        <p>PaperTeX doesn’t know who you are. Open the page and start writing.</p>
-      </div>
-      <div class="privacy__item" data-reveal>
-        <svg class="draw" width="30" height="30" viewBox="0 0 24 24" aria-hidden="true"><path pathLength="1" d="M5 3h11l3 3v15H5z"/><path pathLength="1" d="M8 3v6h8V3"/><path pathLength="1" d="M8 21v-7h8v7"/></svg>
-        <h3>Keep a copy that lasts</h3>
-        <p>Work lives in your browser’s storage, which clean-ups can erase — and <strong>Safari deletes it after 7 days without a visit</strong>. <em>Save project</em> writes a file to your disk that nothing can touch.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
+  <p class="legal">Made by Ayaz Büyükterzi · MIT · <a href="about.html">About and privacy</a> · <a href="https://github.com/Ayz345/papertex" rel="noopener">Source</a></p>
+  <nav class="pager" id="pager" aria-label="Places"></nav>
 </main>
 
-<!-- ============================================================ footer -->
-<footer class="foot">
-  <div class="wrap foot__grid">
-    <div class="foot__brand">
-      <a class="brand" href="./"><img src="desktop/papertex.png" alt="" width="28" height="28"><span>PaperTeX</span></a>
-      <p>You write on the page. It writes the LaTeX.</p>
-    </div>
-    <nav class="foot__nav" aria-label="Footer">
-      <div>
-        <h3>Product</h3>
-        <a href="app.html">Open the editor</a>
-        <a href="#gallery">Chart gallery</a>
-        <a href="#templates">Templates</a>
-      </div>
-      <div>
-        <h3>PaperTeX</h3>
-        <a href="about.html">About</a>
-        <a href="about.html#privacy">Privacy</a>
-        <a href="about.html#licence">Licence &amp; credits</a>
-      </div>
-    </nav>
-    <button class="btn btn--quiet btn--sm foot__top" type="button" id="toTop">
-      <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4"/></svg>
-      <span>Back to top</span>
-    </button>
-  </div>
-  <div class="wrap foot__line">Made by Ayaz Büyükterzi · <a href="mailto:ayaz.buyukterzi.hza@gmail.com">ayaz.buyukterzi.hza@gmail.com</a> · Open source under the MIT licence</div>
-</footer>
-
-<script src="js/vendor/gsap.min.js"></script>
-<script src="js/vendor/ScrollTrigger.min.js"></script>
-<script src="js/sanitize.js"></script>
-<script src="js/store.js"></script>
-<script src="js/templates.js"></script>
-<script src="js/home.js"></script>
-<script src="js/symbols.js"></script>
-<script src="js/math.js"></script>
-<script src="js/landing.js"></script>
+<script src="js/sanitize.js?v=20261110c"></script>
+<script src="js/store.js?v=20261110c"></script>
+<script src="js/templates.js?v=20261110c"></script>
+<script src="js/home.js?v=20261110c"></script>
+<script src="js/landing.js?v=20261110c"></script>
 </body>
 </html>

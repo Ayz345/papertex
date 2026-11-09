@@ -4,86 +4,76 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <!-- A page of text: no scripts at all, nothing loaded from anywhere else. -->
+<meta name="theme-color" content="#111111">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'self' data:; base-uri 'none'; form-action 'none'">
 <title>About PaperTeX</title>
 <meta name="description" content="PaperTeX is a free LaTeX editor that runs in your browser: you write on the page, it writes the LaTeX. Nothing is uploaded.">
 <link rel="icon" href="desktop/papertex.png">
 <style>
-  :root {
-    --ink: #23262b; --ink-2: #4b5058; --muted: #5f646d; --line: #e1e4e9;
-    --paper: #fffefb; --desk: #e4e2de; --accent: #9a5b06; --accent-soft: #fdf3dd;
-  }
+  /* The same world as the home page: near-black, type in a warm white, one
+     yellow. This page is for reading, so it scrolls and runs no scripts. */
+  :root { --ink: #111111; --white: #f3efe6; --spot: #f2c230; --dim: #a9a59d; --line: #34322e;
+    --head: "Helvetica Neue", Helvetica, Arial, "Segoe UI", sans-serif; --mono: "Cascadia Mono", Consolas, ui-monospace, Menlo, monospace; }
   * { box-sizing: border-box; }
-  body {
-    margin: 0; background: var(--desk); color: var(--ink);
-    font: 16px/1.65 Georgia, "Times New Roman", serif;
-  }
-  .sheet {
-    max-width: 720px; margin: 32px auto; background: var(--paper); padding: 48px 56px 56px;
-    border-radius: 3px; box-shadow: 0 0 0 1px rgba(30, 28, 24, .06), 0 18px 48px -16px rgba(30, 28, 24, .28);
-  }
-  @media (max-width: 760px) { .sheet { margin: 0; padding: 28px 20px 40px; border-radius: 0; } }
-  .sheet > header { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
-  .sheet > header img { width: 44px; height: 44px; }
-  h1 { font-size: 30px; margin: 0; letter-spacing: -.01em; }
-  .tag { color: var(--muted); font-size: 15px; margin: 0 0 28px; }
-  h2 {
-    font: 600 11px/1 system-ui, "Segoe UI", sans-serif; letter-spacing: .12em; text-transform: uppercase;
-    color: var(--muted); margin: 36px 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line);
-  }
-  html { scroll-padding-top: 76px; }   /* anchors and focused links clear the sticky bar */
-  @media (max-width: 900px) { html { scroll-padding-top: 124px; } }
-  p, li { color: var(--ink-2); }
-  a { color: var(--accent); }
-  .open {
-    display: inline-flex; align-items: center; min-height: 44px; margin-top: 4px; padding: 0 18px; border-radius: 8px; text-decoration: none;
-    background: #7a4f10; color: #fff9ee; font: 600 14px system-ui, "Segoe UI", sans-serif;
-    transition: transform .18s cubic-bezier(.2,.7,.2,1), background-color .2s ease, box-shadow .25s ease;
-  }
-  .open:hover { background: #5c3a0a; color: #fff9ee; transform: translateY(-2px); box-shadow: 0 12px 22px -12px rgba(92, 58, 10, .9); }
-  .open:active { transform: translateY(1px) scale(.97); }
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+  html { background: var(--ink); color-scheme: dark; scroll-padding-top: 40px; scrollbar-color: #3a3935 var(--ink); }
+  body { margin: 0; color: var(--white); font: 16px/1.65 var(--head); -webkit-font-smoothing: antialiased;
+    background: radial-gradient(70% 50% at 70% 0%, rgba(242, 194, 48, .07), transparent 70%) no-repeat; }
+  ::selection { background: var(--spot); color: var(--ink); }
+  :focus-visible { outline: 2px solid var(--spot); outline-offset: 4px; }
+  a { color: var(--spot); text-underline-offset: 3px; text-decoration-thickness: 1px; }
+  a:hover { color: var(--white); }
+  .brand { position: fixed; left: 2.2vw; top: 50%; transform: translateY(-50%) rotate(180deg); writing-mode: vertical-rl; font: 700 22px Georgia, serif; color: var(--spot); text-decoration: none; }
+  .tick { position: fixed; color: rgba(243, 239, 230, .32); font: 300 15px var(--head); pointer-events: none; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 16vh 28px 12vh; }
 
-  /* the same top bar as the home page, in plain CSS: this page runs no scripts */
-  .topnav { position: sticky; top: 0; z-index: 10; background: rgba(228, 226, 222, .9); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(30, 28, 24, .08); }
-  .topnav__in { max-width: 1200px; margin: 0 auto; padding: 8px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px; font: 15px system-ui, "Segoe UI", sans-serif; }
-  .topnav__brand { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; color: var(--ink); text-decoration: none; font: 700 21px Georgia, serif; }
-  .topnav__brand img { width: 30px; height: 30px; transition: transform .5s cubic-bezier(.3,1.4,.5,1); }
-  .topnav__brand:hover img { transform: rotate(-8deg) scale(1.06); }
-  .topnav__links { display: flex; flex-wrap: wrap; gap: 2px; flex: 1 1 auto; }
-  .topnav__links a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 12px; border-radius: 7px; color: #3d4148; text-decoration: none; white-space: nowrap; transition: background-color .2s ease, color .2s ease; }
-  .topnav__links a:hover { background: rgba(255, 254, 251, .75); color: #1d1f23; }
-  .topnav__links a[aria-current] { color: #1d1f23; font-weight: 600; box-shadow: inset 0 -2px 0 var(--accent); border-radius: 7px 7px 0 0; }
-  .topnav .open { margin-top: 0; }
-  @media (max-width: 760px) { .topnav__in { padding: 6px 16px; } .topnav__links { order: 3; flex: 1 0 100%; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; } .topnav__links::-webkit-scrollbar { display: none; } .topnav__links a:focus-visible { outline-offset: -2px; } }
-  @media (prefers-reduced-motion: reduce) { * { transition-duration: .001ms !important; } }
-  table { border-collapse: collapse; width: 100%; font-size: 14px; }
-  td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--ink-2); }
-  td:first-child { white-space: nowrap; color: var(--ink); }
-  footer { margin-top: 40px; font: 13px system-ui, "Segoe UI", sans-serif; color: var(--muted); }
+  /* the block of type, as on the home page: a grey panel behind its right
+     half and a yellow bracket over the panel's corner */
+  .lead { position: relative; margin-bottom: 11vh; }
+  .lead::before { content: ""; position: absolute; left: 46%; top: -44px; width: 190px; bottom: -34px; background: rgba(40, 40, 40, .78); z-index: -1; }
+  .lead::after { content: ""; position: absolute; left: calc(46% + 62px); top: -55px; width: 138px; height: 68px; border: 0 solid var(--spot); border-width: 11px 11px 0 0; z-index: -1; }
+  h1 { font: 700 clamp(44px, 8vw, 86px)/.98 var(--head); letter-spacing: -.05em; margin: 0 0 .3em; }
+  h1::before { content: ""; display: inline-block; width: .9em; height: .085em; background: var(--spot); margin-right: .1em; vertical-align: .3em; }
+  h1 i, h2 i { font-style: normal; color: var(--spot); }
+  .lead p { margin: 0; max-width: 34ch; font-size: 15px; }
+  .lead p b { color: var(--spot); letter-spacing: .02em; }
+
+  h2 { font: 700 clamp(26px, 3.4vw, 36px)/1.05 var(--head); letter-spacing: -.045em; margin: 9vh 0 18px; }
+  h2::before { content: ""; display: inline-block; width: 30px; height: 4px; background: var(--spot); margin-right: 8px; vertical-align: .3em; }
+  p, li { color: #d6d2c8; max-width: 66ch; }
+  p { margin: 0 0 1em; }
+  strong { color: var(--white); }
+  code { font: .9em var(--mono); color: var(--spot); }
+  ul { padding-left: 1.1em; margin: 0; }
+  li { margin-bottom: .7em; }
+  li::marker { color: var(--spot); }
+  .go { display: inline-block; margin: 14px 0 0; font: 700 13px var(--head); color: var(--ink); background: var(--spot); padding: 12px 18px; text-decoration: none; transition: transform .25s cubic-bezier(.16, 1, .3, 1); }
+  .go:hover { color: var(--ink); transform: translateX(4px); }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; margin-top: 8px; }
+  td { padding: 10px 14px 10px 0; border-top: 1px solid var(--line); vertical-align: top; color: #d6d2c8; }
+  tr:last-child td { border-bottom: 1px solid var(--line); }
+  td:first-child { white-space: nowrap; color: var(--white); font-weight: 700; }
+  footer { margin-top: 11vh; font-size: 12.5px; color: var(--dim); }
+  footer a { color: inherit; }
+  @media (max-width: 760px) {
+    .brand { position: static; transform: none; writing-mode: horizontal-tb; display: inline-block; margin: 22px 0 0 22px; font-size: 18px; }
+    .wrap { padding: 8vh 22px 10vh; }
+    .lead::after { display: none; }
+    td:first-child { white-space: normal; }
+    .tick { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .go { transition: none; } }
 </style>
 </head>
 <body>
-<div class="topnav">
-  <div class="topnav__in">
-    <a class="topnav__brand" href="./"><img src="desktop/papertex.png" alt=""><span>PaperTeX</span></a>
-    <nav class="topnav__links" aria-label="Main">
-      <a href="./#try">Try it</a>
-      <a href="./#plot">Charts</a>
-      <a href="./#how">How it works</a>
-      <a href="./#templates">Templates</a>
-      <a href="about.html" aria-current="page">About</a>
-    </nav>
-    <a class="open" href="app.html">Open the editor</a>
-  </div>
-</div>
-<main class="sheet">
-  <header>
-    <img src="desktop/papertex.png" alt="">
-    <h1>PaperTeX</h1>
+<a class="brand" href="./" aria-label="PaperTeX home">PaperTeX</a>
+<span class="tick" aria-hidden="true" style="left:25%;top:2.6%">+</span><span class="tick" aria-hidden="true" style="left:75%;top:2.6%">+</span>
+<span class="tick" aria-hidden="true" style="left:2%;top:26%">+</span><span class="tick" aria-hidden="true" style="right:1.3%;top:26%">+</span>
+<span class="tick" aria-hidden="true" style="left:2%;top:74%">+</span><span class="tick" aria-hidden="true" style="right:1.3%;top:74%">+</span>
+<main class="wrap">
+  <header class="lead">
+    <h1>About <i>/</i></h1>
+    <p><b>PAPERTEX.</b> You write on the page. It writes the LaTeX.</p>
   </header>
-  <p class="tag">You write on the page. It writes the LaTeX.</p>
-
   <p>PaperTeX is a free LaTeX editor that runs entirely in your browser. Headings, equations,
     tables and references are edited directly on a page that looks like the finished PDF, and a
     clean, compilable <code>.tex</code> file is written for you as you go. Type <code>int</code>
@@ -94,12 +84,23 @@
   <p>It works the other way round too. Open a <code>.tex</code> file or a whole Overleaf project
     (its <code>.zip</code>, with the images and the <code>.bib</code>), paste LaTeX onto the page, or type it
     in the LaTeX pane beside the page: it becomes a document you can edit on the page.</p>
-  <p><a class="open" href="app.html">Open the editor</a></p>
+  <p><a class="go" href="app.html">Open the editor →</a></p>
 
-  <h2>Why</h2>
-  <p>One shouldn’t have to code for a document.</p>
+  <h2>Why <i>/</i></h2>
+  <p>LaTeX is an undeniable cornerstone of science. Papers, theses, lecture notes and lab
+    reports are written in it, because it is how mathematics gets typeset: equations that
+    number themselves, references that stay right when a section moves, and a source file
+    that journals accept.</p>
+  <p>But LaTeX is a programming language. To put a fraction on a page you write code, compile
+    it, and read an error log when a brace is missing. People with something to say about
+    physics or mathematics spend their first weeks learning the tool instead of saying it,
+    and some settle for a word processor and lose what LaTeX would have given them.</p>
+  <p>One shouldn’t have to code to create a document. PaperTeX keeps what makes LaTeX worth
+    having and takes the code out of the way. You write on a page that looks like the finished
+    paper, and the LaTeX is written for you. It is still yours: read it, edit it, or take it
+    anywhere LaTeX goes.</p>
 
-  <h2 id="privacy">Privacy</h2>
+  <h2 id="privacy">Privacy <i>/</i></h2>
   <ul>
     <li><strong>Nothing is uploaded.</strong> Your documents never leave your computer. Editing,
       exporting and compiling all happen in your browser.</li>
@@ -112,18 +113,18 @@
       servers and cached by your browser. Your document itself is not sent anywhere.</li>
   </ul>
 
-  <h2 id="licence">Licence and credits</h2>
-  <p>PaperTeX is open source under the MIT licence.</p>
+  <h2 id="licence">Licence and credits <i>/</i></h2>
+  <p>PaperTeX is open source under the MIT licence. The source is on
+    <a href="https://github.com/Ayz345/papertex" rel="noopener">GitHub</a>.</p>
   <table>
     <tr><td>Computer Modern fonts</td><td>from KaTeX, MIT licence</td></tr>
     <tr><td>Accented letters</td><td>CMU Serif, SIL Open Font License</td></tr>
     <tr><td>LaTeX engine</td><td><a href="https://github.com/SiglumProject/siglum-engine">@siglum/engine</a> (TeX Live 2025 compiled to WebAssembly), MIT licence</td></tr>
-    <tr><td>Home page animation</td><td><a href="https://gsap.com">GSAP</a> and ScrollTrigger 3.15, GreenSock’s standard “no charge” licence (<a href="https://gsap.com/standard-license">terms</a>)</td></tr>
     <tr><td>TeX Live packages</td><td>each under its own licence, mostly the LaTeX Project Public License, kept inside the files</td></tr>
   </table>
 
   <footer><a href="./">Home</a> · <a href="app.html">Open the editor</a><br>
-    Made by Ayaz Büyükterzi · <a href="mailto:ayaz.buyukterzi.hza@gmail.com">ayaz.buyukterzi.hza@gmail.com</a></footer>
+    Made by Ayaz Büyükterzi · Code co-authored with Claude, Anthropic’s AI · <a href="mailto:ayaz.buyukterzi.hza@gmail.com">ayaz.buyukterzi.hza@gmail.com</a></footer>
 </main>
 </body>
 </html>

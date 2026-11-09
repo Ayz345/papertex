@@ -70,10 +70,14 @@ Host notes:
   public custom domain, upload `engine/texlive/*` under `/tl2025/`, and add a
   CORS rule that allows `GET` from your site's origin.
 - **GitHub Pages:** it ignores `_headers`. The CSP still applies from the
-  `<meta>` tag, except `frame-ancestors`. Publish with a Pages workflow that
-  uploads `dist/web/` as an artifact; don't commit the 225 MB of TeX Live to
-  the repository. A project page lives under a path: build with
-  `--site=https://<user>.github.io/papertex`.
+  `<meta>` tag, except `frame-ancestors`. The workflow in
+  `.github/workflows/pages.yml` does the whole thing on every push to `main`:
+  it downloads TeX Live (kept in the Actions cache, never committed), builds
+  with `--with-texlive`, runs `check:launch` and uploads `dist/web/`. Turn it
+  on once under Settings → Pages → Source: *GitHub Actions*. A project page
+  lives under a path, so the workflow builds with
+  `--site=https://<user>.github.io/papertex`; change `SITE` there if the
+  address changes.
 
 The site **must be served over HTTPS** (every serious host does this): the
 compiler's worker and the storage APIs require a secure origin.
@@ -109,8 +113,6 @@ link-preview picture; and the 404 page.
 
 Still to do by hand:
 
-- The About page's dashed boxes, which are in your own words.
-  `check:launch` fails until they are gone.
 - After uploading: open the live site, press **Make PDF** once, and paste the
   address into a link-preview checker to see the picture.
 - The link-preview picture is drawn from `tools/og-card.html`. After changing

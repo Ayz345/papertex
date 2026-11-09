@@ -1279,6 +1279,11 @@
         body.classList.toggle('nopal', cut >= 2);
       }
     }
+    /* a tucked-away panel is out of the Tab order: Tab used to walk into
+       the hidden LaTeX pane, and the browser scrolled the whole row
+       sideways to show it, with no scroll bar to come back by */
+    if ($('.pal')) $('.pal').inert = body.classList.contains('nopal');
+    if ($('.side')) $('.side').inert = body.classList.contains('nopanel');
     if (state.zoomManual || !state.editor) return;
     /* an open chart editor or a formula being written would be torn down
        by redrawing the page under it: refit once it is done */
