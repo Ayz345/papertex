@@ -1,8 +1,8 @@
 /* PaperTeX — compiling the generated LaTeX to a real PDF, in the browser.
 
    The engine is @siglum/engine (MIT): TeX Live 2025 built to WebAssembly. It
-   starts loading in the background once the editor has settled (see warm()),
-   so the first PDF does not wait for it. Nothing is uploaded anywhere — the wasm and the TeX Live bundles are
+   starts loading in the background as soon as someone starts writing (see
+   warm()), so the first PDF does not wait for it. Nothing is uploaded anywhere — the wasm and the TeX Live bundles are
    fetched as static files and cached by the browser. */
 (function () {
   'use strict';
@@ -220,7 +220,7 @@
   /* ---- warming up ----
      The first PDF used to wait for the engine and the TeX Live parts a
      document needs (tens of megabytes) to download. Now they start
-     downloading as soon as the editor has settled: a small document with
+     downloading as soon as someone starts writing: a small document with
      the editor's standard preamble is typeset in the background, which
      fetches the same parts the starter document uses and leaves them in
      memory. Make PDF pressed meanwhile waits for it and shows its progress.
@@ -241,8 +241,17 @@
   function soon(fn) {
     if (window.requestIdleCallback) requestIdleCallback(fn, { timeout: 4000 }); else setTimeout(fn, 1500);
   }
-  if (document.readyState === 'complete') soon(warm);
-  else window.addEventListener('load', function () { soon(warm); });
+  /* only once someone starts writing: opening the editor to look costs
+     nothing, and the download starts with the first thing typed or pasted */
+  /* the editor handles most typing itself (beforeinput, keydown), so no
+     'input' event may ever fire: listen for those too */
+  var EVENTS = ['beforeinput', 'input', 'paste', 'keydown'];
+  function first(e) {
+    if (e.type === 'keydown' && (e.ctrlKey || e.metaKey || e.altKey || String(e.key).length !== 1)) return;
+    EVENTS.forEach(function (n) { document.removeEventListener(n, first, true); });
+    soon(warm);
+  }
+  EVENTS.forEach(function (n) { document.addEventListener(n, first, true); });
 
   function compile(tex, doc, onProgress) {
     var logs = [];
