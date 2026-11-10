@@ -75,3 +75,7 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          # the site is about 235 MB, most of it TeX Live; GitHub takes longer
+          # than the default 10 minutes to sync an artifact that size
+          timeout: 1800000
