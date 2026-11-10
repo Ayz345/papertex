@@ -13,6 +13,8 @@ name: Publish the site
 on:
   push:
     branches: [main]
+    # a change only to these does not alter the site
+    paths-ignore: ['README.md', 'docs/**', 'usability-test-2026-10-04/**', '.github/ISSUE_TEMPLATE/**']
   workflow_dispatch:
 
 permissions:

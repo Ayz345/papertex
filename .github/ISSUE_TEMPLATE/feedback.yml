@@ -1,0 +1,39 @@
+name: Feedback
+description: You tried PaperTeX. What worked, what did not, what you wished it did.
+title: "Feedback: "
+labels: [feedback]
+body:
+  - type: markdown
+    attributes:
+      value: Thank you for trying PaperTeX. A few lines are plenty. Please do not paste anything private from your documents.
+  - type: dropdown
+    id: who
+    attributes:
+      label: You are
+      options: [A student, A teacher or lecturer, A researcher, Someone who already writes LaTeX, Other]
+    validations: { required: true }
+  - type: textarea
+    id: did
+    attributes:
+      label: What did you try to write?
+      placeholder: Lab report with two tables and a fitted curve, homework with matrices, …
+    validations: { required: true }
+  - type: textarea
+    id: good
+    attributes:
+      label: What worked well?
+  - type: textarea
+    id: bad
+    attributes:
+      label: Where did you get stuck, or what was missing?
+    validations: { required: true }
+  - type: dropdown
+    id: again
+    attributes:
+      label: Would you use it again for real work?
+      options: [Yes, Maybe, No]
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: Chrome on Windows, Safari on iPad, …

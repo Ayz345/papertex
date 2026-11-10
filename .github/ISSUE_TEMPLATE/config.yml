@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Open PaperTeX
+    url: https://ayz345.github.io/papertex/
+    about: The editor itself, nothing to install.

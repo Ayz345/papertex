@@ -19,6 +19,14 @@ every document up to a folder you pick on your computer (see
 
 **Use it:** <https://ayz345.github.io/papertex/> — nothing to install.
 
+| Write on the page, the LaTeX is written beside it | Four short tours on the home page |
+|---|---|
+| ![The editor: a typeset article on the page, its LaTeX in the pane beside it](docs/screenshots/5-editor.jpg) | ![The home page's map: five ways out from a compass](docs/screenshots/2-map.jpg) |
+| ![Equations: an integral typed into its slots, with the keys pressed shown under the page](docs/screenshots/3-equations.jpg) | ![Charts: a function typed and drawn, with a pie, a histogram and a polar rose](docs/screenshots/4-charts.jpg) |
+
+Tried it? Tell me what worked and what did not:
+[give feedback](https://github.com/Ayz345/papertex/issues/new/choose).
+
 ## Run it from this repository
 
 Node or Python is enough; there is nothing to install first.

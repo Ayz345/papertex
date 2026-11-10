@@ -1,0 +1,27 @@
+name: Something is broken
+description: A wrong result, an error, or something that does not respond.
+title: "Bug: "
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations: { required: true }
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to make it happen again
+      placeholder: 1. Open the editor  2. Type …  3. Press Make PDF
+    validations: { required: true }
+  - type: textarea
+    id: latex
+    attributes:
+      label: The LaTeX, if it is about Make PDF or Download .tex
+      description: Copy it from the LaTeX pane. Leave out anything private.
+      render: latex
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+    validations: { required: true }
