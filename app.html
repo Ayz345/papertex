@@ -10,11 +10,17 @@
      style attributes are how the maths is laid out; fonts and pasted images
      are data: URLs; the compiled PDF is a blob:. connect-src names the
      engine host — tools/build-web.js narrows it to this site alone when
-     TeX Live is deployed beside the page. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+     TeX Live is deployed beside the page — and Dropbox's two API hosts,
+     which the page calls only after a user turns on Dropbox backup; the
+     web build keeps them only when papertex-dropbox below is set. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org https://api.dropboxapi.com https://content.dropboxapi.com; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <!-- Where the compiler's wasm and TeX Live live, if not beside this page
      (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
 <meta name="papertex-engine" content="">
+<!-- Dropbox backup: the App key of a Dropbox app registered by the site's
+     owner (DEPLOY.md, "Dropbox backup"). Empty: Dropbox is not offered, and
+     the page never talks to Dropbox. The key is public by design (PKCE). -->
+<meta name="papertex-dropbox" content="">
 <title>PaperTeX — write on the page, get the LaTeX</title>
 <meta name="description" content="A free LaTeX editor in your browser: write on a page that looks like the PDF, and get clean, compilable LaTeX. No account, nothing uploaded.">
 <meta property="og:title" content="PaperTeX — write on the page, get the LaTeX">
@@ -31,6 +37,8 @@
 <header class="top">
   <a class="brand" href="./" title="PaperTeX home — templates, about, privacy"><img src="desktop/papertex.png" alt="" width="26" height="26"><b>PaperTeX</b><i>write on the paper</i></a>
   <span class="savestate" id="saveState" role="status" aria-live="polite"></span>
+  <!-- the lasting copy (js/backup.js): shown only while a backup is turned on -->
+  <button class="backupstate" id="backupState" hidden></button>
 
   <button class="tb" id="btnNew" title="New document"><span class="k">🗎</span>New</button>
   <button class="tb" id="btnOpen" title="Open a saved PaperTeX project">Open</button>
@@ -207,6 +215,7 @@
 <script src="js/math.js"></script>
 <script src="js/sanitize.js"></script>
 <script src="js/store.js"></script>
+<script src="js/backup.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/latex.js"></script>
 <script src="js/doc.js"></script>

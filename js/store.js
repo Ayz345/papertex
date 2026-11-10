@@ -57,7 +57,15 @@
     del: function (id) { return tx('docs', 'readwrite', function (s) { s.delete(id); }); },
     all: function () { return tx('docs', 'readonly', function (s) { return req(s.getAll()); }); },
     getMeta: function (k) { return tx('meta', 'readonly', function (s) { return req(s.get(k)); }).then(function (r) { return r ? r.value : undefined; }); },
-    setMeta: function (k, v) { return tx('meta', 'readwrite', function (s) { s.put({ key: k, value: v }); }); }
+    setMeta: function (k, v) { return tx('meta', 'readwrite', function (s) { s.put({ key: k, value: v }); }); },
+    /* read and rewrite one record in a single transaction, so a save landing
+       in between cannot be overwritten by the older copy */
+    change: function (id, fn) {
+      return tx('docs', 'readwrite', function (s) {
+        var r = s.get(id);
+        r.onsuccess = function () { var rec = r.result; if (rec && fn(rec) !== false) s.put(rec); };
+      });
+    }
   };
   var LS = 'papertex.store.';
   var local = {
@@ -81,7 +89,12 @@
       return Promise.resolve(ids.map(function (id) { return JSON.parse(localStorage.getItem(LS + 'doc.' + id) || 'null'); }).filter(Boolean));
     },
     getMeta: function (k) { var v = localStorage.getItem(LS + 'meta.' + k); return Promise.resolve(v == null ? undefined : JSON.parse(v)); },
-    setMeta: function (k, v) { localStorage.setItem(LS + 'meta.' + k, JSON.stringify(v)); return Promise.resolve(); }
+    setMeta: function (k, v) { localStorage.setItem(LS + 'meta.' + k, JSON.stringify(v)); return Promise.resolve(); },
+    change: function (id, fn) {   /* synchronous here: nothing can come between */
+      var rec = JSON.parse(localStorage.getItem(LS + 'doc.' + id) || 'null');
+      if (rec && fn(rec) !== false) localStorage.setItem(LS + 'doc.' + id, JSON.stringify(rec));
+      return Promise.resolve();
+    }
   };
   var memory = {
     get: function (id) { return Promise.resolve(mem.docs[id] || null); },
@@ -89,7 +102,8 @@
     del: function (id) { delete mem.docs[id]; return Promise.resolve(); },
     all: function () { return Promise.resolve(Object.keys(mem.docs).map(function (k) { return mem.docs[k]; })); },
     getMeta: function (k) { return Promise.resolve(mem.meta[k]); },
-    setMeta: function (k, v) { mem.meta[k] = v; return Promise.resolve(); }
+    setMeta: function (k, v) { mem.meta[k] = v; return Promise.resolve(); },
+    change: function (id, fn) { var rec = mem.docs[id]; if (rec) fn(rec); return Promise.resolve(); }
   };
   var be = memory;
 
@@ -185,9 +199,18 @@
     });
   }
   function load(id) { return be.get(id).then(function (r) { return r ? r.json : null; }); }
-  function markBackedUp(id) {
-    return be.get(id).then(function (r) { if (!r) return; r.backedUp = Date.now(); return be.put(r); });
+  /* A copy of the document was written out (Save project, the backup
+     folder, Dropbox, a .zip). With `version` — the `updated` of the copy
+     that was written — the mark is set only if nothing newer has been saved
+     since, so a copy that is already behind never counts as current. */
+  function markBackedUp(id, version) {
+    return be.change(id, function (r) {
+      if (version != null && r.updated !== version) return false;
+      r.backedUp = Date.now();
+    });
   }
+  /* the whole record: what a backup writes out */
+  function getRecord(id) { return be.get(id); }
 
   /* Ask the browser not to clear this site's data under storage pressure.
      Chrome and Firefox grant it to sites people use; Safari still removes
@@ -211,6 +234,7 @@
     newId: newId,
     list: list,
     load: load,
+    record: getRecord,
     save: save,
     remove: function (id) { return be.del(id); },
     current: function () { return be.getMeta('current'); },

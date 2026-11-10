@@ -10,11 +10,17 @@
      style attributes are how the maths is laid out; fonts and pasted images
      are data: URLs; the compiled PDF is a blob:. connect-src names the
      engine host — tools/build-web.js narrows it to this site alone when
-     TeX Live is deployed beside the page. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-BTJyM//T36beMA6SX6sm1ZiI/X46wKqND3Kylbm02vs=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-MJ5zhakDm7hm0lVafVeFb1BEOQ4+tODFM3S4D+QdsgU=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-CoZh+jYl8McHKRJEdhGuWtNb3QxVr4ajm91zizVx52o=' 'sha256-eRyB0e9MwcV/sN/Bkhv2uITPtCubhMwZrfU9ePEG2XU=' 'sha256-gTXpx1MqBsqZrci2XKPyfaRAhleCjx+MQvyPz6Ia6r8=' 'sha256-m6ZufmdvKdyk6Jk2FHD7vFynWbDROIwnBtSY5MCstIY=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-PELHPcRMzs0VEst+affQ+UKmlkviwOym4W2BWkYJq5M=' 'sha256-8pKaQF1tkxeLhGaQRindJVGvU+UQKwiqACC5Q69e8aY=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-xSlWA023E0ZEIcF7Nan+Zxuh2Puld/ez8/LWRJUgkt0='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+     TeX Live is deployed beside the page — and Dropbox's two API hosts,
+     which the page calls only after a user turns on Dropbox backup; the
+     web build keeps them only when papertex-dropbox below is set. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-BTJyM//T36beMA6SX6sm1ZiI/X46wKqND3Kylbm02vs=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-MJ5zhakDm7hm0lVafVeFb1BEOQ4+tODFM3S4D+QdsgU=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-UIRBwL6hyAquHMoKmJprK4BanuZapRSP6YD6EuYRBgs=' 'sha256-BjfGtGtv2t1HdS9KXb5wc8upklsPZvL5vk0n9720zUQ=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-CoZh+jYl8McHKRJEdhGuWtNb3QxVr4ajm91zizVx52o=' 'sha256-eRyB0e9MwcV/sN/Bkhv2uITPtCubhMwZrfU9ePEG2XU=' 'sha256-gTXpx1MqBsqZrci2XKPyfaRAhleCjx+MQvyPz6Ia6r8=' 'sha256-m6ZufmdvKdyk6Jk2FHD7vFynWbDROIwnBtSY5MCstIY=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-PELHPcRMzs0VEst+affQ+UKmlkviwOym4W2BWkYJq5M=' 'sha256-8pKaQF1tkxeLhGaQRindJVGvU+UQKwiqACC5Q69e8aY=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-FWjDUirz5bCvhhCAJBYU5gyV/RfSY+6TqRgc1PGFJc8='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org https://api.dropboxapi.com https://content.dropboxapi.com; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <!-- Where the compiler's wasm and TeX Live live, if not beside this page
      (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
 <meta name="papertex-engine" content="">
+<!-- Dropbox backup: the App key of a Dropbox app registered by the site's
+     owner (DEPLOY.md, "Dropbox backup"). Empty: Dropbox is not offered, and
+     the page never talks to Dropbox. The key is public by design (PKCE). -->
+<meta name="papertex-dropbox" content="">
 <title>PaperTeX — write on the page, get the LaTeX</title>
 <meta name="description" content="A free LaTeX editor in your browser: write on a page that looks like the PDF, and get clean, compilable LaTeX. No account, nothing uploaded.">
 <meta property="og:title" content="PaperTeX — write on the page, get the LaTeX">
@@ -231,6 +237,21 @@ button { font-family: inherit; }
 .savestate.saving { color: var(--muted); }
 .savestate.failed, .savestate.volatile { color: var(--danger); font-weight: 600; }
 .savestate.failed::before, .savestate.volatile::before { content: "● "; }
+/* the lasting copy, beside it: a quiet tick when fine, a button to press when not */
+.backupstate {
+  font: inherit; font-size: 11px; color: var(--faint); background: transparent; border: 1px solid transparent;
+  border-radius: 999px; padding: 2px 8px; margin: 0 6px 0 -4px; white-space: nowrap; cursor: pointer;
+  transition: color .15s ease, border-color .15s ease, background-color .15s ease;
+}
+.backupstate[hidden] { display: none; }
+.backupstate.ok::before { content: "✓ "; color: var(--accent); }
+.backupstate:hover { color: var(--ink); border-color: var(--line); }
+.backupstate.saving { color: var(--muted); }
+.backupstate.saving::before { content: "↻ "; display: inline-block; }
+.backupstate.paused, .backupstate.auth { color: var(--accent-ink); border-color: #6b5718; background: var(--accent-soft); }
+.backupstate.failed { color: var(--danger); border-color: #7a3626; background: #3a1d17; font-weight: 600; }
+.backupstate.failed::before { content: "● "; }
+@media (max-width: 760px) { .backupstate.ok, .backupstate.saving { display: none; } }
 
 /* the banner under the toolbar */
 .savebar {
@@ -814,6 +835,25 @@ body.nopanel .side { margin-right: calc(-1 * var(--sidew)); }
   border-radius: 7px; padding: 6px 12px; font-size: 12.5px; cursor: pointer; margin: 6px 0 4px;
 }
 .sbtn:hover { border-color: #57554f; color: var(--ink); }
+.sbtn.sbtn-main { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--on-accent); font-weight: 500; }
+.sbtn.sbtn-main:hover { background: #ffd75a; border-color: #ffd75a; color: var(--on-accent); }
+/* Document → Keep a copy */
+.bkbox .sbtn { display: block; }
+.bkbox .bkrow { display: flex; flex-wrap: wrap; gap: 6px; }
+.bkbox .bkrow .sbtn { display: inline-block; }
+.bkline { font-size: 12px; line-height: 1.5; color: var(--ink-2); margin: 2px 0 4px; padding-left: 10px; border-left: 2px solid var(--accent-2); }
+.bkline.paused, .bkline.auth { border-left-color: #8f7426; }
+.bkline.failed { border-left-color: var(--danger); color: var(--danger); }
+/* the restore dialog's list */
+.restorelist { max-height: 44vh; overflow-y: auto; margin: 4px 0 8px; border: 1px solid var(--line-2); border-radius: 8px; }
+.restorerow { display: flex; align-items: flex-start; gap: 9px; padding: 7px 10px; cursor: pointer; border-top: 1px solid var(--line-2); }
+.restorerow:first-child { border-top: 0; }
+.restorerow:hover { background: var(--chrome-2); }
+.restorerow.same { opacity: .55; cursor: default; }
+.restorerow input { margin: 3px 0 0; accent-color: var(--accent-2); }
+.restoretx { display: flex; flex-direction: column; min-width: 0; }
+.restoret { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.restorem { font-size: 11px; color: var(--muted); }
 
 /* keyboard shortcuts dialog */
 .kb-back {
@@ -2266,6 +2306,8 @@ blockquote.pt-quote {
 <header class="top">
   <a class="brand" href="./" title="PaperTeX home — templates, about, privacy"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAAeo0lEQVR4nO2de5BcV33nf+fc2+/X9Dz0HI2kkV9o5Qck2GAelsgarxcWp8JKxe6yS2zKhgBFAC+bwJrYBSFZNn/gMgRsnBgKKgXYDsWmNmQXGyTiBzYyXgO2hCXrPZJGmhnNTM/08957ztbv9m0YOwLNox+3+3w/Va2ZbnVP3759f9/zO7/f7/wOEQAAAAAAAAAAAAAAAAAAAACgxxDUg2ite/Jzgc4jhNCdPgYQGPmDDz5o7d6929Za2/y71lrC+EEr0fVrjG/+dae1trp5wLGpS+CT/NBDD8mdO3fyyVZCCEVE3vmeOzNzLK+nlS7Iua79YkB4UCqjN+Xz4qHvf78ghGhcc3z9/QqtSezZs9vavn27Dq7PrvAUQm0ggbJK/n3Bifc5cuRIX8xSF1uR2DbLkiOVSuUKaVl55XopaVkXK+WG/eOBLkGTJtuOkOs441KIcaXIjcYiT7uuOyW0fjbdN7gvm81Ovuw1Wss9e/bI7du3e2EWAxFmw19o9CdPnkxalr6SlHqr53lv0pqutG1rMJVKkpQWua7LryOlFNWqVVaMzn4I0FNorSkSiZBt151m/l1rRZVKlaq12qwQ4kVLWk9qz9vtkvXE8PDw1ILXWvwj8FpDRaishFWzPtjXDf/AgQOxfDZ5gyb9+1rr3xNCjKRSaXKcmn/iHcfx3S1fpIPPIoRo/B0Amn6JUv0W/M6XnJa2bctYLErRaIxqtRpVq5UpS1qPayn+l9bV761Zs+XMwmnsrl27zjt1NVYAXjniT06eGHZr+r1SyndFo9HLLEtSqVTmk8snn5/TeH4ojh+YjeYLWAjFP/m6jEQiMpGIk2VZVCqWzmgS/xAR+ov9azb8PHh+Y1rbcY+g0wYkdu/ebe3YsYMn7HT6+EvbLDv2MS3onclkIsujfLlcVlJKPlF80jCyg9Cj60LAgkDRaNRKpVJULBY9KcQPpZB/Nbhm/SMLpgYdDRh2TABYBRsKePz4i+ujdvwzQsj/lEwmo3Nzc+R6nifq0wEYPehqMdBESgphpdNp8jyPleER1/M+tXbthqeD51ivDHK3i44YF+fu2fjvu+++yPipsTvisdSz6XT6ZsdxotPT057neawOfFJg/KCrEXwRC+EHAefm5rxSqaSikcj1kuix8VMnHji2f/86Nv5O1RO01cDuvPNOv4iCXf4TJw5f8we///bHMpnUZzzXWzU9PcPTAC2lZMPv9NQEgGbDl7U/qBUKBc9xnEgmnbo5kc/uPX36+LtYBHgqwAVtbT2odr0Rf7BG9PPU2NE7Lcu+IxKx7WKxyIYPowemobXWXjQatePxOFWqtW9NnRv70Nat10y1c0og2uXy86i/b9++tf35zFcz6fQN09PTfAZY9dqqeACECaWUn0HI5/NWuVQ+WKyUb9606aInuMxYCOEHx7taABof5NChF6/OptPfjUajawuFAkZ9ABagtXYT8bgtpHRLlfIHNmwYvb8dWQLRDuM/fuTQLelM8m7PU5lKpeIKIbpmDQIA7YI9YsuSMh5PiEqldPe64dGPBjUDulUiIFtt/CeOHrw115f922q1luGcPowfgPPD02HPU1Qqlbz+/sGPnDp+5CtBqrxlq1xFq40/k819hT8Qp/WR1gPgwtTriMgZGBiIzMxM379uePNtrZoOyHYYv+u6XPSDnD4Ai4Cz4EKIyNTUlNvXl7818AQ4K9D0WgHZggIf99jhl96TzfV9hcsf2fillMjrA7BEeLp87tw5Jz/Qf+vxo4fuDbICTbVZ0ezS3nq0P7Xb81TccRxq/cjfWAgIjQHtRLfzzdxcLmefm5p+/8bRi+5rZp1AU6ymEak8fPjwqnQi8nNpWauCRTyy9a6S9Ndlcx8AANqFEMLvQ8HXXjBnb2nFkGVZXjKZtKemZ966ZcsljzRLBJqVjvMXRsei8hvxRGIV5/mllC1N9QkpyXMdKs0XqFyaJ8+pwQkAbUD4Bm9ZNsWTSUqlc2RH4r4QtOwd2dI9T1arVZ2Mx78xPn7oSiI6u3BB3XKxmzXvP3r4wJ2rVq26ngMXrU71sWNRLs7R9OQ4CSkok81TKpP1VRmAdsw4y6Uizc1O+7dcfpAyucFWiwALgNfX17e6UCh8Qwjx1mY0vlmRxTQUaGzswKvjkfTTNacmWalauZiHXf5yqUDnzp6igVVrad2GUYonUogBgLbjOlU6Oz5Gp44folQ2T7n8UDumA25/f789cXbyQ5u2XPzXK50KiJV28XmBXrDyJ5JPJVLJVxfniy2t7Wfjr1VLNDF+glavHaaR0a1+RzCtQtNhCRiE8ENcFk2dHaPDB/dRrn+I0pn+lnoCHA+wbZtjAsVKrfyaDRsuOhTMEpb1pitx1f0WXseOHPzT/FD/qycnJ1s+72cKM5OUTGVoZPQyIl1vBArXH3QErUmrGg2sGqb5uQJNnDlFiWTWDw62KkvAlu44jkqlUplqpfKllU4FlvXC4A3VkSNH1kSj0Y8VCgXV6lV9PPo7ToWq5TKtWTfiHzqMH3Qc4W9TQWvWbfAHokp53o9RtTJNyD0zZmdnvXQmc/2xYwfe2mgosqy/tQIh0ha5/yOTyfRzs87WNvGoj/K1Spks26Z0NldvBoygH+gwgq9BrSgaT1IimaJqubSwSXVL35o7Z9kicg93z270Jm25AASBP29s7PCl8UTyXbOzsy3P9zfgXD93WrUj0bootONNAbgQ/jRUUiQSJdWmeBRnBbi9WDaXvTQWk9xRqNE4d0ksx3B9u1Ou+mQiEY+xCrU9BN/iSCsAy6HVGYBXwl431wbYwvrE8ePHE0EnYtEyAai3PxfeoUOHVtu2/c65uTl+AIt8AOgAbHtccZvJZi4VwtsRrBRckj0u1Xj958ci4n2ZTCblui4H/+CJA9BBfC9cqY8Fd3VLBCBwLVTd1dDvqVQqvguy5KMFADQNzr4Vi0Xeluy606cP/qtghyLZCg+Ag39aCOct6Ux2NOjuA/cfgBC0EkunU7ZbEzcHD7VEAIJ3o52WlKHc6RQAQ5Hlcpn9gbcHKUGvqQLQCP6dPPlMkhRdXy6X2fVHO28AwhMM1PF4/OJUKsrTAH8FcTM9AP95WueujCcSq2u1GoJ/AIQLL5FISO2p3wvui2YKgP/HPIduTCYT3JcM7j8A4UK4rktaqbcF91UzBUDxvn6WlG/kNl9YewtA6JCcmZPS2vbLXz4zGGQDLugF2Iuc/6tDh57JaRKXV6tV/82addQAgOatEkwkkv1kDV1GRI8HdvpbA4KLMWRfRWKxgc3xeKzPcZwWL/wBACwTFY/HhOe4VwX3L2inixEA/znKVb8bj8dtzP8BCPl6BKGvady90PMX7coLQRuCRX9YiQNAOOElwmzUG5opAPVooqbLOcqIACAAoUXUajXSJDdPTOzPLKZHwFI8gHy7lzsCAJaECPbHyBUKRb90v1mVgDz3TwV/HAFAAEJKsImIjMVy2eCh5XsAjRTgiRMvZIW0LmH3AgIAQDhhY3VdVycS8QxR5JLGw03wAJT2G58BAEIPT9UXm61DQQ8ABgMBAMBgIAAAGAwEAACDaflWXt0QMOH0JpY3mPe9SymN/96NFwDe4NGSkU5fj6BDaOUYLQLGCkC9qlGS5yn68r330uNP/JhiMd7ZBdWOvQyP+lzPsnFkhD5++x/T4NAqo0XAYAGo1zf/ySfuoPvu/yplsxl/KoClTr2PlIKKpUfp2eeeo4e//XeUzWT8Lb1NFAEjBYBHfcuO0s9/9hx981sP0/C6tYHdY/TvfYTv/eXzedr7zLP08N9/h957yy3kOg7ZtnnmYN4nXkCxVOJdVfw4gFdf6Qh6Hv2y6UChMEcmY5vqAirl0lVXXUXXXP279M+PPUEDA/2+GIDehw1/auocrRoapJve8Xbf/ZfSzC73RgoAz/W0UpRIJOjeL91Df/LJO+hnz/2CotEoKSx56Pnv3nU9Gh3dTJ/99J/R6OgWUl7NFwUTMVIAGP7CtXJp3bp19I2vPUAz01PGXgSmoZRHuVyOhIwYbfxGC8CvPQG/zTn15QeC+aF5kWCzaHzHnvHGT6YLANNI/TSEAJiCMHrkb2C8ADQwMQcMACQQAIOBAABgMBAAAAwGAgCAwUAAADAYCAAABgMBAMBgjK8DQEuw8IK2Xa3HeAFAS7Cw4wXdW0ArMFYA0BIs3Mu1q9UavfENr6c/ev9tZPklu2Z27Gk1BgsAWoKFFlFfrfmP//R9OnrsOP3V5/7SX8MD+28+RgoAWoJ1A4Ky6bTfsu097/4PdMWVV5Hn1siyELduJkYKQAO0BAsz2u/Rx12a+HsCrcFIAUBLsPBjWRadPj1Ob37TG/zWbdzCjb830FyMFAC0BAs3UtR791977TX0ub/4c791m/IcP2MDmouRAsCgJVi44T0a6l2a6s1a0LyjNRgrAAxagoW7bVejSxPSf63DaAFg0BIsvMDwW4/xAtAAFxswEURVADAYCAAABgMBAMBgIAAAGAwEAACDgQAAYDAQAAAMxvg6ALQE6z3QSmzxGC8AaAnWu3ApMQq8fjvGCgBagvUevGCIVxFuHBmhj9/+xzQ4tAoicAEMFgC0BOtFuGdAsfQoPfvcc/Twt/+OspkMaY1+gr8JIwUALcF6FeF7dvl8nvY+8yw9/Pffoffecgu5juN3FwL/EqPPClqC9Rr6ZdOBQmGuo0fTDRgpAGgJ1ruw4U9NnaNVQ4N00zve7rv/UlqdPqzQYqQAoCVY736vruvR6Ohm+uyn/4xGR7eQ8mroJvRbMFIAGLQE602U8iiXy5GQERj/IjBWABi0BOvNVmK8nRhG/sVhtAAwaAnWiwi4/YvEeAFogIoxYCJYDASAwUAAADAYCAAABgMBAMBgIAAAGAwEAACDgQAAYDAQAAAMBgIAgMFAAAAwGAgAAAYDAQDAYLAYqIvRyqv/IsTCbljtPgq/tXp9GS7oNiAAXYsmYcUoHHisRhCBLgQC0IX4ba5llA79+Ju0/wdfIyE7MPwLQZ7j0vC2HXTVTf+tvv6ee62zNwK6BghAF7r9PPLve/TL9Og9HyA72viPDhyMJDr89A+pcOYgXfe+B3wBgP13FxCAboINTEbJKc/Ss9/5LMWSFtnxOGnF7ndniCWJ9v3w67T1+j+iVRe9jrRXJYEuvF0DBKDbEIKU55BbK5GwpN8Es77NUQfQRNK2/em/W53vzDGAFQEB6CaE8EfYWGqALn7ju2nvg1+gZF53zAPg6P/8VJU2XHl1ffRXLgmBzHI3AQHoMtjAtPbodf/xc/79g48/SHWPW7ffE3E8Wr/tarru1i+RHUv5G3ESBKCrgAB0G0L4GXcrGqM3/OE99Nqdd/lZAf/BNmqAX3qgNMUyQ/UH/K24Mfp3GxCAbkV5pLVD0VR/Rw/DH/W5JgHG35VAAMKE1vWg3lJe4pZ/vR9Gu/nV+wrSpBYdN4BYhAcIQJiQEZIyQj2Pdjt9BCAAAhAGOI0nLZo7e4h+uefrZEXszqX2WgSP+k7VoQ1Xbqe1r7oOGYOQAAEIS2kvRWh2/CA99sCn/eKaDtb2tATLIirOEF13a43WvmqHn7rkOgbQWSAAIcKyY5Tqj1E0HutodV8rkJZNJMsUiac7fShgARCAEMEVfpW5ql/s04seQGWOyKtVOn0oYAEQgBDgR8W1R4ObX0P//i8eqbvGPRcDEOS5inJrNvufFesFwgEEIAz4S+g0xdIDtP7yf009j+aSYSwbDgMQgDCh3HpVX5PQTfIi6rbaJIMVXAcA4w8LEICwlfkKv7B/RdRFRJC0mlRToL162g7LfHsOCECP9gxgqnMTJKRYdjiBR2qlFMXTfX4TEq1qqOLrMSAAPdcqLELzk8foR/d/gCZe+gnJiLWCgGJdAJK5tfSmW+6mtVs5fw8R6CUgAL2Cb+SS3GqRHrl7F5342U8onrVJl1YWU2APonRugr73uZvonX/5NPWtvZS0H8RDEU8vgG+xp0Z/m86+9BSd2v8TSg+k/HiCtCMruglhUzybodLsHB168lt+EK/XipRMBh5Aj2HH0n5PjrogNEHfOWDvr/0niiazzThEECIgAD0CR+i159DQ6Gtp61v+Cz33v79O0SSnFlf4hyWRWyFac9k2uuTNf+h3JZbIBvQMEIAewk+vC01vvu1+yq6+mMae372ylYWcBXA9yq4epat33eUXKnHnH/T+7h0gAD1YUSgti17zB3f4t6YC4+85IAA9R33CzoU7Tane8zWFd/xBBV8vAgHoSURzq/ZQuduzIA0IgMFAAAAwGAgAAAYDAQDAYCAAABgMBAAAg4EAAGAwEAAADAYCAIDBQAAAMBiUAgfdc7n1FWpee4n61sVScqNV1DL/JowXADZ8aUUJ29T1KtzRWEEEfgO26SM/G//0uUl6Yd9+sm2jT0fPfbc88l/92t/xv2OtHIjAebBNH/mfePJJ+tCHb6fTp8fJsmSv7chlLOz1u65HV1/9O3TvX99D69atJaVcks1ok9ZD2MaODtKmyYmz9OGP/FcaHz9D+b4ceWh22VNYlkWPPfYkffKOO+mBv7mXF0l3+pBCh5ECoJQmy5a0b/9+Ghs7Rf39earV2EXs9JGBZn/PQ4MDtPenz9JcYZb68gOYCrwCIwWgHhXWtGF4mFKpJFWrVYrFYr/aUgv0Atr3AKampumK0U2USKb8hqbICLwcIwWAU0Oe59Dm0S303z/xcfrEHXdRoTDn/5/200eg2/G3NfMUDQ0N0qfv+pQv8J7r+HEeYLgAMJaUpJRD773lZtr6qkvpyR8/TdFotGk76oLOw9/lTe94G23aNEraq8H4z4OxAsBIIfwL4/Wvv9a/gd7E388Q0f/zYrQAMHxhKK8WVAKCXoPTfkj9/WaMFwAGFwkwFUREADAYCAAABgMBAMBgIAAAGAwEAACDgQAAYDAQAAAMBnUAaAm2CNBeq1cxXgDQEmwpoL1Wr2G0AKAl2OLPE9pr9SbGCgBagi0etNfqXYwUALQEWzpor9WbGCkAaAm2vHOG9lq9h5ECgJZgSwXttXoVIwUALcGWBtpr9S5GCgCDlmBLA+21ehNjBYBBS7Clg/ZavYXRAsCgJdjiQeek3sN4AWBwYQNTwWIgAAwGAgCAwUAAADAYCAAABgMBAMBgIAAAGAwEAACDgQAAYDAQAAAMZvECoP3OkACA7kA3TQCEkEITRXhFGAAg/KXtSqnIop57oSdorQVRoUykxyIR/29CBQAIIVprLaUU1WqtrJQ71nh42QIgBA/8JEZGri1LIU5CAAAIN5ZliVqtWnGc6ZMrFoCFqLrArPgAAQCtRQjpxmJJazHPlYt9jlb6p/AAAAg1KhaL8Y8DIyOXz/CMIPDiV+4BaKHPwAMAIPzt20nT2cb0/ULPX4wA+Api2/bearWqhBCoHQAgnHAQkA12b3C/KQKg/L8kagfK5cq8ZVkSwQAAQol0HIe0kP8vuK9XLADsSnAq8MUXT05rrQ7W5xhIBQIQJthIeXAulcpFKd0XGg9f6HWLdeetHTt2uJroiUAAfK8AABAaVDweJ6W8F9evv+gkD9pCCNUsAfCVRGl6pFqt8u+IAwAQLnQ0GuWfPwgMv2lpQMZXEp2Tj5dKpZlIJII4AADhQtZqNa4D/l4L1gL4cQC5qW/TLGn940QiwX8c0wAAQgAbZzQaleVy6XQqpRoBwEXZ51Jc+aCoQD7E5YaoCQAgNHipVIo8pR7t798yy/HACxUALUcAPP8FEecfC7OFSVYcpAMBCAWSY3NC0teW/MLFPjGYBljr1l0y4Sn3u6lUSjREAQDQGbTWKpFIiFKptH94+MQ/B9H/RdvlUqP5fnmhp9XnS6WSK4RYVKQRANAaeFSOx+NCC/q8EDvcxUb/lyUAnF5ghdm48ZL91WrtsXQ6zW4BvAAAOhj8K8zOTlmW8916746leeXLyecLIXhtkPqMUsq/AwBg2m4LHg/CnlJfXL/+sslfB+pbKAA8v+CU4IbNF+8uzs//KJPJWO3yAnzl0YqrndrxdgAsDuGPxqSU27YBkUf/SCRiFQpz08KKfSEY/Zecml9RRZ8SdLvjOFV/CWJL1wew4WuKxuLk1Bwqz8/7h45UJAgFQpLnVKlcKlI0lgg8Ad3y4F8ymRSucj81PDw8tZzRf9kCEMQCrI0bL/rpfLH4rVwuZ6kWD8ts7JFonOxolM6Mc7szTD1A59GqXnU7OTFOrutQIpkOBqbWXZ9KKZVKpazZ2cKBDRuO38ce+XIL8+wVHIdfHXj06NE/nSvM3RiPxwdb2y9Ac6sjyuT6aXriNE2dHaOBVcNE2oUnADqGsKJULs7SqRNHKJXOkR2J+dPUViKl1IIEKdIf5Mh/UPizrDddkUwFb+wdO3xwV74//+1CoeCuUFQuCM+xCtMTNFeYpo2jl9LQmmGqZyPRrxC0E+Ffc4WZKTp84HmS0qKBVev96UArr0WllDswMGBPTk1+aeOmiz/YsMHl/r0V+ym7d++2eanw8SMvPdg/0L/z3LlzrpSypSIghaTZmQn/5KczOcoPrKJ0JlsPwEAHQEvRvtmUyyWaOTfh3+LJNPUPriXB3Xha2DiXXf9kMilrNefw7Fzpql/84helnTt3stetOyYAQfRRnDjxQl/Eyu61bWtzuVzm1kQtXTLM04FqpUjzhWmqVkowfNBmNNnRGKUzfZRIZfmCZGNodcMPz7YjoliefePmzVufCpp+rmi+0ZRIReNAjhzY97pUNvek6zra8zwuSWxppI4VlwXZ8xzyXKeVbwXAyzJSlmWTHYn4XifXw7QarbU7NDRknzkz/tGNmy+5W2ttCyF4yr0immagjbnI0cMv3prL9X2FS4WVUvxYy8P19bdAVgC0c/qv2xZ85nl/Pp+3Z2cL9w+PbL6tWcZPzbaaxoEdP3rw86tXr/7I2bMTjhBiUXuUAQDOb/z9/f327MzMU+s2jF7LDfr9Lv0rmPcvpNnzdK4StEc2XfzRiYmp+wcGBnhD0aYoFQCmofyRv8+eLxb3elR6W2D8jS37KHQCEByYXyrMrsrMzDSLAGcEMEEHYBnGXyqV956dmL5hZGTbOX58pUG/V9L0SH0gAvXeAcObb5s5xyLQz54ACwOSdAAs0u1n4z8zMX3DFVdcMd2MiP/5aFnkLEgP8kF7J8eO3pvNZN5XKBQ8pThtid2FAHglwQDp9fX12eVS6YnyxPS/29hC42dalqsPPAF/zcD64U3vnyvMvz+ZTFq8frnV6wYA6DaUPzISDQ0O2vPF+ftf+OVL21tt/NSGsl1f0R588EFr3YaN9x0/fPBoLBH/al9f39rZ2Vm/e0k70oQAhBmttZtMJm2ltDs1M/Px9es3cp5ftNr4mbYZ36/qBI7uWxuPZr6aTqduKBQK5LqeJyVaiwHz0MGqoXw+L8vl8oFauXzL+k0XPRGs7mtaqu+30bYdfoJGItamTVtPr1m34d/Mzc1/OBKJzOZyWUtpzVMF7DMAjJnrK6U8ruvnW6lU+sKxE6evZuPntTU86rfD+Jm2u9+NtQP8IcfGDl0SsWN3R2z7Ri6nLJVK9fphBAlBDwf5IpGInUwmqVwpv+DWnNvXj4z+3+D/W+7yv5KOzb8XLmM8e+rEjSTF/0wkEtuq1SqVy2X/8UAIECMAXY2ue7jcwNNKp1NULlfOKuX9+cTUU/dt27arxrbgN9hq06jftiDgYnoLBr//0/PPP/+DgT71bsuWH81ms9vYIygWi36AJEgnYkNS0GWjvfC0Vha7+byrdrlUOlMslu6dL9W+vGXLljP8PA6Qr2Q9/0oJxejKJ2HXrl3+SXj++eejg4P5G7XyPiiI3pJOp61KuUzlSsU/oUE5JAtCKI4dgIbBB+673ymL093s5vOGna7j/FzY1hfn5ir/0DD8BV18OlocFxoj0trvreoXDjUeOzd+4gqX5H9WnvdvpSW3JhMJcj2PKpUKOY7DPclVfWGWvxsKp00atdKh+Vygd9Avq2Rl4/Xv8j/SsiwZj8cpEonwtUm1WnXMsu1HhKRvDgys+2Hjuu6ku38+QmcojQrChSeJT9rk5OnXeI77Zk10o3K9q+KJ+EAsGvXPvud5vtLyT/6OPM9DRgE0+7okNvKgAzaxS29Z0m8FxgZfLpVKUsoXPKV+ZAnxf+x4be/g4CWFBa8PleGHVgAWwq7Unj17JLccW/j4zMzx/lKBLtfCe7VlWVcKkiM1t3aRbVkZ13Vj6XQ6iWUHoJlIKWl+ft7jlpRKkWfbcp+n1BQp/dNIPL7XtvX+gYHhE6+4fi2ih4hoF1f5hcrwu0IAFnoFDz30kNw5NCRo+3ZW0X8xwp88eTKZSqVi8xMT6Vhf+iKeJgDQFFyX+vr6aHJmflxKOZ7JZFR/f//s+a7TPXv2WNu3b9dhHO17hqBMkncksoOfyBCAdl+DcuE1eOedd3blNdgVHsBiaAQA77rrLsG3Th8P6El0I2qP0R0AAAAAAAAAAAAAAAAAAAAAQOHk/wMA+E+RHKaCMAAAAABJRU5ErkJggg==" alt="" width="26" height="26"><b>PaperTeX</b><i>write on the paper</i></a>
   <span class="savestate" id="saveState" role="status" aria-live="polite"></span>
+  <!-- the lasting copy (js/backup.js): shown only while a backup is turned on -->
+  <button class="backupstate" id="backupState" hidden></button>
 
   <button class="tb" id="btnNew" title="New document"><span class="k">🗎</span>New</button>
   <button class="tb" id="btnOpen" title="Open a saved PaperTeX project">Open</button>
@@ -6188,7 +6230,15 @@ blockquote.pt-quote {
     del: function (id) { return tx('docs', 'readwrite', function (s) { s.delete(id); }); },
     all: function () { return tx('docs', 'readonly', function (s) { return req(s.getAll()); }); },
     getMeta: function (k) { return tx('meta', 'readonly', function (s) { return req(s.get(k)); }).then(function (r) { return r ? r.value : undefined; }); },
-    setMeta: function (k, v) { return tx('meta', 'readwrite', function (s) { s.put({ key: k, value: v }); }); }
+    setMeta: function (k, v) { return tx('meta', 'readwrite', function (s) { s.put({ key: k, value: v }); }); },
+    /* read and rewrite one record in a single transaction, so a save landing
+       in between cannot be overwritten by the older copy */
+    change: function (id, fn) {
+      return tx('docs', 'readwrite', function (s) {
+        var r = s.get(id);
+        r.onsuccess = function () { var rec = r.result; if (rec && fn(rec) !== false) s.put(rec); };
+      });
+    }
   };
   var LS = 'papertex.store.';
   var local = {
@@ -6212,7 +6262,12 @@ blockquote.pt-quote {
       return Promise.resolve(ids.map(function (id) { return JSON.parse(localStorage.getItem(LS + 'doc.' + id) || 'null'); }).filter(Boolean));
     },
     getMeta: function (k) { var v = localStorage.getItem(LS + 'meta.' + k); return Promise.resolve(v == null ? undefined : JSON.parse(v)); },
-    setMeta: function (k, v) { localStorage.setItem(LS + 'meta.' + k, JSON.stringify(v)); return Promise.resolve(); }
+    setMeta: function (k, v) { localStorage.setItem(LS + 'meta.' + k, JSON.stringify(v)); return Promise.resolve(); },
+    change: function (id, fn) {   /* synchronous here: nothing can come between */
+      var rec = JSON.parse(localStorage.getItem(LS + 'doc.' + id) || 'null');
+      if (rec && fn(rec) !== false) localStorage.setItem(LS + 'doc.' + id, JSON.stringify(rec));
+      return Promise.resolve();
+    }
   };
   var memory = {
     get: function (id) { return Promise.resolve(mem.docs[id] || null); },
@@ -6220,7 +6275,8 @@ blockquote.pt-quote {
     del: function (id) { delete mem.docs[id]; return Promise.resolve(); },
     all: function () { return Promise.resolve(Object.keys(mem.docs).map(function (k) { return mem.docs[k]; })); },
     getMeta: function (k) { return Promise.resolve(mem.meta[k]); },
-    setMeta: function (k, v) { mem.meta[k] = v; return Promise.resolve(); }
+    setMeta: function (k, v) { mem.meta[k] = v; return Promise.resolve(); },
+    change: function (id, fn) { var rec = mem.docs[id]; if (rec) fn(rec); return Promise.resolve(); }
   };
   var be = memory;
 
@@ -6316,9 +6372,18 @@ blockquote.pt-quote {
     });
   }
   function load(id) { return be.get(id).then(function (r) { return r ? r.json : null; }); }
-  function markBackedUp(id) {
-    return be.get(id).then(function (r) { if (!r) return; r.backedUp = Date.now(); return be.put(r); });
+  /* A copy of the document was written out (Save project, the backup
+     folder, Dropbox, a .zip). With `version` — the `updated` of the copy
+     that was written — the mark is set only if nothing newer has been saved
+     since, so a copy that is already behind never counts as current. */
+  function markBackedUp(id, version) {
+    return be.change(id, function (r) {
+      if (version != null && r.updated !== version) return false;
+      r.backedUp = Date.now();
+    });
   }
+  /* the whole record: what a backup writes out */
+  function getRecord(id) { return be.get(id); }
 
   /* Ask the browser not to clear this site's data under storage pressure.
      Chrome and Firefox grant it to sites people use; Safari still removes
@@ -6342,6 +6407,7 @@ blockquote.pt-quote {
     newId: newId,
     list: list,
     load: load,
+    record: getRecord,
     save: save,
     remove: function (id) { return be.del(id); },
     current: function () { return be.getMeta('current'); },
@@ -6355,6 +6421,561 @@ blockquote.pt-quote {
     estimate: estimate,
     /* is anything still waiting to be written? */
     busy: function () { return Object.keys(writing).length > 0 || Object.keys(pending).length > 0; }
+  };
+})();
+</script>
+<script>
+/* js/backup.js */
+/* PaperTeX — the lasting copy of every document.
+
+   PT.store (IndexedDB) is the working copy: fast, written on every change,
+   and gone when the browser's data for this site is cleared — or, in
+   Safari, after seven days without a visit. This file keeps a second copy
+   somewhere the user owns, written a few seconds after each change:
+
+     folder    a folder on this computer the user picks once (the File
+               System Access API — Chrome, Edge, Opera and other Chromium
+               browsers on a computer). Nothing leaves the machine; a folder
+               that a sync app (Dropbox, Google Drive, OneDrive, iCloud)
+               watches carries the copies to the cloud by itself.
+     dropbox   the app's own folder (Apps/<app name>) in the user's own Dropbox,
+               written straight from this page to Dropbox's API. Only
+               when the site's owner has registered a Dropbox app and put
+               its key in <meta name="papertex-dropbox"> (see DEPLOY.md);
+               otherwise it is not offered at all.
+
+   Each document is one file, "<title> [<id>].papertex.json", holding the
+   document exactly as Save project writes it, so Open reads it back too.
+   The id in brackets lets a restore put it back in its place.
+
+   And for every browser, one .zip with every document in it (zipAll).
+
+   Nothing here runs until the user turns it on. */
+(function () {
+  'use strict';
+
+  var S = PT.store;
+  var listeners = [];
+  var st = { target: null, phase: 'off', where: '', last: 0, error: '' };
+  var dir = null;                 /* the folder's handle */
+  var dbx = null;                 /* { refresh, access, exp } */
+  var names = {};                 /* id → file name last written, per target */
+  var dirty = {}, timer = null, running = null;
+  var DELAY = 2500;               /* after the last change: one write per pause */
+
+  function set(p) {
+    Object.keys(p).forEach(function (k) { st[k] = p[k]; });
+    listeners.forEach(function (fn) { try { fn(status()); } catch (e) { /* a listener's problem */ } });
+  }
+  function status() { return Object.assign({}, st); }
+
+  /* ------------------------------------------------------------- file names */
+  var EXT = '.papertex.json';
+  function fileName(rec) {
+    var t = String(rec.title || 'Untitled document')
+      .replace(/[\\/:*?"<>|\u0000-\u001f\u007f\[\]]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (t.length > 60) t = t.slice(0, 60).trim();
+    t = t.replace(/^\.+/, '') || 'Untitled document';
+    return t + ' [' + rec.id + ']' + EXT;
+  }
+  function idOf(name) {
+    var m = /\[([0-9a-z]{4,40})\]\.papertex\.json$/i.exec(name || '');
+    return m ? m[1] : null;
+  }
+
+  /* ----------------------------------------------------------------- folder */
+  var folderSupported = typeof window.showDirectoryPicker === 'function' && window.isSecureContext !== false;
+
+  function folderPermission(ask) {
+    if (!dir) return Promise.resolve('denied');
+    var o = { mode: 'readwrite' };
+    return (ask ? dir.requestPermission(o) : dir.queryPermission(o)).catch(function () { return 'denied'; });
+  }
+  var folder = {
+    write: function (name, text) {
+      return dir.getFileHandle(name, { create: true }).then(function (fh) {
+        return fh.createWritable();        /* written aside, swapped in on close */
+      }).then(function (w) {
+        return w.write(text).then(function () { return w.close(); }, function (e) {
+          return w.abort().then(function () { throw e; }, function () { throw e; });
+        });
+      });
+    },
+    remove: function (name) { return dir.removeEntry(name).catch(function () { /* already gone */ }); },
+    list: function () {
+      var out = [];
+      var it = dir.values();
+      function next() {
+        return it.next().then(function (r) {
+          if (r.done) return out;
+          var h = r.value;
+          if (h.kind === 'file' && idOf(h.name)) {
+            out.push({
+              name: h.name, id: idOf(h.name),
+              meta: function () { return h.getFile().then(function (f) { return f.lastModified; }); },
+              read: function () { return h.getFile().then(function (f) { return f.text(); }); }
+            });
+          }
+          return next();
+        });
+      }
+      return next();
+    }
+  };
+
+  /* ---------------------------------------------------------------- Dropbox
+     OAuth 2 with PKCE: the page is a public client, so there is no secret
+     to hide and no server in between. The user signs in on dropbox.com,
+     which sends them back to app.html with a one-time code; the page trades
+     it for a refresh token, kept in this browser (IndexedDB) and used only
+     to talk to Dropbox. "Stop backing up" revokes it. */
+  function dropboxKey() {
+    var m = document.querySelector('meta[name="papertex-dropbox"]');
+    var v = m ? (m.getAttribute('content') || '').trim() : '';
+    return /^[a-z0-9]{6,40}$/i.test(v) ? v : '';
+  }
+  var API = 'https://api.dropboxapi.com', CONTENT = 'https://content.dropboxapi.com';
+  function redirectUri() {
+    /* the editor's own address, as registered in the Dropbox app console */
+    return location.origin + location.pathname.replace(/[^/]*$/, '') + 'app.html';
+  }
+  function b64url(bytes) {
+    var s = '';
+    bytes.forEach(function (b) { s += String.fromCharCode(b); });
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function randomString(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return b64url(a); }
+  /* Dropbox-API-Arg is an HTTP header: JSON, with anything past ASCII
+     written as \uXXXX (a title like “Çalışma” would otherwise break it) */
+  function headerJSON(o) {
+    return JSON.stringify(o).replace(/[\u007f-￿]/g, function (c) { return '\\u' + ('000' + c.charCodeAt(0).toString(16)).slice(-4); });
+  }
+  function dbxError(r) {
+    return r.text().then(function (t) {
+      var e = new Error('Dropbox answered ' + r.status + (t ? ': ' + t.slice(0, 160) : ''));
+      e.status = r.status;
+      if (r.status === 401) e.auth = true;
+      if (r.status === 409 && /insufficient_space/.test(t)) e.message = 'Your Dropbox is full.';
+      throw e;
+    }, function () { var e = new Error('Dropbox answered ' + r.status); e.status = r.status; throw e; });
+  }
+  function token(force) {
+    if (!dbx) return Promise.reject(Object.assign(new Error('Not connected to Dropbox'), { auth: true }));
+    if (!force && dbx.access && dbx.exp > Date.now() + 60e3) return Promise.resolve(dbx.access);
+    var body = new URLSearchParams({ grant_type: 'refresh_token', refresh_token: dbx.refresh, client_id: dropboxKey() });
+    return fetch(API + '/oauth2/token', { method: 'POST', body: body }).then(function (r) {
+      if (r.status === 400 || r.status === 401) { var e = new Error('Dropbox needs you to sign in again'); e.auth = true; throw e; }
+      if (!r.ok) return dbxError(r);
+      return r.json();
+    }).then(function (j) {
+      dbx.access = j.access_token;
+      dbx.exp = Date.now() + (j.expires_in || 14400) * 1000;
+      S.setMeta('backup.dropbox', dbx);
+      return dbx.access;
+    });
+  }
+  /* one call, retried once with a fresh token if the old one expired */
+  function call(fn) {
+    return token().then(fn).then(function (r) {
+      if (r.status !== 401) return r;
+      return token(true).then(fn);
+    }).then(function (r) { return r.ok ? r : dbxError(r); });
+  }
+  function rpc(path, arg) {
+    return call(function (t) {
+      return fetch(API + path, { method: 'POST', headers: { Authorization: 'Bearer ' + t, 'Content-Type': 'application/json' }, body: JSON.stringify(arg) });
+    });
+  }
+  var dropbox = {
+    write: function (name, text, rec) {
+      return call(function (t) {
+        return fetch(CONTENT + '/2/files/upload', {
+          method: 'POST',
+          headers: {
+            Authorization: 'Bearer ' + t,
+            'Content-Type': 'application/octet-stream',
+            'Dropbox-API-Arg': headerJSON({ path: '/' + name, mode: 'overwrite', mute: true,
+              client_modified: new Date(rec.updated).toISOString().replace(/\.\d+Z$/, 'Z') })
+          },
+          body: new Blob([text])
+        });
+      });
+    },
+    remove: function (name) {
+      return rpc('/2/files/delete_v2', { path: '/' + name }).catch(function (e) { if (e.status !== 409) throw e; });
+    },
+    list: function () {
+      var out = [];
+      function page(j) {
+        (j.entries || []).forEach(function (en) {
+          if (en['.tag'] !== 'file' || !idOf(en.name)) return;
+          out.push({
+            name: en.name, id: idOf(en.name),
+            meta: function () { return Promise.resolve(Date.parse(en.client_modified || en.server_modified) || 0); },
+            read: function () {
+              return call(function (t) {
+                return fetch(CONTENT + '/2/files/download', { method: 'POST',
+                  headers: { Authorization: 'Bearer ' + t, 'Dropbox-API-Arg': headerJSON({ path: en.path_lower || '/' + en.name }) } });
+              }).then(function (r) { return r.text(); });
+            }
+          });
+        });
+        if (j.has_more) return rpc('/2/files/list_folder/continue', { cursor: j.cursor }).then(function (r) { return r.json(); }).then(page);
+        return out;
+      }
+      return rpc('/2/files/list_folder', { path: '' }).then(function (r) { return r.json(); }).then(page);
+    }
+  };
+
+  function connectDropbox() {
+    var key = dropboxKey();
+    if (!key) return Promise.reject(new Error('Dropbox is not set up on this site'));
+    var verifier = randomString(48), stateTag = randomString(16);
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)).then(function (h) {
+      try {
+        sessionStorage.setItem('papertex.dbx', JSON.stringify({ v: verifier, s: stateTag }));
+      } catch (e) { throw new Error('This browser will not keep the sign-in step; try a normal (not private) window'); }
+      var q = new URLSearchParams({
+        client_id: key, response_type: 'code', token_access_type: 'offline',
+        code_challenge: b64url(new Uint8Array(h)), code_challenge_method: 'S256',
+        redirect_uri: redirectUri(), state: stateTag
+      });
+      location.assign('https://www.dropbox.com/oauth2/authorize?' + q.toString());
+    });
+  }
+  /* Back from dropbox.com: app.html?code=…&state=… (or ?error=…). The
+     address is cleaned straight away, so a reload does not try again.
+     Resolves 'connected', 'declined', or null when this was no such return. */
+  function finishDropbox() {
+    var q = new URLSearchParams(location.search);
+    if (!q.has('state') || !(q.has('code') || q.has('error'))) return Promise.resolve(null);
+    var saved = null;
+    try { saved = JSON.parse(sessionStorage.getItem('papertex.dbx') || 'null'); sessionStorage.removeItem('papertex.dbx'); } catch (e) { saved = null; }
+    try { history.replaceState(null, '', location.pathname + location.hash); } catch (e) { /* file: */ }
+    if (!saved || saved.s !== q.get('state')) return Promise.resolve(null);
+    if (!q.has('code')) return Promise.resolve('declined');
+    var body = new URLSearchParams({ code: q.get('code'), grant_type: 'authorization_code', code_verifier: saved.v,
+      client_id: dropboxKey(), redirect_uri: redirectUri() });
+    return fetch(API + '/oauth2/token', { method: 'POST', body: body }).then(function (r) {
+      if (!r.ok) return dbxError(r);
+      return r.json();
+    }).then(function (j) {
+      if (!j.refresh_token) throw new Error('Dropbox gave no lasting sign-in');
+      dbx = { refresh: j.refresh_token, access: j.access_token, exp: Date.now() + (j.expires_in || 14400) * 1000 };
+      names = {};
+      return Promise.all([S.setMeta('backup.dropbox', dbx), S.setMeta('backup', { target: 'dropbox' }), S.setMeta('backup.names', {})]);
+    }).then(function () {
+      dir = null;
+      set({ target: 'dropbox', phase: 'ok', where: 'Dropbox', error: '' });
+      return 'connected';
+    });
+  }
+
+  /* --------------------------------------------------------------- the copy */
+  function backend() { return st.target === 'folder' ? folder : st.target === 'dropbox' ? dropbox : null; }
+
+  /* Write each document waiting for a copy, one at a time. A document
+     renamed since its last copy is written under the new name, then the old
+     file is removed. */
+  function flush() {
+    if (running) return running;
+    var be = backend();
+    if (!be || st.phase === 'paused' || st.phase === 'auth') return Promise.resolve();
+    var ids = Object.keys(dirty);
+    if (!ids.length) return Promise.resolve();
+    set({ phase: 'saving' });
+    running = (function next() {
+      var id = Object.keys(dirty)[0];
+      if (!id) return Promise.resolve();
+      delete dirty[id];
+      return S.record(id).then(function (rec) {
+        if (!rec || !rec.json) return;
+        var name = fileName(rec), old = names[id];
+        return be.write(name, rec.json, rec).then(function () {
+          names[id] = name;
+          var tail = old && old !== name ? be.remove(old) : null;
+          return Promise.all([tail, S.markBackedUp(id, rec.updated), S.setMeta('backup.names', names)]);
+        });
+      }).then(next, function (e) { dirty[id] = true; throw e; });
+    })().then(function () {
+      running = null;
+      set({ phase: 'ok', last: Date.now(), error: '' });
+      if (Object.keys(dirty).length) schedule();
+    }, function (e) {
+      running = null;
+      fail(e);
+    });
+    return running;
+  }
+  function fail(e) {
+    var name = e && e.name;
+    if (st.target === 'folder' && (name === 'NotAllowedError' || name === 'SecurityError')) {
+      set({ phase: 'paused', error: 'The browser no longer lets PaperTeX write to the folder.' });
+    } else if (st.target === 'folder' && name === 'NotFoundError') {
+      set({ phase: 'failed', error: 'The folder “' + st.where + '” is gone — moved, renamed or deleted.' });
+    } else if (st.target === 'dropbox' && e && e.auth) {
+      set({ phase: 'auth', error: 'Dropbox needs you to sign in again.' });
+    } else if (e && e.name === 'TypeError' && !navigator.onLine) {
+      set({ phase: 'failed', error: 'You are offline. The copy is written when the connection is back.' });
+    } else if (e && e.name === 'QuotaExceededError') {
+      set({ phase: 'failed', error: 'The disk is full.' });
+    } else {
+      set({ phase: 'failed', error: (e && e.message) || 'The copy could not be written.' });
+    }
+  }
+  function schedule(now) {
+    clearTimeout(timer);
+    timer = setTimeout(function () { timer = null; flush(); }, now ? 0 : DELAY);
+  }
+  /* after each save of a document to the store */
+  function queue(id) {
+    if (!st.target || !id) return;
+    dirty[id] = true;
+    if (st.phase === 'ok' || st.phase === 'saving' || st.phase === 'failed') schedule();
+  }
+  /* every document whose copy is missing or behind */
+  function queueAll(all) {
+    return S.list().then(function (docs) {
+      docs.forEach(function (d) { if (all || !d.backedUp || d.updated > d.backedUp) dirty[d.id] = true; });
+      schedule(true);
+    });
+  }
+  /* Just turned on, against a folder or Dropbox that may already hold
+     copies (from another computer, or an earlier time): every document here
+     is written, except one whose copy there is newer — that waits for the
+     user to restore it (or for their next change to it). */
+  function adopt() {
+    return listBackup().then(function (es) {
+      var hold = {};
+      es.forEach(function (e) { if (e.how === 'newer') hold[e.id] = true; });
+      return S.list().then(function (docs) {
+        docs.forEach(function (d) { if (!hold[d.id]) dirty[d.id] = true; });
+        schedule(true);
+      });
+    }, function (e) { fail(e); });
+  }
+  /* write what is waiting now (leaving the page, pressing Retry) */
+  function now() { clearTimeout(timer); timer = null; return flush(); }
+
+  /* ------------------------------------------------------- turning it on/off */
+  function chooseFolder() {
+    if (!folderSupported) return Promise.reject(new Error('This browser cannot write to a folder'));
+    if (S.kind() !== 'idb') return Promise.reject(new Error('This browser’s storage cannot remember a folder'));
+    return window.showDirectoryPicker({ id: 'papertex-backup', mode: 'readwrite', startIn: 'documents' }).then(function (h) {
+      return h.requestPermission({ mode: 'readwrite' }).then(function (p) {
+        if (p !== 'granted') { var e = new Error('Writing to that folder was not allowed'); e.name = 'NotAllowedError'; throw e; }
+        dir = h; dbx = null; names = {};
+        return Promise.all([S.setMeta('backup', { target: 'folder' }), S.setMeta('backup.dir', h), S.setMeta('backup.names', {}),
+          S.setMeta('backup.dropbox', null)]);
+      });
+    }).then(function () {
+      set({ target: 'folder', phase: 'ok', where: dir.name, error: '' });
+      return adopt();
+    });
+  }
+  /* a user's click: ask the browser again (it asks the user) */
+  function resume() {
+    if (st.target === 'folder') {
+      return folderPermission(true).then(function (p) {
+        if (p !== 'granted') { set({ phase: 'paused' }); return false; }
+        set({ phase: 'ok', error: '' });
+        return queueAll(false).then(function () { return true; });
+      });
+    }
+    if (st.target === 'dropbox') {
+      if (st.phase === 'auth') return connectDropbox().then(function () { return false; });
+      set({ phase: 'ok', error: '' });
+      return queueAll(false).then(function () { return true; });
+    }
+    return Promise.resolve(false);
+  }
+  function turnOff() {
+    var revoke = st.target === 'dropbox' && dbx
+      ? token().then(function (t) { return fetch(API + '/2/auth/token/revoke', { method: 'POST', headers: { Authorization: 'Bearer ' + t } }); }).catch(function () { /* forgotten here all the same */ })
+      : Promise.resolve();
+    clearTimeout(timer);
+    dirty = {};
+    return revoke.then(function () {
+      dir = null; dbx = null; names = {};
+      return Promise.all([S.setMeta('backup', null), S.setMeta('backup.dir', null), S.setMeta('backup.dropbox', null), S.setMeta('backup.names', {})]);
+    }).then(function () { set({ target: null, phase: 'off', where: '', error: '', last: 0 }); });
+  }
+
+  /* On every page load: pick up where it was. A folder's permission may
+     have lapsed with the tab (unless the user chose "Allow on every
+     visit"); then the backup waits, paused, for one click. */
+  function start() {
+    /* a return from dropbox.com comes first: it may be switching targets */
+    return finishDropbox().catch(function (e) {
+      return { error: e };
+    }).then(function (got) {
+      if (got === 'connected') return adopt().then(function () { return got; });
+      return Promise.all([S.getMeta('backup'), S.getMeta('backup.dir'), S.getMeta('backup.dropbox'), S.getMeta('backup.names')]).then(function (r) {
+        var cfg = r[0];
+        names = r[3] || {};
+        if (!cfg || !cfg.target) return got;
+        if (cfg.target === 'folder' && r[1] && folderSupported && typeof r[1].queryPermission === 'function') {
+          dir = r[1];
+          return folderPermission(false).then(function (p) {
+            set({ target: 'folder', where: dir.name, phase: p === 'granted' ? 'ok' : 'paused' });
+            if (p === 'granted') queueAll(false);
+            return got;
+          });
+        }
+        if (cfg.target === 'dropbox' && r[2] && dropboxKey()) {
+          dbx = r[2];
+          set({ target: 'dropbox', where: 'Dropbox', phase: 'ok' });
+          queueAll(false);
+          return got;
+        }
+        /* turned on in a browser that can no longer do it (or the site's
+           Dropbox key was removed): say so, rather than seem to back up */
+        set({ target: cfg.target, where: cfg.target === 'dropbox' ? 'Dropbox' : 'folder', phase: 'failed',
+          error: cfg.target === 'dropbox' ? 'Dropbox backup is no longer offered on this site.' : 'The backup folder can no longer be reached from this browser.' });
+        return got;
+      });
+    }).catch(function () { return null; });
+  }
+  if (typeof window.addEventListener === 'function') {
+    window.addEventListener('online', function () { if (st.phase === 'failed' && st.target) { set({ phase: 'ok' }); schedule(true); } });
+  }
+
+  /* ------------------------------------------------------------------ restore
+     What the backup holds, one entry per document (the newest copy, where a
+     renamed document left two), with how it compares to the copy here. */
+  function listBackup() {
+    var be = backend();
+    if (!be) return Promise.reject(new Error('No backup is turned on'));
+    return Promise.all([be.list(), S.list()]).then(function (r) {
+      return entries(r[0], r[1]);
+    });
+  }
+  function entries(files, local) {
+    var here = {};
+    local.forEach(function (d) { here[d.id] = d; });
+    return Promise.all(files.map(function (f) {
+      return f.meta().then(function (t) { f.modified = t; return f; }, function () { f.modified = 0; return f; });
+    })).then(function (fs) {
+      var best = {};
+      fs.forEach(function (f) { if (!best[f.id] || f.modified > best[f.id].modified) best[f.id] = f; });
+      return Promise.all(Object.keys(best).map(function (id) {
+        var f = best[id];
+        return f.read().then(function (text) {
+          var doc = null;
+          try { doc = JSON.parse(text); } catch (e) { doc = null; }
+          if (!doc || !Array.isArray(doc.blocks)) return null;
+          var mine = here[id] || null;
+          /* how it compares with the copy here: settled below, against the stored text */
+          return { id: id, name: f.name, modified: f.modified, text: text, doc: doc, how: mine ? null : 'missing', local: mine };
+        });
+      })).then(function (list) {
+        list = list.filter(Boolean);
+        return Promise.all(list.map(function (e) {
+          if (e.how) return e;
+          return S.load(e.id).then(function (json) {
+            if (json === e.text) e.how = 'same';
+            else e.how = e.modified > e.local.updated ? 'newer' : 'older';
+            return e;
+          });
+        }));
+      }).then(function (list) {
+        return list.sort(function (a, b) { return b.modified - a.modified; });
+      });
+    });
+  }
+  /* a .zip of documents, opened with Open: the same entries, from its files */
+  function entriesFromZip(files) {
+    var list = Object.keys(files).filter(function (k) { return idOf(k.replace(/^.*\//, '')); }).map(function (k) {
+      var bytes = files[k];
+      return { name: k.replace(/^.*\//, ''), id: idOf(k.replace(/^.*\//, '')),
+        meta: function () {
+          /* the time the zip was made is no guide; the stored one is */
+          return Promise.resolve(0);
+        },
+        read: function () { return Promise.resolve(new TextDecoder().decode(bytes)); } };
+    });
+    return S.list().then(function (local) { return entries(list, local); }).then(function (es) {
+      /* without dates, a copy that differs is simply "different" */
+      es.forEach(function (e) { if (e.how === 'older' || e.how === 'newer') e.how = 'different'; });
+      return es;
+    });
+  }
+  function isDocZip(files) {
+    var keys = Object.keys(files).filter(function (k) { return !/\/$/.test(k) && !/(^|\/)(__MACOSX|\.DS_Store)/.test(k); });
+    return keys.length > 0 && keys.every(function (k) { return idOf(k.replace(/^.*\//, '')); });
+  }
+
+  /* -------------------------------------------------------------------- .zip
+     Every document in one file, for browsers with no folder access and as a
+     copy to keep anywhere. Stored, not compressed: the parts are small text
+     and photos that are compressed already. */
+  var CRC = null;
+  function crc32(d) {
+    if (!CRC) {
+      CRC = new Uint32Array(256);
+      for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; CRC[n] = c >>> 0; }
+    }
+    var x = 0xffffffff;
+    for (var i = 0; i < d.length; i++) x = CRC[(x ^ d[i]) & 255] ^ (x >>> 8);
+    return (x ^ 0xffffffff) >>> 0;
+  }
+  function zip(files) {          /* [{ name, data: Uint8Array, time }] → Blob */
+    var parts = [], central = [], offset = 0, enc = new TextEncoder();
+    function le(n, bytes) { var a = []; for (var i = 0; i < bytes; i++) { a.push(n & 255); n = Math.floor(n / 256); } return a; }
+    files.forEach(function (f) {
+      var name = enc.encode(f.name), dt = new Date(f.time || Date.now());
+      var time = (dt.getHours() << 11) | (dt.getMinutes() << 5) | (dt.getSeconds() >> 1);
+      var date = ((Math.max(1980, dt.getFullYear()) - 1980) << 9) | ((dt.getMonth() + 1) << 5) | dt.getDate();
+      var crc = crc32(f.data), size = f.data.length;
+      /* version 20, flag 0x0800: the name is UTF-8 */
+      var common = [].concat(le(20, 2), le(0x0800, 2), le(0, 2), le(time, 2), le(date, 2), le(crc, 4), le(size, 4), le(size, 4), le(name.length, 2), le(0, 2));
+      var local = new Uint8Array([].concat(le(0x04034b50, 4), common));
+      parts.push(local, name, f.data);
+      central.push(new Uint8Array([].concat(le(0x02014b50, 4), le(20, 2), common, le(0, 2), le(0, 2), le(0, 2), le(0, 4), le(offset, 4))), name);
+      offset += local.length + name.length + size;
+    });
+    var csize = central.reduce(function (s, p) { return s + p.length; }, 0);
+    var end = new Uint8Array([].concat(le(0x06054b50, 4), le(0, 2), le(0, 2), le(files.length, 2), le(files.length, 2), le(csize, 4), le(offset, 4), le(0, 2)));
+    return new Blob(parts.concat(central, [end]), { type: 'application/zip' });
+  }
+  /* → { blob, ids: [[id, updated]…], count } */
+  function zipAll() {
+    var enc = new TextEncoder();
+    return S.list().then(function (docs) {
+      return Promise.all(docs.map(function (d) { return S.record(d.id); }));
+    }).then(function (recs) {
+      recs = recs.filter(function (r) { return r && r.json; });
+      var used = {};
+      var files = recs.map(function (r) {
+        var n = fileName(r);
+        while (used[n]) n = n.replace(/ \[/, '_ [');
+        used[n] = true;
+        return { name: n, data: enc.encode(r.json), time: r.updated };
+      });
+      return { blob: zip(files), versions: recs.map(function (r) { return [r.id, r.updated]; }), count: recs.length };
+    });
+  }
+
+  window.PT = window.PT || {};
+  window.PT.backup = {
+    folderSupported: function () { return folderSupported; },
+    dropboxOffered: function () { return !!dropboxKey(); },
+    status: status,
+    onChange: function (fn) { listeners.push(fn); },
+    start: start,
+    chooseFolder: chooseFolder,
+    connectDropbox: connectDropbox,
+    resume: resume,
+    turnOff: turnOff,
+    queue: queue,
+    now: now,
+    retry: function () { if (st.target) { set({ phase: 'ok', error: '' }); return queueAll(false).then(now); } return Promise.resolve(); },
+    pending: function () { return Object.keys(dirty).length > 0 || !!running; },
+    list: listBackup,
+    entriesFromZip: entriesFromZip,
+    isDocZip: isDocZip,
+    zipAll: zipAll,
+    fileName: fileName
   };
 })();
 </script>
@@ -16295,7 +16916,7 @@ blockquote.pt-quote {
      Documents live in PT.store (IndexedDB), any number of them. A change is
      written a moment after it is made; whether that worked is always shown,
      and a write that fails is never swallowed. */
-  var S = PT.store;
+  var S = PT.store, B = PT.backup;
   function serialize(doc) {
     return JSON.stringify(doc, function (k, v) { return k.slice(0, 2) === '__' ? undefined : v; });
   }
@@ -16313,6 +16934,7 @@ blockquote.pt-quote {
         if (id !== state.docId) return;
         setSaveState(S.kind() === 'memory' ? 'volatile' : 'saved');
         announce(id);
+        B.queue(id);
         if (!state.persistAsked) { state.persistAsked = true; S.persist(); }
         checkBackup();
       }, function (err) {
@@ -16380,7 +17002,8 @@ blockquote.pt-quote {
       el.title = {
         saving: 'Writing your changes to this ' + (NATIVE ? 'computer' : 'browser'),
         saved: NATIVE ? 'Every change is kept in this app — open it again any time from Open'
-          : 'Every change is kept in this browser — open it again from Open. Safari deletes it after 7 days without a visit: Save project keeps a copy on disk',
+          : backupOn() ? 'Every change is kept in this browser, and copied to your backup (' + B.status().where + ')'
+          : 'Every change is kept in this browser — open it again from Open. Safari deletes it after 7 days without a visit: Document → Keep a copy',
         failed: 'The last change could not be stored: ' + (err && err.message || 'storage refused'),
         volatile: 'This page cannot store anything here; your work lasts only as long as the tab'
       }[s] || '';
@@ -16397,24 +17020,30 @@ blockquote.pt-quote {
      iPhone or iPad) deletes a site's storage after 7 days without a
      visit. Until "Got it", it is said again next time. */
   function tellWeek() {
-    if (NATIVE || state.weekTold || state.bar || !state.docId) return;
+    if (NATIVE || state.weekTold || state.bar || !state.docId || B.status().target) return;
     state.weekTold = true;
-    S.getMeta('told.week').then(function (told) {
-      if (told || state.bar) return;
+    /* after the backup has started: with one on, there is nothing to say */
+    backupReady.then(function () { return S.getMeta('told.week'); }).then(function (told) {
+      if (told || state.bar || B.status().target) return;
+      var folder = B.folderSupported() && S.kind() === 'idb';
       showBar('week', 'Your work is kept in this browser, not on a server. Safari (and any browser on an iPhone or iPad) deletes it after' +
-        ' 7 days without a visit, and clearing browsing data deletes it too. Save project keeps a copy on your disk.',
-        function () { S.setMeta('told.week', Date.now()); }, 'Got it');
+        ' 7 days without a visit, and clearing browsing data deletes it too. ' +
+        (folder ? 'Pick a folder on this computer and PaperTeX keeps a copy of every document there as you write.'
+          : 'Save project keeps a copy on your disk.'),
+        function () { S.setMeta('told.week', Date.now()); }, 'Got it',
+        folder ? { label: 'Back up to a folder…', fn: function () { S.setMeta('told.week', Date.now()); hideBar(); pickFolder(); } } : null);
     });
   }
-  function showBar(kind, text, later, laterLabel) {
+  /* act: { label, fn } in place of Save project */
+  function showBar(kind, text, later, laterLabel, act0) {
     var bar = $('#savebar');
     if (!bar) return;
     state.bar = kind;
     bar.className = 'savebar on ' + kind;
     bar.textContent = '';
     bar.appendChild(h('span', 'savebar-t', text));
-    var act = h('button', 'savebar-b primary', kind === 'stale' ? 'Reload' : 'Save project');
-    act.onclick = function () { if (kind === 'stale') location.reload(); else saveProject(); };
+    var act = h('button', 'savebar-b primary', act0 ? act0.label : kind === 'stale' ? 'Reload' : 'Save project');
+    act.onclick = function () { if (act0) act0.fn(); else if (kind === 'stale') location.reload(); else saveProject(); };
     bar.appendChild(act);
     if (later) {
       var no = h('button', 'savebar-b', laterLabel || 'Later');
@@ -16429,9 +17058,10 @@ blockquote.pt-quote {
      being written to a file, say so — once a session, and not again for
      three days after "Later". */
   function checkBackup() {
-    if (state.backupNudged || state.bar || !state.docId) return;
+    if (state.backupNudged || state.bar || !state.docId || backupOn()) return;
     var id = state.docId;
-    Promise.all([S.list(), S.getMeta('snooze.' + id)]).then(function (r) {
+    backupReady.then(function () { return Promise.all([S.list(), S.getMeta('snooze.' + id)]); }).then(function (r) {
+      if (backupOn()) return;
       var rec = r[0].filter(function (x) { return x.id === id; })[0], snooze = r[1] || 0;
       if (!rec || id !== state.docId || state.bar || state.backupNudged) return;
       var week = 7 * 864e5;
@@ -16446,7 +17076,8 @@ blockquote.pt-quote {
       state.backupNudged = true;
       showBar('backup', '“' + rec.title + '” is kept only in this ' + (NATIVE ? 'app' : 'browser') +
         (rec.backedUp ? ', and has changed since you last saved a copy.' : '.') +
-        ' Save project keeps a copy on disk that clearing ' + (NATIVE ? 'app data' : 'the browser') + ' cannot touch.',
+        ' Save project keeps a copy on disk that clearing ' + (NATIVE ? 'app data' : 'the browser') + ' cannot touch' +
+        (B.folderSupported() && S.kind() === 'idb' && !B.status().target ? ' — or turn on Document → Keep a copy, and every change is copied to a folder.' : '.'),
         function () { S.setMeta('snooze.' + id, Date.now() + 3 * 864e5); });
     });
   }
@@ -16480,6 +17111,244 @@ blockquote.pt-quote {
         }
         return r;
       });
+  }
+
+  /* ------------------------------------------------------------------ backup
+     The store is the working copy; PT.backup (js/backup.js) keeps the
+     lasting one — in a folder the user picks, or their own Dropbox when the
+     site offers it. Turned on under Document → Keep a copy; its state is
+     always on show beside "Saved", and a problem is said in the bar. */
+  /* settled once PT.backup has picked up its state on load: the reminders
+     wait for it, so they never speak over a backup that is about to start */
+  var backupReadyDone = null;
+  var backupReady = new Promise(function (res) { backupReadyDone = res; });
+  function backupOn() { var b = B.status(); return !!b.target && (b.phase === 'ok' || b.phase === 'saving'); }
+  function whereText(b) { return b.target === 'dropbox' ? 'PaperTeX’s folder in your Dropbox' : 'the folder “' + b.where + '”'; }
+  function clockText(t) { return t ? new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''; }
+
+  function renderBackupState(b) {
+    var el = $('#backupState');
+    if (!el) return;
+    el.hidden = !b.target;
+    el.className = 'backupstate ' + b.phase;
+    el.textContent = { ok: 'Backed up', saving: 'Backing up…', paused: 'Backup paused', auth: 'Reconnect Dropbox', failed: 'Backup failed' }[b.phase] || '';
+    el.title = {
+      ok: 'A copy of every document is kept in ' + whereText(b) + (b.last ? ' — last written at ' + clockText(b.last) : '') + '. Click for the backup settings.',
+      saving: 'Writing a copy to ' + whereText(b),
+      paused: 'The browser needs your OK again before PaperTeX writes to ' + whereText(b) + '. Click to give it.',
+      auth: 'Dropbox wants you to sign in again before PaperTeX can write there. Click to sign in.',
+      failed: (b.error || 'The last copy could not be written.') + ' Click for what to do.'
+    }[b.phase] || '';
+  }
+  /* a problem is said once each time it starts, not on every change */
+  var lastPhase = 'off';
+  function backupChanged(b) {
+    renderBackupState(b);
+    renderBackupBox();
+    if (b.phase === lastPhase) return;
+    var was = lastPhase;
+    lastPhase = b.phase;
+    if (b.phase === 'paused') {
+      showBar('backup-paused', 'Backup paused: this browser asks again before PaperTeX may write to ' + whereText(b) +
+        '. Your work is still kept here. (Chrome can remember it: choose “Allow on every visit”.)', function () { /* later */ }, 'Later',
+        { label: 'Resume backup', fn: function () { hideBar(); resumeBackup(); } });
+    } else if (b.phase === 'auth') {
+      showBar('backup-paused', 'Dropbox wants you to sign in again before PaperTeX can keep copying your documents there.', function () { /* later */ }, 'Later',
+        { label: 'Sign in to Dropbox', fn: function () { hideBar(); resumeBackup(); } });
+    } else if (b.phase === 'failed') {
+      showBar('backup-failed', 'Backup failed: ' + (b.error || 'the copy could not be written.') + ' Your work is still kept in this browser.',
+        function () { /* later */ }, 'Later', { label: 'Try again', fn: function () { hideBar(); B.retry(); } });
+    } else if ((b.phase === 'ok' || b.phase === 'saving' || b.phase === 'off') && /^backup-/.test(state.bar || '')) {
+      hideBar();
+    }
+    /* the reminders to keep a copy are answered once a backup runs */
+    if ((b.phase === 'ok' || b.phase === 'saving') && (state.bar === 'week' || state.bar === 'backup')) hideBar();
+    if (b.phase === 'ok' && (was === 'paused' || was === 'auth' || was === 'failed')) toast('Backup running again.');
+  }
+  function backupClick() {
+    var b = B.status();
+    if (b.phase === 'paused' || b.phase === 'auth') { resumeBackup(); return; }
+    showSettingsPane();
+    var box = $('#backupBox');
+    if (box) box.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+  function showSettingsPane() {
+    var tab = $('.rtab[data-pane="pane-settings"]');
+    if (document.body.classList.contains('nopanel')) $('#btnPanel').click();
+    if (tab && !tab.classList.contains('on')) tab.click();
+  }
+  function resumeBackup() {
+    B.resume().then(function (ok) { if (ok) toast('Backup resumed — copies go to ' + whereText(B.status()) + '.'); },
+      function (e) { toast('Backup could not resume: ' + (e && e.message || 'refused') + '.'); });
+  }
+  function pickFolder() {
+    flushSave();
+    return B.chooseFolder().then(function () {
+      toast('Backing up to ' + whereText(B.status()) + ' — every document, a few seconds after each change.');
+      offerRestore(true);
+    }, function (e) {
+      if (e && e.name === 'AbortError') return;     /* closed the picker */
+      dialog({ title: 'No backup folder', body: (e && e.name === 'NotAllowedError'
+        ? 'The browser did not let PaperTeX write to that folder. Pick it again and allow editing — or choose another folder.'
+        : e && e.name === 'SecurityError' ? 'The browser would not open the folder picker here. Press the button again — and if this page is shown inside another site, open PaperTeX in a tab of its own.'
+        : 'That folder cannot be used: ' + (e && e.message || 'the browser refused') + '.'),
+        noCancel: true });
+    });
+  }
+  function connectDropbox() {
+    flushSave();
+    dialog({
+      title: 'Back up to Dropbox',
+      body: 'You sign in on dropbox.com and let PaperTeX use one folder of its own in your Dropbox, under Apps — nothing else there. ' +
+        'This page then writes a copy of each document to that folder, straight to Dropbox: no PaperTeX server is involved. ' +
+        'The page reloads on the way back; your document is saved first.',
+      okLabel: 'Continue to Dropbox'
+    }).then(function (yes) {
+      if (!yes) return;
+      flushSave();
+      B.connectDropbox().catch(function (e) { toast('Could not open Dropbox: ' + (e && e.message || 'refused') + '.'); });
+    });
+  }
+  function stopBackup() {
+    var b = B.status();
+    dialog({
+      title: 'Stop backing up?',
+      body: 'New changes stay only in this browser. The copies already in ' + whereText(b) + ' are left where they are' +
+        (b.target === 'dropbox' ? ', and PaperTeX’s access to your Dropbox is withdrawn.' : '.'),
+      okLabel: 'Stop backing up'
+    }).then(function (yes) { if (yes) B.turnOff().then(function () { toast('Backup turned off.'); }); });
+  }
+
+  /* Every document in one .zip — for any browser, and as a copy to keep */
+  function downloadAll() {
+    flushSave();
+    B.zipAll().then(function (z) {
+      if (!z.count) { toast('There are no documents to download yet.'); return; }
+      var day = new Date().toISOString().slice(0, 10);
+      return download('papertex-documents-' + day + '.zip', z.blob, 'application/zip', { noTextFallback: true }).then(function (r) {
+        if (r !== 'saved' && r !== 'anchor') return;
+        z.versions.forEach(function (v) { S.markBackedUp(v[0], v[1]); });
+        toast(z.count + ' document' + (z.count > 1 ? 's' : '') + ' in one .zip — open it with Open to bring them back.');
+        if (state.bar === 'week') S.setMeta('told.week', Date.now());
+        if (state.bar === 'backup' || state.bar === 'week') hideBar();
+      });
+    }, function (e) { toast('The .zip could not be made: ' + (e && e.message || 'storage refused') + '.'); });
+  }
+
+  /* What a backup holds, offered back. `fresh`: just turned on — say
+     something only if it holds documents this browser lacks or has older. */
+  function offerRestore(fresh) {
+    B.list().then(function (es) {
+      if (fresh) {
+        if (!es.some(function (e) { return e.how === 'missing' || e.how === 'newer'; })) return;
+        restoreDialog(es, 'This backup already holds documents that are not in this browser, or are newer there. Bring them in?');
+        return;
+      }
+      if (!es.length) { toast('The backup holds no PaperTeX documents yet.'); return; }
+      restoreDialog(es);
+    }, function (e) { toast('The backup could not be read: ' + (e && e.message || 'refused') + '.'); });
+  }
+  var HOW = {
+    missing: 'not in this browser',
+    newer: 'newer than the copy here — replaces it',
+    older: 'older than the copy here — would replace it',
+    different: 'differs from the copy here — would replace it',
+    same: 'the same as here'
+  };
+  function restoreDialog(es, intro) {
+    var box = h('div');
+    box.appendChild(h('p', '', intro || 'Tick the documents to bring back into this browser.'));
+    var ul = h('div', 'restorelist');
+    var picks = es.map(function (e) {
+      var row = h('label', 'restorerow' + (e.how === 'same' ? ' same' : ''));
+      var c = h('input');
+      c.type = 'checkbox';
+      c.checked = e.how === 'missing' || e.how === 'newer';
+      c.disabled = e.how === 'same';
+      row.appendChild(c);
+      var tx = h('span', 'restoretx');
+      var title = '';
+      try { title = PT.latex.plainText(e.doc.meta && e.doc.meta.title) || ''; } catch (err) { title = ''; }
+      tx.appendChild(h('span', 'restoret', title || e.name.replace(/ \[[^\]]*\]\.papertex\.json$/i, '')));
+      tx.appendChild(h('span', 'restorem', (e.modified ? relTime(e.modified) + ' · ' : '') + HOW[e.how]));
+      row.appendChild(tx);
+      ul.appendChild(row);
+      return { e: e, c: c };
+    });
+    box.appendChild(ul);
+    box.appendChild(h('p', 'shint', 'A document here is replaced only if you tick it. Nothing in the backup is changed.'));
+    dialog({ title: 'Restore documents', node: box, okLabel: 'Restore' }).then(function (yes) {
+      if (!yes) return;
+      var chosen = picks.filter(function (p) { return p.c.checked && !p.c.disabled; }).map(function (p) { return p.e; });
+      if (!chosen.length) return;
+      flushSave();
+      var bad = 0, current = null;
+      Promise.all(chosen.map(function (e) {
+        var d;
+        try { d = normalizeDoc(e.doc); } catch (err) { bad++; return null; }
+        if (e.id === state.docId) current = d;
+        return S.save(e.id, serialize(d), d).then(function () { return S.markBackedUp(e.id); }, function () { bad++; });
+      })).then(function () {
+        var n = chosen.length - bad;
+        if (current) { showDoc(state.docId, current); }
+        toast(n ? 'Restored ' + n + ' document' + (n > 1 ? 's — they are' : ' — it is') + ' under Open.' + (bad ? ' ' + bad + ' could not be read.' : '')
+          : 'Nothing could be restored.');
+      });
+    });
+  }
+
+  /* Document → Keep a copy: drawn into its own box, redrawn as it changes */
+  function renderBackupBox() {
+    var box = $('#backupBox');
+    if (!box) return;
+    box.textContent = '';
+    var b = B.status(), canFolder = B.folderSupported() && S.kind() === 'idb', canDbx = B.dropboxOffered();
+    function btn(label, fn, cls) { var x = h('button', 'sbtn' + (cls ? ' ' + cls : ''), label); x.onclick = fn; box.appendChild(x); return x; }
+    function hint(t) { box.appendChild(h('div', 'shint', t)); }
+    if (NATIVE) {
+      hint('Documents are kept in this app. Save project writes one to a file; Download all puts every document in one .zip.');
+      btn('Download all documents (.zip)', downloadAll);
+      return;
+    }
+    if (b.target) {
+      var line = h('div', 'bkline ' + b.phase);
+      line.textContent = {
+        ok: 'On — a copy of every document goes to ' + whereText(b) + ' a few seconds after each change.' + (b.last ? ' Last copy at ' + clockText(b.last) + '.' : ''),
+        saving: 'On — writing a copy to ' + whereText(b) + '…',
+        paused: 'Paused — the browser asks again before PaperTeX may write to ' + whereText(b) + '.',
+        auth: 'Paused — Dropbox wants you to sign in again.',
+        failed: 'Not working — ' + (b.error || 'the last copy could not be written.')
+      }[b.phase] || '';
+      box.appendChild(line);
+      var row = h('div', 'bkrow');
+      box.appendChild(row);
+      var add = function (label, fn, cls) { var x = h('button', 'sbtn' + (cls ? ' ' + cls : ''), label); x.onclick = fn; row.appendChild(x); };
+      if (b.phase === 'paused' || b.phase === 'auth') add(b.phase === 'auth' ? 'Sign in to Dropbox' : 'Resume backup', resumeBackup, 'sbtn-main');
+      if (b.phase === 'failed') add('Try again', function () { B.retry(); }, 'sbtn-main');
+      if (b.phase === 'ok' || b.phase === 'saving') add('Restore…', function () { offerRestore(false); });
+      if (b.target === 'folder' && canFolder) add('Another folder…', pickFolder);
+      add('Stop', stopBackup);
+      hint(b.target === 'folder'
+        ? 'Each document is a .papertex.json file there, which Open reads on any computer. In a folder your Dropbox, Google Drive, OneDrive or iCloud app syncs, the copies reach your cloud too.'
+        : 'Each document is a .papertex.json file in PaperTeX’s folder under Apps in your Dropbox. Open reads it on any computer; Restore brings it back here.');
+    } else {
+      hint('Your documents live in this browser. Clearing its data deletes them' +
+        (canFolder ? '.' : ', and Safari deletes them after 7 days without a visit.') + ' Keep a copy that lasts:');
+      if (canFolder) {
+        btn('Back up to a folder…', pickFolder, 'sbtn-main');
+        hint('Pick a folder on this computer once — for example Documents/PaperTeX. Every document is copied there a few seconds after each change. ' +
+          'Nothing is uploaded; a folder your Dropbox, Google Drive or OneDrive app syncs takes the copies to your cloud.');
+      }
+      if (canDbx) {
+        btn('Back up to Dropbox…', connectDropbox, canFolder ? '' : 'sbtn-main');
+        hint('Copies go to a PaperTeX folder under Apps in your own Dropbox, sent from this page straight to Dropbox. You can stop it any time.');
+      }
+      if (!canFolder && !canDbx) {
+        hint('This browser cannot write to a folder by itself (Chrome and Edge on a computer can). Download all keeps every document in one file — do it now and then.');
+      }
+    }
+    btn('Download all documents (.zip)', downloadAll);
+    hint('One file with every document in it. Open it with Open, in any browser, to bring them back.');
   }
 
   /* -------------------------------------------------------------------- undo */
@@ -17475,6 +18344,10 @@ blockquote.pt-quote {
     zw.appendChild(z); zw.appendChild(zl);
     field('Zoom', zw);
 
+    group('Keep a copy');
+    box.appendChild(h('div', 'bkbox')).id = 'backupBox';
+    renderBackupBox();
+
     group('Keyboard');
     var kb = h('button', 'sbtn', 'Customize shortcuts…');
     kb.onclick = function () { K.open(); };
@@ -18260,7 +19133,8 @@ blockquote.pt-quote {
   function deleteDoc(rec) {
     dialog({
       title: 'Delete “' + rec.title + '”?',
-      body: 'It is removed from this ' + (NATIVE ? 'app' : 'browser') + ' for good. A project file you saved to disk is not affected.',
+      body: 'It is removed from this ' + (NATIVE ? 'app' : 'browser') + ' for good. A project file you saved to disk is not affected' +
+        (B.status().target ? ', and neither is its copy in ' + whereText(B.status()) + ' — Restore can bring it back.' : '.'),
       okLabel: 'Delete'
     }).then(function (yes) {
       if (!yes) return;
@@ -18380,7 +19254,7 @@ blockquote.pt-quote {
         var b = h('button', 'popitem docopen');
         b.appendChild(h('span', 'doct', d.title));
         b.appendChild(h('span', 'docm', (d.id === state.docId ? 'open now · ' : '') + relTime(d.updated) + ' · ' +
-          sizeText(d.size) + (d.backedUp ? ' · copy saved ' + relTime(d.backedUp) : ' · no copy on disk')));
+          sizeText(d.size) + (d.backedUp ? ' · copy saved ' + relTime(d.backedUp) : ' · no copy outside this ' + (NATIVE ? 'app' : 'browser'))));
         b.onclick = function () { D.closeAllPop(); switchTo(d.id); };
         var x = h('button', 'docdel', '×');
         x.title = 'Delete from this ' + (NATIVE ? 'app' : 'browser');
@@ -18390,9 +19264,17 @@ blockquote.pt-quote {
         listBox.appendChild(row);
       });
     });
-    var f = h('button', 'popitem docfile', 'Open a file — a project, a .tex or an Overleaf .zip…');
+    var f = h('button', 'popitem docfile', 'Open a file — a project, a .tex, an Overleaf .zip or a .zip of documents…');
     f.onclick = function () { D.closeAllPop(); openFile(); };
     m.appendChild(f);
+    if (backupOn()) {
+      var rb = h('button', 'popitem docfile', 'Restore from your backup in ' + whereText(B.status()) + '…');
+      rb.onclick = function () { D.closeAllPop(); offerRestore(false); };
+      m.appendChild(rb);
+    }
+    var za = h('button', 'popitem docfile', 'Download all documents as one .zip');
+    za.onclick = function () { D.closeAllPop(); downloadAll(); };
+    m.appendChild(za);
     var foot = h('div', 'docfoot');
     m.appendChild(foot);
     var where = { idb: '', local: ' Stored in the small fallback storage — keep a copy on disk.',
@@ -18401,7 +19283,8 @@ blockquote.pt-quote {
       foot.textContent = (e ? sizeText(e.usage) + ' used. ' + (e.persisted
         ? 'Protected from automatic clearing.'
         : 'The ' + (NATIVE ? 'app' : 'browser') + ' may clear this when space runs low — keep copies of what matters.') : '') + where +
-        (NATIVE ? '' : ' Safari deletes documents kept here after 7 days without a visit — Save project keeps them.');
+        (NATIVE ? '' : backupOn() ? ' A copy of each goes to ' + whereText(B.status()) + '.'
+          : ' Safari deletes documents kept here after 7 days without a visit — Document → Keep a copy keeps them.');
     });
     document.body.appendChild(m);
     var r = anchor.getBoundingClientRect();
@@ -18587,6 +19470,8 @@ blockquote.pt-quote {
     $('#btnPalette').onclick = function () { PT.palette.open(); };
     $('#btnMore').onclick = function () { moreMenu($('#btnMore')); };
     $('#btnSave').onclick = saveProject;
+    $('#backupState').onclick = backupClick;
+    B.onChange(backupChanged);
     /* a project file becomes a document of its own */
     /* …and so does a .tex file, read back into blocks (texread.js) */
     function openText(text, name) {
@@ -18649,6 +19534,13 @@ blockquote.pt-quote {
           return PT.unzip(buf).then(function (got) { Object.keys(got).forEach(function (k) { files[k] = got[k]; }); });
         });
       })).then(function () {
+        if (B.isDocZip(files)) {
+          B.entriesFromZip(files).then(function (es) {
+            if (!es.length) { toast('That .zip holds no PaperTeX documents that can be read.'); return; }
+            restoreDialog(es, 'This .zip holds ' + es.length + ' PaperTeX document' + (es.length > 1 ? 's' : '') + '. Tick the ones to bring into this browser.');
+          });
+          return;
+        }
         var r, d;
         try { r = PT.texread.readProject(files); d = normalizeDoc(r.doc); }
         catch (e) { toast('PaperTeX could not open that: ' + (e && e.message ? e.message : 'not a LaTeX project') + '.'); return; }
@@ -18727,11 +19619,20 @@ blockquote.pt-quote {
     watchGuides();
     /* Leaving: write what is waiting, and if the work cannot be stored at
        all, let the browser ask before the tab goes. */
-    window.addEventListener('pagehide', flushSave);
-    document.addEventListener('visibilitychange', function () { if (document.hidden) flushSave(); });
+    window.addEventListener('pagehide', function () { flushSave(); B.now(); });
+    document.addEventListener('visibilitychange', function () { if (document.hidden) { flushSave(); B.now(); } });
     window.addEventListener('beforeunload', function (e) {
       flushSave();
       if (state.saveState === 'failed' || state.saveState === 'volatile') { e.preventDefault(); e.returnValue = ''; }
+    });
+
+    /* the lasting copy picks up where it was — or finishes connecting
+       Dropbox, when this load is the way back from dropbox.com */
+    B.start().then(function (got) {
+      backupReadyDone();
+      if (got === 'connected') { toast('Dropbox connected — every document is copied to PaperTeX’s folder under Apps.'); offerRestore(true); }
+      else if (got === 'declined') toast('Dropbox was not connected.');
+      else if (got && got.error) dialog({ title: 'Dropbox not connected', body: 'Dropbox did not finish the sign-in: ' + (got.error.message || 'it refused') + '.', noCancel: true });
     });
 
     if (!d) save(true);              /* a fresh document is in the list from the start */

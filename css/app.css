@@ -87,6 +87,21 @@ button { font-family: inherit; }
 .savestate.saving { color: var(--muted); }
 .savestate.failed, .savestate.volatile { color: var(--danger); font-weight: 600; }
 .savestate.failed::before, .savestate.volatile::before { content: "● "; }
+/* the lasting copy, beside it: a quiet tick when fine, a button to press when not */
+.backupstate {
+  font: inherit; font-size: 11px; color: var(--faint); background: transparent; border: 1px solid transparent;
+  border-radius: 999px; padding: 2px 8px; margin: 0 6px 0 -4px; white-space: nowrap; cursor: pointer;
+  transition: color .15s ease, border-color .15s ease, background-color .15s ease;
+}
+.backupstate[hidden] { display: none; }
+.backupstate.ok::before { content: "✓ "; color: var(--accent); }
+.backupstate:hover { color: var(--ink); border-color: var(--line); }
+.backupstate.saving { color: var(--muted); }
+.backupstate.saving::before { content: "↻ "; display: inline-block; }
+.backupstate.paused, .backupstate.auth { color: var(--accent-ink); border-color: #6b5718; background: var(--accent-soft); }
+.backupstate.failed { color: var(--danger); border-color: #7a3626; background: #3a1d17; font-weight: 600; }
+.backupstate.failed::before { content: "● "; }
+@media (max-width: 760px) { .backupstate.ok, .backupstate.saving { display: none; } }
 
 /* the banner under the toolbar */
 .savebar {
@@ -670,6 +685,25 @@ body.nopanel .side { margin-right: calc(-1 * var(--sidew)); }
   border-radius: 7px; padding: 6px 12px; font-size: 12.5px; cursor: pointer; margin: 6px 0 4px;
 }
 .sbtn:hover { border-color: #57554f; color: var(--ink); }
+.sbtn.sbtn-main { background: var(--accent-ink); border-color: var(--accent-ink); color: var(--on-accent); font-weight: 500; }
+.sbtn.sbtn-main:hover { background: #ffd75a; border-color: #ffd75a; color: var(--on-accent); }
+/* Document → Keep a copy */
+.bkbox .sbtn { display: block; }
+.bkbox .bkrow { display: flex; flex-wrap: wrap; gap: 6px; }
+.bkbox .bkrow .sbtn { display: inline-block; }
+.bkline { font-size: 12px; line-height: 1.5; color: var(--ink-2); margin: 2px 0 4px; padding-left: 10px; border-left: 2px solid var(--accent-2); }
+.bkline.paused, .bkline.auth { border-left-color: #8f7426; }
+.bkline.failed { border-left-color: var(--danger); color: var(--danger); }
+/* the restore dialog's list */
+.restorelist { max-height: 44vh; overflow-y: auto; margin: 4px 0 8px; border: 1px solid var(--line-2); border-radius: 8px; }
+.restorerow { display: flex; align-items: flex-start; gap: 9px; padding: 7px 10px; cursor: pointer; border-top: 1px solid var(--line-2); }
+.restorerow:first-child { border-top: 0; }
+.restorerow:hover { background: var(--chrome-2); }
+.restorerow.same { opacity: .55; cursor: default; }
+.restorerow input { margin: 3px 0 0; accent-color: var(--accent-2); }
+.restoretx { display: flex; flex-direction: column; min-width: 0; }
+.restoret { color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.restorem { font-size: 11px; color: var(--muted); }
 
 /* keyboard shortcuts dialog */
 .kb-back {
