@@ -102,13 +102,35 @@
 
   <h2 id="privacy">Privacy <i>/</i></h2>
   <ul>
-    <li><strong>Nothing is uploaded.</strong> Your documents never leave your computer. Editing,
-      exporting and compiling all happen in your browser.</li>
+    <li><strong>Nothing is uploaded.</strong> Your documents never leave your computer unless you
+      send them yourself. Editing, exporting and compiling all happen in your browser, and PaperTeX
+      has no server that could receive them.</li>
     <li><strong>No account, no cookies, no tracking.</strong> PaperTeX does not know who you are.</li>
     <li><strong>Where your documents live:</strong> in your browser's storage for this site. Clearing
       the site's data deletes them, and <strong>Safari removes a site's storage after seven days
-      without a visit.</strong> Use <em>Save project</em> to keep a copy of anything that matters —
-      it is a file on your disk that no browser clean-up can touch.</li>
+      without a visit.</strong> Keep a copy of anything that matters, under
+      <em>Document → Keep a copy</em>:
+      <ul>
+        <li><em>Back up to a folder</em> (Chrome, Edge and other Chromium browsers on a computer):
+          you pick a folder once, and a copy of every document is written there, on your own disk,
+          a few seconds after each change. If that folder is one your Dropbox, Google Drive,
+          OneDrive or iCloud app syncs, that app uploads it to your account — PaperTeX itself
+          sends nothing.</li>
+        <li><em>Download all documents</em> (every browser) saves them all as one .zip file;
+          <em>Save project</em> saves one.</li>
+        <li>PaperTeX remembers the folder you picked, in your browser, and only writes
+          <code>.papertex.json</code> files of your documents to it. <em>Stop</em> forgets it.</li>
+        <!-- Dropbox backup: un-comment this item when <meta name="papertex-dropbox"> in app.html
+             is set (DEPLOY.md, "Dropbox backup"), and not before.
+        <li><em>Back up to Dropbox</em>, if you turn it on: you sign in on dropbox.com and allow
+          PaperTeX one folder of its own in your Dropbox (under Apps). Your browser then sends a
+          copy of each document straight to Dropbox, over Dropbox's own connection — not through any
+          PaperTeX server. The sign-in key Dropbox gives back is kept in your browser and used only
+          to talk to Dropbox; <em>Stop</em> withdraws it, or remove PaperTeX at
+          dropbox.com/account/connected_apps. What Dropbox does with your files is Dropbox's
+          privacy policy, as for anything else in your Dropbox.</li>
+        -->
+      </ul></li>
     <li>When you compile, the LaTeX engine and its packages are downloaded from PaperTeX's own
       servers and cached by your browser. Your document itself is not sent anywhere.</li>
   </ul>

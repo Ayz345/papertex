@@ -13,7 +13,9 @@ you can edit.
 
 It runs entirely in the browser. There is no account and no server: documents
 stay in the browser's storage, and the PDF is typeset by TeX Live compiled to
-WebAssembly, on your own machine.
+WebAssembly, on your own machine. For a copy that lasts, PaperTeX can back
+every document up to a folder you pick on your computer (see
+[Keeping your documents](#keeping-your-documents)).
 
 **Use it:** <https://ayz345.github.io/papertex/> — nothing to install.
 
@@ -109,6 +111,7 @@ The site has three pages: `index.html` (home), `app.html` (the editor) and
 | `js/studio.js` | The chart and table editor: a chart or table opened to fill the window, with every setting beside it. |
 | `js/compile.js` | Make PDF: loads the engine only when a PDF is asked for, and hands it the source, the figures and the packages the document uses. |
 | `js/store.js` | Where documents live between sessions: IndexedDB, several documents, saves that are checked. |
+| `js/backup.js` | The lasting copy: every document backed up to a folder the user picks (or their own Dropbox, if the site enables it), restore, and all documents as one .zip. |
 | `js/sanitize.js` | The gate stored rich text passes through, so HTML from a project file never reaches the page as it is. |
 | `js/keys.js`, `js/palette.js` | One registry of everything a key can do, and the `Ctrl+K` command palette that searches it. |
 | `js/templates.js` | The starting documents under **New**. |
@@ -246,10 +249,32 @@ resolves. See [engine/README.md](engine/README.md) for the packages the engine
 has, and [DEPLOY.md](DEPLOY.md) for serving TeX Live from your own site — which
 a published copy must do.
 
-**Save** stores the project as a file so you can keep editing later; the
-current document also autosaves to the browser. Browser storage can be cleared,
-and Safari deletes it after seven days without a visit, so **Save** is the copy
-that lasts.
+### Keeping your documents
+
+Every change autosaves to the browser (IndexedDB) — the working copy. Browser
+storage can be cleared, and Safari deletes it after seven days without a
+visit, so PaperTeX offers copies that last, under **Document → Keep a copy**:
+
+- **Back up to a folder** (Chrome, Edge and other Chromium browsers on a
+  computer). Pick a folder once; a few seconds after each change, every
+  document is written there as `Title [id].papertex.json` — the same file
+  **Save** makes, so **Open** reads it anywhere. Nothing is uploaded. A folder
+  that the Dropbox, Google Drive, OneDrive or iCloud desktop app syncs carries
+  the copies to that cloud with no sign-in in PaperTeX. After the browser
+  restarts it may ask once before writing again (*Backup paused* — one click;
+  Chrome's *Allow on every visit* removes even that). **Restore…** lists what
+  the folder holds and brings documents back; turning the backup on in a new
+  browser offers that by itself. Firefox and Safari have no folder access, so
+  they don't show this option.
+- **Download all documents (.zip)**, in every browser: one file with every
+  document. Opening that .zip with **Open** offers the documents back.
+- **Back up to Dropbox**, only on a site whose owner has registered a Dropbox
+  app (see [DEPLOY.md](DEPLOY.md#dropbox-backup-optional)): copies go to the
+  app's own folder in the user's Dropbox, sent by the page straight to
+  Dropbox's API. The repository ships with it switched off.
+
+**Save** still writes a single project file, and the reminder to keep a copy
+stays until one of these is in place.
 
 ### Running inside a sandboxed viewer
 

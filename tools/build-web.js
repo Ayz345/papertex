@@ -102,7 +102,11 @@ html = html.replace(/(<meta name="papertex-engine" content=")[^"]*(")/, (_, a, b
 const cspRe = /(<meta http-equiv="Content-Security-Policy" content=")([^"]*)(")/;
 const cspMatch = cspRe.exec(html);
 if (!cspMatch) fail('papertex.html has no Content-Security-Policy meta tag');
-const csp = cspMatch[2].replace(/connect-src [^;]*/, 'connect-src \'self\'' + (engineOrigin ? ' ' + engineOrigin : ''));
+/* Dropbox backup (js/backup.js) is offered only when app.html carries the
+   owner's Dropbox app key; only then may the page reach Dropbox's API. */
+const dropboxKey = ((/<meta name="papertex-dropbox" content="([^"]*)"/.exec(html) || [])[1] || '').trim();
+const dropboxHosts = dropboxKey ? ' https://api.dropboxapi.com https://content.dropboxapi.com' : '';
+const csp = cspMatch[2].replace(/connect-src [^;]*/, 'connect-src \'self\'' + (engineOrigin ? ' ' + engineOrigin : '') + dropboxHosts);
 html = html.replace(cspRe, (_, a, b, c) => a + csp + c);
 fs.writeFileSync(path.join(out, 'app.html'), pageMeta(html, 'app'));
 

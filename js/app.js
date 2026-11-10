@@ -17,7 +17,7 @@
      Documents live in PT.store (IndexedDB), any number of them. A change is
      written a moment after it is made; whether that worked is always shown,
      and a write that fails is never swallowed. */
-  var S = PT.store;
+  var S = PT.store, B = PT.backup;
   function serialize(doc) {
     return JSON.stringify(doc, function (k, v) { return k.slice(0, 2) === '__' ? undefined : v; });
   }
@@ -35,6 +35,7 @@
         if (id !== state.docId) return;
         setSaveState(S.kind() === 'memory' ? 'volatile' : 'saved');
         announce(id);
+        B.queue(id);
         if (!state.persistAsked) { state.persistAsked = true; S.persist(); }
         checkBackup();
       }, function (err) {
@@ -102,7 +103,8 @@
       el.title = {
         saving: 'Writing your changes to this ' + (NATIVE ? 'computer' : 'browser'),
         saved: NATIVE ? 'Every change is kept in this app — open it again any time from Open'
-          : 'Every change is kept in this browser — open it again from Open. Safari deletes it after 7 days without a visit: Save project keeps a copy on disk',
+          : backupOn() ? 'Every change is kept in this browser, and copied to your backup (' + B.status().where + ')'
+          : 'Every change is kept in this browser — open it again from Open. Safari deletes it after 7 days without a visit: Document → Keep a copy',
         failed: 'The last change could not be stored: ' + (err && err.message || 'storage refused'),
         volatile: 'This page cannot store anything here; your work lasts only as long as the tab'
       }[s] || '';
@@ -119,24 +121,30 @@
      iPhone or iPad) deletes a site's storage after 7 days without a
      visit. Until "Got it", it is said again next time. */
   function tellWeek() {
-    if (NATIVE || state.weekTold || state.bar || !state.docId) return;
+    if (NATIVE || state.weekTold || state.bar || !state.docId || B.status().target) return;
     state.weekTold = true;
-    S.getMeta('told.week').then(function (told) {
-      if (told || state.bar) return;
+    /* after the backup has started: with one on, there is nothing to say */
+    backupReady.then(function () { return S.getMeta('told.week'); }).then(function (told) {
+      if (told || state.bar || B.status().target) return;
+      var folder = B.folderSupported() && S.kind() === 'idb';
       showBar('week', 'Your work is kept in this browser, not on a server. Safari (and any browser on an iPhone or iPad) deletes it after' +
-        ' 7 days without a visit, and clearing browsing data deletes it too. Save project keeps a copy on your disk.',
-        function () { S.setMeta('told.week', Date.now()); }, 'Got it');
+        ' 7 days without a visit, and clearing browsing data deletes it too. ' +
+        (folder ? 'Pick a folder on this computer and PaperTeX keeps a copy of every document there as you write.'
+          : 'Save project keeps a copy on your disk.'),
+        function () { S.setMeta('told.week', Date.now()); }, 'Got it',
+        folder ? { label: 'Back up to a folder…', fn: function () { S.setMeta('told.week', Date.now()); hideBar(); pickFolder(); } } : null);
     });
   }
-  function showBar(kind, text, later, laterLabel) {
+  /* act: { label, fn } in place of Save project */
+  function showBar(kind, text, later, laterLabel, act0) {
     var bar = $('#savebar');
     if (!bar) return;
     state.bar = kind;
     bar.className = 'savebar on ' + kind;
     bar.textContent = '';
     bar.appendChild(h('span', 'savebar-t', text));
-    var act = h('button', 'savebar-b primary', kind === 'stale' ? 'Reload' : 'Save project');
-    act.onclick = function () { if (kind === 'stale') location.reload(); else saveProject(); };
+    var act = h('button', 'savebar-b primary', act0 ? act0.label : kind === 'stale' ? 'Reload' : 'Save project');
+    act.onclick = function () { if (act0) act0.fn(); else if (kind === 'stale') location.reload(); else saveProject(); };
     bar.appendChild(act);
     if (later) {
       var no = h('button', 'savebar-b', laterLabel || 'Later');
@@ -151,9 +159,10 @@
      being written to a file, say so — once a session, and not again for
      three days after "Later". */
   function checkBackup() {
-    if (state.backupNudged || state.bar || !state.docId) return;
+    if (state.backupNudged || state.bar || !state.docId || backupOn()) return;
     var id = state.docId;
-    Promise.all([S.list(), S.getMeta('snooze.' + id)]).then(function (r) {
+    backupReady.then(function () { return Promise.all([S.list(), S.getMeta('snooze.' + id)]); }).then(function (r) {
+      if (backupOn()) return;
       var rec = r[0].filter(function (x) { return x.id === id; })[0], snooze = r[1] || 0;
       if (!rec || id !== state.docId || state.bar || state.backupNudged) return;
       var week = 7 * 864e5;
@@ -168,7 +177,8 @@
       state.backupNudged = true;
       showBar('backup', '“' + rec.title + '” is kept only in this ' + (NATIVE ? 'app' : 'browser') +
         (rec.backedUp ? ', and has changed since you last saved a copy.' : '.') +
-        ' Save project keeps a copy on disk that clearing ' + (NATIVE ? 'app data' : 'the browser') + ' cannot touch.',
+        ' Save project keeps a copy on disk that clearing ' + (NATIVE ? 'app data' : 'the browser') + ' cannot touch' +
+        (B.folderSupported() && S.kind() === 'idb' && !B.status().target ? ' — or turn on Document → Keep a copy, and every change is copied to a folder.' : '.'),
         function () { S.setMeta('snooze.' + id, Date.now() + 3 * 864e5); });
     });
   }
@@ -202,6 +212,244 @@
         }
         return r;
       });
+  }
+
+  /* ------------------------------------------------------------------ backup
+     The store is the working copy; PT.backup (js/backup.js) keeps the
+     lasting one — in a folder the user picks, or their own Dropbox when the
+     site offers it. Turned on under Document → Keep a copy; its state is
+     always on show beside "Saved", and a problem is said in the bar. */
+  /* settled once PT.backup has picked up its state on load: the reminders
+     wait for it, so they never speak over a backup that is about to start */
+  var backupReadyDone = null;
+  var backupReady = new Promise(function (res) { backupReadyDone = res; });
+  function backupOn() { var b = B.status(); return !!b.target && (b.phase === 'ok' || b.phase === 'saving'); }
+  function whereText(b) { return b.target === 'dropbox' ? 'PaperTeX’s folder in your Dropbox' : 'the folder “' + b.where + '”'; }
+  function clockText(t) { return t ? new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''; }
+
+  function renderBackupState(b) {
+    var el = $('#backupState');
+    if (!el) return;
+    el.hidden = !b.target;
+    el.className = 'backupstate ' + b.phase;
+    el.textContent = { ok: 'Backed up', saving: 'Backing up…', paused: 'Backup paused', auth: 'Reconnect Dropbox', failed: 'Backup failed' }[b.phase] || '';
+    el.title = {
+      ok: 'A copy of every document is kept in ' + whereText(b) + (b.last ? ' — last written at ' + clockText(b.last) : '') + '. Click for the backup settings.',
+      saving: 'Writing a copy to ' + whereText(b),
+      paused: 'The browser needs your OK again before PaperTeX writes to ' + whereText(b) + '. Click to give it.',
+      auth: 'Dropbox wants you to sign in again before PaperTeX can write there. Click to sign in.',
+      failed: (b.error || 'The last copy could not be written.') + ' Click for what to do.'
+    }[b.phase] || '';
+  }
+  /* a problem is said once each time it starts, not on every change */
+  var lastPhase = 'off';
+  function backupChanged(b) {
+    renderBackupState(b);
+    renderBackupBox();
+    if (b.phase === lastPhase) return;
+    var was = lastPhase;
+    lastPhase = b.phase;
+    if (b.phase === 'paused') {
+      showBar('backup-paused', 'Backup paused: this browser asks again before PaperTeX may write to ' + whereText(b) +
+        '. Your work is still kept here. (Chrome can remember it: choose “Allow on every visit”.)', function () { /* later */ }, 'Later',
+        { label: 'Resume backup', fn: function () { hideBar(); resumeBackup(); } });
+    } else if (b.phase === 'auth') {
+      showBar('backup-paused', 'Dropbox wants you to sign in again before PaperTeX can keep copying your documents there.', function () { /* later */ }, 'Later',
+        { label: 'Sign in to Dropbox', fn: function () { hideBar(); resumeBackup(); } });
+    } else if (b.phase === 'failed') {
+      showBar('backup-failed', 'Backup failed: ' + (b.error || 'the copy could not be written.') + ' Your work is still kept in this browser.',
+        function () { /* later */ }, 'Later', { label: 'Try again', fn: function () { hideBar(); B.retry(); } });
+    } else if ((b.phase === 'ok' || b.phase === 'saving' || b.phase === 'off') && /^backup-/.test(state.bar || '')) {
+      hideBar();
+    }
+    /* the reminders to keep a copy are answered once a backup runs */
+    if ((b.phase === 'ok' || b.phase === 'saving') && (state.bar === 'week' || state.bar === 'backup')) hideBar();
+    if (b.phase === 'ok' && (was === 'paused' || was === 'auth' || was === 'failed')) toast('Backup running again.');
+  }
+  function backupClick() {
+    var b = B.status();
+    if (b.phase === 'paused' || b.phase === 'auth') { resumeBackup(); return; }
+    showSettingsPane();
+    var box = $('#backupBox');
+    if (box) box.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+  function showSettingsPane() {
+    var tab = $('.rtab[data-pane="pane-settings"]');
+    if (document.body.classList.contains('nopanel')) $('#btnPanel').click();
+    if (tab && !tab.classList.contains('on')) tab.click();
+  }
+  function resumeBackup() {
+    B.resume().then(function (ok) { if (ok) toast('Backup resumed — copies go to ' + whereText(B.status()) + '.'); },
+      function (e) { toast('Backup could not resume: ' + (e && e.message || 'refused') + '.'); });
+  }
+  function pickFolder() {
+    flushSave();
+    return B.chooseFolder().then(function () {
+      toast('Backing up to ' + whereText(B.status()) + ' — every document, a few seconds after each change.');
+      offerRestore(true);
+    }, function (e) {
+      if (e && e.name === 'AbortError') return;     /* closed the picker */
+      dialog({ title: 'No backup folder', body: (e && e.name === 'NotAllowedError'
+        ? 'The browser did not let PaperTeX write to that folder. Pick it again and allow editing — or choose another folder.'
+        : e && e.name === 'SecurityError' ? 'The browser would not open the folder picker here. Press the button again — and if this page is shown inside another site, open PaperTeX in a tab of its own.'
+        : 'That folder cannot be used: ' + (e && e.message || 'the browser refused') + '.'),
+        noCancel: true });
+    });
+  }
+  function connectDropbox() {
+    flushSave();
+    dialog({
+      title: 'Back up to Dropbox',
+      body: 'You sign in on dropbox.com and let PaperTeX use one folder of its own in your Dropbox, under Apps — nothing else there. ' +
+        'This page then writes a copy of each document to that folder, straight to Dropbox: no PaperTeX server is involved. ' +
+        'The page reloads on the way back; your document is saved first.',
+      okLabel: 'Continue to Dropbox'
+    }).then(function (yes) {
+      if (!yes) return;
+      flushSave();
+      B.connectDropbox().catch(function (e) { toast('Could not open Dropbox: ' + (e && e.message || 'refused') + '.'); });
+    });
+  }
+  function stopBackup() {
+    var b = B.status();
+    dialog({
+      title: 'Stop backing up?',
+      body: 'New changes stay only in this browser. The copies already in ' + whereText(b) + ' are left where they are' +
+        (b.target === 'dropbox' ? ', and PaperTeX’s access to your Dropbox is withdrawn.' : '.'),
+      okLabel: 'Stop backing up'
+    }).then(function (yes) { if (yes) B.turnOff().then(function () { toast('Backup turned off.'); }); });
+  }
+
+  /* Every document in one .zip — for any browser, and as a copy to keep */
+  function downloadAll() {
+    flushSave();
+    B.zipAll().then(function (z) {
+      if (!z.count) { toast('There are no documents to download yet.'); return; }
+      var day = new Date().toISOString().slice(0, 10);
+      return download('papertex-documents-' + day + '.zip', z.blob, 'application/zip', { noTextFallback: true }).then(function (r) {
+        if (r !== 'saved' && r !== 'anchor') return;
+        z.versions.forEach(function (v) { S.markBackedUp(v[0], v[1]); });
+        toast(z.count + ' document' + (z.count > 1 ? 's' : '') + ' in one .zip — open it with Open to bring them back.');
+        if (state.bar === 'week') S.setMeta('told.week', Date.now());
+        if (state.bar === 'backup' || state.bar === 'week') hideBar();
+      });
+    }, function (e) { toast('The .zip could not be made: ' + (e && e.message || 'storage refused') + '.'); });
+  }
+
+  /* What a backup holds, offered back. `fresh`: just turned on — say
+     something only if it holds documents this browser lacks or has older. */
+  function offerRestore(fresh) {
+    B.list().then(function (es) {
+      if (fresh) {
+        if (!es.some(function (e) { return e.how === 'missing' || e.how === 'newer'; })) return;
+        restoreDialog(es, 'This backup already holds documents that are not in this browser, or are newer there. Bring them in?');
+        return;
+      }
+      if (!es.length) { toast('The backup holds no PaperTeX documents yet.'); return; }
+      restoreDialog(es);
+    }, function (e) { toast('The backup could not be read: ' + (e && e.message || 'refused') + '.'); });
+  }
+  var HOW = {
+    missing: 'not in this browser',
+    newer: 'newer than the copy here — replaces it',
+    older: 'older than the copy here — would replace it',
+    different: 'differs from the copy here — would replace it',
+    same: 'the same as here'
+  };
+  function restoreDialog(es, intro) {
+    var box = h('div');
+    box.appendChild(h('p', '', intro || 'Tick the documents to bring back into this browser.'));
+    var ul = h('div', 'restorelist');
+    var picks = es.map(function (e) {
+      var row = h('label', 'restorerow' + (e.how === 'same' ? ' same' : ''));
+      var c = h('input');
+      c.type = 'checkbox';
+      c.checked = e.how === 'missing' || e.how === 'newer';
+      c.disabled = e.how === 'same';
+      row.appendChild(c);
+      var tx = h('span', 'restoretx');
+      var title = '';
+      try { title = PT.latex.plainText(e.doc.meta && e.doc.meta.title) || ''; } catch (err) { title = ''; }
+      tx.appendChild(h('span', 'restoret', title || e.name.replace(/ \[[^\]]*\]\.papertex\.json$/i, '')));
+      tx.appendChild(h('span', 'restorem', (e.modified ? relTime(e.modified) + ' · ' : '') + HOW[e.how]));
+      row.appendChild(tx);
+      ul.appendChild(row);
+      return { e: e, c: c };
+    });
+    box.appendChild(ul);
+    box.appendChild(h('p', 'shint', 'A document here is replaced only if you tick it. Nothing in the backup is changed.'));
+    dialog({ title: 'Restore documents', node: box, okLabel: 'Restore' }).then(function (yes) {
+      if (!yes) return;
+      var chosen = picks.filter(function (p) { return p.c.checked && !p.c.disabled; }).map(function (p) { return p.e; });
+      if (!chosen.length) return;
+      flushSave();
+      var bad = 0, current = null;
+      Promise.all(chosen.map(function (e) {
+        var d;
+        try { d = normalizeDoc(e.doc); } catch (err) { bad++; return null; }
+        if (e.id === state.docId) current = d;
+        return S.save(e.id, serialize(d), d).then(function () { return S.markBackedUp(e.id); }, function () { bad++; });
+      })).then(function () {
+        var n = chosen.length - bad;
+        if (current) { showDoc(state.docId, current); }
+        toast(n ? 'Restored ' + n + ' document' + (n > 1 ? 's — they are' : ' — it is') + ' under Open.' + (bad ? ' ' + bad + ' could not be read.' : '')
+          : 'Nothing could be restored.');
+      });
+    });
+  }
+
+  /* Document → Keep a copy: drawn into its own box, redrawn as it changes */
+  function renderBackupBox() {
+    var box = $('#backupBox');
+    if (!box) return;
+    box.textContent = '';
+    var b = B.status(), canFolder = B.folderSupported() && S.kind() === 'idb', canDbx = B.dropboxOffered();
+    function btn(label, fn, cls) { var x = h('button', 'sbtn' + (cls ? ' ' + cls : ''), label); x.onclick = fn; box.appendChild(x); return x; }
+    function hint(t) { box.appendChild(h('div', 'shint', t)); }
+    if (NATIVE) {
+      hint('Documents are kept in this app. Save project writes one to a file; Download all puts every document in one .zip.');
+      btn('Download all documents (.zip)', downloadAll);
+      return;
+    }
+    if (b.target) {
+      var line = h('div', 'bkline ' + b.phase);
+      line.textContent = {
+        ok: 'On — a copy of every document goes to ' + whereText(b) + ' a few seconds after each change.' + (b.last ? ' Last copy at ' + clockText(b.last) + '.' : ''),
+        saving: 'On — writing a copy to ' + whereText(b) + '…',
+        paused: 'Paused — the browser asks again before PaperTeX may write to ' + whereText(b) + '.',
+        auth: 'Paused — Dropbox wants you to sign in again.',
+        failed: 'Not working — ' + (b.error || 'the last copy could not be written.')
+      }[b.phase] || '';
+      box.appendChild(line);
+      var row = h('div', 'bkrow');
+      box.appendChild(row);
+      var add = function (label, fn, cls) { var x = h('button', 'sbtn' + (cls ? ' ' + cls : ''), label); x.onclick = fn; row.appendChild(x); };
+      if (b.phase === 'paused' || b.phase === 'auth') add(b.phase === 'auth' ? 'Sign in to Dropbox' : 'Resume backup', resumeBackup, 'sbtn-main');
+      if (b.phase === 'failed') add('Try again', function () { B.retry(); }, 'sbtn-main');
+      if (b.phase === 'ok' || b.phase === 'saving') add('Restore…', function () { offerRestore(false); });
+      if (b.target === 'folder' && canFolder) add('Another folder…', pickFolder);
+      add('Stop', stopBackup);
+      hint(b.target === 'folder'
+        ? 'Each document is a .papertex.json file there, which Open reads on any computer. In a folder your Dropbox, Google Drive, OneDrive or iCloud app syncs, the copies reach your cloud too.'
+        : 'Each document is a .papertex.json file in PaperTeX’s folder under Apps in your Dropbox. Open reads it on any computer; Restore brings it back here.');
+    } else {
+      hint('Your documents live in this browser. Clearing its data deletes them' +
+        (canFolder ? '.' : ', and Safari deletes them after 7 days without a visit.') + ' Keep a copy that lasts:');
+      if (canFolder) {
+        btn('Back up to a folder…', pickFolder, 'sbtn-main');
+        hint('Pick a folder on this computer once — for example Documents/PaperTeX. Every document is copied there a few seconds after each change. ' +
+          'Nothing is uploaded; a folder your Dropbox, Google Drive or OneDrive app syncs takes the copies to your cloud.');
+      }
+      if (canDbx) {
+        btn('Back up to Dropbox…', connectDropbox, canFolder ? '' : 'sbtn-main');
+        hint('Copies go to a PaperTeX folder under Apps in your own Dropbox, sent from this page straight to Dropbox. You can stop it any time.');
+      }
+      if (!canFolder && !canDbx) {
+        hint('This browser cannot write to a folder by itself (Chrome and Edge on a computer can). Download all keeps every document in one file — do it now and then.');
+      }
+    }
+    btn('Download all documents (.zip)', downloadAll);
+    hint('One file with every document in it. Open it with Open, in any browser, to bring them back.');
   }
 
   /* -------------------------------------------------------------------- undo */
@@ -1197,6 +1445,10 @@
     zw.appendChild(z); zw.appendChild(zl);
     field('Zoom', zw);
 
+    group('Keep a copy');
+    box.appendChild(h('div', 'bkbox')).id = 'backupBox';
+    renderBackupBox();
+
     group('Keyboard');
     var kb = h('button', 'sbtn', 'Customize shortcuts…');
     kb.onclick = function () { K.open(); };
@@ -1982,7 +2234,8 @@
   function deleteDoc(rec) {
     dialog({
       title: 'Delete “' + rec.title + '”?',
-      body: 'It is removed from this ' + (NATIVE ? 'app' : 'browser') + ' for good. A project file you saved to disk is not affected.',
+      body: 'It is removed from this ' + (NATIVE ? 'app' : 'browser') + ' for good. A project file you saved to disk is not affected' +
+        (B.status().target ? ', and neither is its copy in ' + whereText(B.status()) + ' — Restore can bring it back.' : '.'),
       okLabel: 'Delete'
     }).then(function (yes) {
       if (!yes) return;
@@ -2102,7 +2355,7 @@
         var b = h('button', 'popitem docopen');
         b.appendChild(h('span', 'doct', d.title));
         b.appendChild(h('span', 'docm', (d.id === state.docId ? 'open now · ' : '') + relTime(d.updated) + ' · ' +
-          sizeText(d.size) + (d.backedUp ? ' · copy saved ' + relTime(d.backedUp) : ' · no copy on disk')));
+          sizeText(d.size) + (d.backedUp ? ' · copy saved ' + relTime(d.backedUp) : ' · no copy outside this ' + (NATIVE ? 'app' : 'browser'))));
         b.onclick = function () { D.closeAllPop(); switchTo(d.id); };
         var x = h('button', 'docdel', '×');
         x.title = 'Delete from this ' + (NATIVE ? 'app' : 'browser');
@@ -2112,9 +2365,17 @@
         listBox.appendChild(row);
       });
     });
-    var f = h('button', 'popitem docfile', 'Open a file — a project, a .tex or an Overleaf .zip…');
+    var f = h('button', 'popitem docfile', 'Open a file — a project, a .tex, an Overleaf .zip or a .zip of documents…');
     f.onclick = function () { D.closeAllPop(); openFile(); };
     m.appendChild(f);
+    if (backupOn()) {
+      var rb = h('button', 'popitem docfile', 'Restore from your backup in ' + whereText(B.status()) + '…');
+      rb.onclick = function () { D.closeAllPop(); offerRestore(false); };
+      m.appendChild(rb);
+    }
+    var za = h('button', 'popitem docfile', 'Download all documents as one .zip');
+    za.onclick = function () { D.closeAllPop(); downloadAll(); };
+    m.appendChild(za);
     var foot = h('div', 'docfoot');
     m.appendChild(foot);
     var where = { idb: '', local: ' Stored in the small fallback storage — keep a copy on disk.',
@@ -2123,7 +2384,8 @@
       foot.textContent = (e ? sizeText(e.usage) + ' used. ' + (e.persisted
         ? 'Protected from automatic clearing.'
         : 'The ' + (NATIVE ? 'app' : 'browser') + ' may clear this when space runs low — keep copies of what matters.') : '') + where +
-        (NATIVE ? '' : ' Safari deletes documents kept here after 7 days without a visit — Save project keeps them.');
+        (NATIVE ? '' : backupOn() ? ' A copy of each goes to ' + whereText(B.status()) + '.'
+          : ' Safari deletes documents kept here after 7 days without a visit — Document → Keep a copy keeps them.');
     });
     document.body.appendChild(m);
     var r = anchor.getBoundingClientRect();
@@ -2309,6 +2571,8 @@
     $('#btnPalette').onclick = function () { PT.palette.open(); };
     $('#btnMore').onclick = function () { moreMenu($('#btnMore')); };
     $('#btnSave').onclick = saveProject;
+    $('#backupState').onclick = backupClick;
+    B.onChange(backupChanged);
     /* a project file becomes a document of its own */
     /* …and so does a .tex file, read back into blocks (texread.js) */
     function openText(text, name) {
@@ -2371,6 +2635,13 @@
           return PT.unzip(buf).then(function (got) { Object.keys(got).forEach(function (k) { files[k] = got[k]; }); });
         });
       })).then(function () {
+        if (B.isDocZip(files)) {
+          B.entriesFromZip(files).then(function (es) {
+            if (!es.length) { toast('That .zip holds no PaperTeX documents that can be read.'); return; }
+            restoreDialog(es, 'This .zip holds ' + es.length + ' PaperTeX document' + (es.length > 1 ? 's' : '') + '. Tick the ones to bring into this browser.');
+          });
+          return;
+        }
         var r, d;
         try { r = PT.texread.readProject(files); d = normalizeDoc(r.doc); }
         catch (e) { toast('PaperTeX could not open that: ' + (e && e.message ? e.message : 'not a LaTeX project') + '.'); return; }
@@ -2449,11 +2720,20 @@
     watchGuides();
     /* Leaving: write what is waiting, and if the work cannot be stored at
        all, let the browser ask before the tab goes. */
-    window.addEventListener('pagehide', flushSave);
-    document.addEventListener('visibilitychange', function () { if (document.hidden) flushSave(); });
+    window.addEventListener('pagehide', function () { flushSave(); B.now(); });
+    document.addEventListener('visibilitychange', function () { if (document.hidden) { flushSave(); B.now(); } });
     window.addEventListener('beforeunload', function (e) {
       flushSave();
       if (state.saveState === 'failed' || state.saveState === 'volatile') { e.preventDefault(); e.returnValue = ''; }
+    });
+
+    /* the lasting copy picks up where it was — or finishes connecting
+       Dropbox, when this load is the way back from dropbox.com */
+    B.start().then(function (got) {
+      backupReadyDone();
+      if (got === 'connected') { toast('Dropbox connected — every document is copied to PaperTeX’s folder under Apps.'); offerRestore(true); }
+      else if (got === 'declined') toast('Dropbox was not connected.');
+      else if (got && got.error) dialog({ title: 'Dropbox not connected', body: 'Dropbox did not finish the sign-in: ' + (got.error.message || 'it refused') + '.', noCancel: true });
     });
 
     if (!d) save(true);              /* a fresh document is in the list from the start */
