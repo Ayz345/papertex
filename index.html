@@ -15,8 +15,8 @@
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#111111">
 <link rel="icon" href="desktop/papertex.png">
-<link rel="stylesheet" href="css/fonts.css?v=20261110d">
-<link rel="stylesheet" href="css/landing.css?v=20261110d">
+<link rel="stylesheet" href="css/fonts.css?v=20261110h">
+<link rel="stylesheet" href="css/landing.css?v=20261110h">
 </head>
 <body>
 <a class="skip" href="app.html">Skip to the editor</a>
@@ -74,19 +74,33 @@
         <span class="slab" aria-hidden="true"></span><span class="brk" aria-hidden="true"></span>
         <h2>Type its name <i>/</i></h2>
         <p><b>INT, SUM, SQRT.</b> Type the word and the symbol appears, with its slots waiting.</p>
+        <ul class="facts">
+          <li><kbd>alpha</kbd> becomes α, <kbd>x1</kbd> becomes x₁, <kbd>-&gt;</kbd> becomes →</li>
+          <li><kbd>Tab</kbd> or <kbd>Enter</kbd> moves to the next box</li>
+          <li>Equations number themselves, references follow</li>
+        </ul>
       </div>
       <article class="sheet" aria-label="A page with an equation">
         <h3>1&ensp;Introduction</h3>
-        <p>The integral of a Gaussian over the whole real line has a closed form,</p>
-        <div class="eqn">∫<sub>−∞</sub><sup>∞</sup> <i>e</i><sup>−<i>x</i>²</sup> <i>dx</i> = √<span class="bar">π</span><span class="no">(1)</span></div>
-        <p>which we prove in Section 2.</p>
-        <button class="hot" type="button" style="left:50%;top:56%" aria-expanded="false" aria-label="Show the LaTeX for this equation"></button>
-        <pre class="code" style="left:8%;top:70%"><b>\begin</b>{equation}
+        <p>For a quantity <i>x</i> with mean ⟨<i>x</i>⟩, the spread is <i>σ</i><sup>2</sup> = ⟨<i>x</i><sup>2</sup>⟩ − ⟨<i>x</i>⟩<sup>2</sup>. The integral of a Gaussian over the whole real line has a closed form,</p>
+        <div class="eqn build" data-build>
+          <span class="b" data-k="1">∫</span><sub><span class="slot" data-k="2">−∞</span></sub><sup><span class="slot" data-k="3">∞</span></sup>
+          <span class="b" data-k="4">&nbsp;<i>e</i><sup>−<i>x</i>²</sup></span>
+          <span class="b" data-k="5"><i>dx</i> = √<span class="bar">π</span></span><span class="no">(1)</span>
+        </div>
+        <p>which we prove in Section&nbsp;2. For two quantities the spreads form a matrix,</p>
+        <div class="eqn eqn--sm" data-k="6"><i>Σ</i> = <span class="mat"><span><i>σ</i><sub><i>x</i></sub><sup>2</sup></span><span><i>ρσ</i><sub><i>x</i></sub><i>σ</i><sub><i>y</i></sub></span><span><i>ρσ</i><sub><i>x</i></sub><i>σ</i><sub><i>y</i></sub></span><span><i>σ</i><sub><i>y</i></sub><sup>2</sup></span></span><span class="no">(2)</span></div>
+        <button class="hot" type="button" style="left:80%;top:47%" aria-expanded="false" aria-label="Show the LaTeX for this equation"></button>
+        <pre class="code" style="left:8%;top:76%"><b>\begin</b>{equation}
   <b>\int</b>_{-<b>\infty</b>}^{<b>\infty</b>} e^{-x^{2}}\,dx = <b>\sqrt</b>{<b>\pi</b>}
   <b>\label</b>{eq:gauss}
 <b>\end</b>{equation}</pre>
-        <button class="hot" type="button" style="left:16%;top:27%" aria-expanded="false" aria-label="Show the LaTeX for this heading"></button>
-        <pre class="code" style="left:8%;top:35%"><b>\section</b>{Introduction}<b>\label</b>{sec:intro}</pre>
+        <button class="hot" type="button" style="left:74%;top:66%" aria-expanded="false" aria-label="Show the LaTeX for the matrix"></button>
+        <pre class="code" style="left:14%;top:74%"><b>\Sigma</b> = <b>\begin</b>{pmatrix}
+  <b>\sigma</b>_x^2 &amp; <b>\rho\sigma</b>_x<b>\sigma</b>_y <b>\\</b>
+  <b>\rho\sigma</b>_x<b>\sigma</b>_y &amp; <b>\sigma</b>_y^2
+<b>\end</b>{pmatrix}</pre>
+        <div class="typed" aria-hidden="true"><span class="typed__label">you type</span><span class="typed__keys"></span></div>
       </article>
       <button class="back" type="button"><svg class="node" viewBox="-40 -40 80 80" aria-hidden="true"><circle class="n-teeth" r="30"/><circle class="n-fill" r="22"/><circle class="n-ring" r="22"/><path class="n-chev" d="M-5 -8L5 0L-5 8"/></svg><span>back_</span></button>
     </section>
@@ -96,15 +110,36 @@
         <span class="slab" aria-hidden="true"></span><span class="brk" aria-hidden="true"></span>
         <h2>Type a function <i>/</i></h2>
         <p><b>IT DRAWS ITSELF.</b> On the page, and again in the PDF as real pgfplots.</p>
+        <ul class="facts">
+          <li>Write it the way you would on paper: <kbd>sin 2x</kbd>, <kbd>e^(-x/4)</kbd></li>
+          <li>Pie, histogram, polar, bars, 3D surface, log axes</li>
+          <li>Written out as pgfplots and TikZ, so the PDF matches</li>
+        </ul>
       </div>
-      <article class="sheet" aria-label="A page with a plotted function">
-        <svg viewBox="0 0 520 220" role="img" aria-label="A damped wave inside its envelope"><path class="ax" d="M30 14V206M30 110H500"/><path class="cv2" id="env" d=""/><path class="cv" id="wave" d=""/></svg>
-        <p class="cap">Figure 1: <i>y</i> = sin 2<i>x</i> · <i>e</i><sup>−<i>x</i>/4</sup>, inside its envelope.</p>
-        <button class="hot" type="button" style="left:34%;top:34%" aria-expanded="false" aria-label="Show the LaTeX for this plot"></button>
-        <pre class="code" style="left:10%;top:70%"><b>\begin</b>{axis}[axis lines=middle, domain=0:12]
+      <article class="sheet sheet--chart" aria-label="A page with a plotted function and three smaller charts">
+        <div class="fx" aria-hidden="true"><span class="fx__y"><i>y</i> =</span><span class="fx__in"></span><span class="fx__caret"></span></div>
+        <svg class="plot" viewBox="0 0 520 200" role="img" aria-label="A damped wave inside its envelope">
+          <path class="grid" d="M30 30H500M30 170H500M147 14V186M265 14V186M382 14V186"/>
+          <path class="ax" d="M30 14V186M30 100H500"/>
+          <path class="cv2" id="env" d=""/><path class="cv" id="wave" d=""/>
+          <circle class="pen" id="pen" r="5" cx="30" cy="100"/>
+        </svg>
+        <p class="cap" data-k="2">Figure 1: <i>y</i> = sin 2<i>x</i> · <i>e</i><sup>−<i>x</i>/4</sup>, inside its envelope.</p>
+        <div class="minis">
+          <figure data-k="3"><svg viewBox="-50 -50 100 100" aria-hidden="true"><circle class="pie p1" r="15"/><circle class="pie p2" r="15"/><circle class="pie p3" r="15"/></svg><figcaption>Figure 2: a pie</figcaption></figure>
+          <figure data-k="4"><svg viewBox="0 0 100 80" aria-hidden="true"><path class="ax" d="M6 4V72H96"/><rect class="bar" x="12" y="52" width="12" height="20"/><rect class="bar" x="27" y="30" width="12" height="42"/><rect class="bar" x="42" y="12" width="12" height="60"/><rect class="bar" x="57" y="26" width="12" height="46"/><rect class="bar" x="72" y="48" width="12" height="24"/></svg><figcaption>Figure 3: a histogram</figcaption></figure>
+          <figure data-k="5"><svg viewBox="-50 -50 100 100" aria-hidden="true"><circle class="grid" r="36"/><circle class="grid" r="18"/><path class="cv rose" id="rose" d=""/></svg><figcaption>Figure 4: <i>r</i> = cos 3<i>θ</i></figcaption></figure>
+        </div>
+        <button class="hot" type="button" style="left:90%;top:20%" aria-expanded="false" aria-label="Show the LaTeX for this plot"></button>
+        <pre class="code" style="left:12%;top:75%"><b>\begin</b>{axis}[axis lines=middle, domain=0:12]
   <b>\addplot</b>[thick] {sin(deg(2*x))*exp(-x/4)};
   <b>\addplot</b>[dashed] {exp(-x/4)};
 <b>\end</b>{axis}</pre>
+        <button class="hot" type="button" style="left:90%;top:72%" aria-expanded="false" aria-label="Show the LaTeX for the polar plot"></button>
+        <pre class="code" style="left:24%;top:40%"><b>\begin</b>{polaraxis}
+  <b>\addplot</b>[domain=0:180, samples=180] {cos(3*x)};
+<b>\end</b>{polaraxis}</pre>
+        <div class="typed" aria-hidden="true"><span class="typed__label">you type</span><span class="typed__keys"></span></div>
       </article>
       <button class="back" type="button"><svg class="node" viewBox="-40 -40 80 80" aria-hidden="true"><circle class="n-teeth" r="30"/><circle class="n-fill" r="22"/><circle class="n-ring" r="22"/><path class="n-chev" d="M-5 -8L5 0L-5 8"/></svg><span>back_</span></button>
     </section>
@@ -114,16 +149,29 @@
         <span class="slab" aria-hidden="true"></span><span class="brk" aria-hidden="true"></span>
         <h2>Paste your data <i>/</i></h2>
         <p><b>FROM EXCEL OR SHEETS.</b> One click charts the table and fits a model.</p>
+        <ul class="facts">
+          <li>Paste cells into a table, or import a CSV</li>
+          <li>Line, scatter or bar chart, and it follows the table</li>
+          <li>Tune the model and watch the error change</li>
+        </ul>
       </div>
-      <article class="sheet" aria-label="A page with a table and a fitted curve">
+      <article class="sheet" aria-label="A page with a table, a chart and a fitted curve">
+        <h3>2&ensp;Measurements</h3>
+        <p>Water cooling in a room at 20&nbsp;°C, read every two minutes.</p>
         <div class="two">
-          <table class="t"><thead><tr><th>t</th><th>T</th></tr></thead><tbody><tr><td>0</td><td>80</td></tr><tr><td>2</td><td>67</td></tr><tr><td>4</td><td>57</td></tr><tr><td>6</td><td>48</td></tr><tr><td>8</td><td>43</td></tr></tbody></table>
-          <svg viewBox="0 0 300 180" role="img" aria-label="The measured points and the fitted curve"><path class="ax" d="M20 10V165H290"/><path class="cv" d="M20 20C70 68 150 122 290 148"/><circle class="pt" cx="20" cy="20" r="4"/><circle class="pt" cx="88" cy="68" r="4"/><circle class="pt" cx="155" cy="104" r="4"/><circle class="pt" cx="222" cy="130" r="4"/><circle class="pt" cx="290" cy="148" r="4"/></svg>
+          <table class="t"><thead><tr><th><i>t</i> (min)</th><th><i>T</i> (°C)</th></tr></thead><tbody><tr data-k="1"><td>0</td><td>80</td></tr><tr data-k="1"><td>2</td><td>67</td></tr><tr data-k="1"><td>4</td><td>57</td></tr><tr data-k="1"><td>6</td><td>48</td></tr><tr data-k="1"><td>8</td><td>43</td></tr><tr data-k="1"><td>10</td><td>37</td></tr></tbody></table>
+          <svg class="fitplot" viewBox="0 0 300 190" role="img" aria-label="The measured points and the fitted cooling curve"><path class="grid" d="M24 50H292M24 100H292M24 150H292"/><path class="ax" d="M24 8V172H292"/><path class="cv fit" id="fit" d=""/><g id="pts"></g></svg>
         </div>
-        <p class="cap">Table 1 and Figure 2: cooling of water.</p>
-        <button class="hot" type="button" style="left:66%;top:44%" aria-expanded="false" aria-label="Show the LaTeX for the fitted curve"></button>
-        <pre class="code" style="left:22%;top:66%"><b>\addplot</b>[only marks] <b>table</b> {cooling.dat};
+        <p class="cap">Table 1 and Figure 5: cooling of water, with the fitted model.</p>
+        <div class="fitline" data-k="3"><span><i>T</i> = 20 + 60 <i>e</i><sup>−<i>t</i>/<i>τ</i></sup></span><span><i>τ</i> = <b class="n-tau">11</b> min</span><span>error <b class="n-rms">5.2</b> °C</span></div>
+        <button class="hot" type="button" style="left:92%;top:40%" aria-expanded="false" aria-label="Show the LaTeX for the fitted curve"></button>
+        <pre class="code" style="left:16%;top:81%"><b>\addplot</b>[only marks] <b>table</b> {cooling.dat};
 <b>\addplot</b>[domain=0:10] {20 + 60*exp(-x/11)};</pre>
+        <button class="hot" type="button" style="left:44%;top:34%" aria-expanded="false" aria-label="Show the LaTeX for the table"></button>
+        <pre class="code" style="left:8%;top:44%"><b>\begin</b>{tabular}{rr} <b>\toprule</b>
+  $t$ (min) &amp; $T$ (°C) <b>\\</b> <b>\midrule</b>
+  0 &amp; 80 <b>\\</b>  2 &amp; 67 <b>\\</b>  4 &amp; 57 <b>\\</b> …
+<b>\end</b>{tabular}</pre>
       </article>
       <button class="back" type="button"><svg class="node" viewBox="-40 -40 80 80" aria-hidden="true"><circle class="n-teeth" r="30"/><circle class="n-fill" r="22"/><circle class="n-ring" r="22"/><path class="n-chev" d="M-5 -8L5 0L-5 8"/></svg><span>back_</span></button>
     </section>
@@ -133,15 +181,23 @@
         <span class="slab" aria-hidden="true"></span><span class="brk" aria-hidden="true"></span>
         <h2>Get the real PDF <i>/</i></h2>
         <p><b>REAL TEX LIVE.</b> It runs in your browser, so nothing is uploaded. Take the .tex to Overleaf, or bring a project back.</p>
+        <ul class="facts">
+          <li>TeX Live 2025, compiled to WebAssembly</li>
+          <li>Download the .tex, or the PDF, any time</li>
+          <li>Open a .tex file or a whole Overleaf project</li>
+        </ul>
       </div>
       <article class="sheet sheet--pdf" aria-label="The compiled PDF">
-        <div class="pdfbar" aria-hidden="true"><span>main.pdf</span><span>Save PDF</span></div>
-        <h3>2&ensp;Proof</h3>
-        <p>Squaring both sides turns the problem into a double integral over the plane, which polar coordinates make elementary.</p>
-        <div class="eqn eqn--sm"><i>I</i><sup>2</sup> = ∫<sub>0</sub><sup>2π</sup> ∫<sub>0</sub><sup>∞</sup> <i>e</i><sup>−<i>r</i>²</sup> <i>r dr dθ</i> = π<span class="no">(2)</span></div>
-        <button class="hot" type="button" style="left:80%;top:9%" aria-expanded="false" aria-label="Show how the PDF is made"></button>
-        <pre class="code" style="left:30%;top:16%">Running <b>pdflatex</b>, here in your browser…
-Output written on <b>main.pdf</b>.</pre>
+        <div class="pdfbar" aria-hidden="true"><span>main.pdf</span><span class="pdfstate">Running pdflatex…</span><i class="pdfprog"></i></div>
+        <div class="print" data-k="2"><h3>2&ensp;Proof</h3></div>
+        <div class="print" data-k="2"><p>Write <i>I</i> for the integral in (1). Squaring it gives a double integral over the plane, which polar coordinates make elementary:</p></div>
+        <div class="print" data-k="2"><div class="eqn eqn--sm"><i>I</i><sup>2</sup> = ∫<sub>0</sub><sup>2π</sup> ∫<sub>0</sub><sup>∞</sup> <i>e</i><sup>−<i>r</i>²</sup> <i>r</i> <i>dr</i> <i>dθ</i> = π<span class="no">(3)</span></div></div>
+        <div class="print" data-k="2"><p>Hence <i>I</i> = √<span class="bar">π</span>, as claimed.&ensp;∎</p></div>
+        <div class="print" data-k="2"><h4>References</h4><p class="ref">[1]&ensp;A. Student, <i>Notes on the Gaussian integral</i>, 2026.</p></div>
+        <div class="print folio" data-k="2">2</div>
+        <button class="hot" type="button" style="left:84%;top:6%" aria-expanded="false" aria-label="Show how the PDF is made"></button>
+        <pre class="code" style="left:30%;top:13%">Running <b>pdflatex</b>, here in your browser…
+Output written on <b>main.pdf</b> (2 pages).</pre>
       </article>
       <button class="back" type="button"><svg class="node" viewBox="-40 -40 80 80" aria-hidden="true"><circle class="n-teeth" r="30"/><circle class="n-fill" r="22"/><circle class="n-ring" r="22"/><path class="n-chev" d="M-5 -8L5 0L-5 8"/></svg><span>back_</span></button>
     </section>
@@ -151,10 +207,10 @@ Output written on <b>main.pdf</b>.</pre>
   <nav class="pager" id="pager" aria-label="Places"></nav>
 </main>
 
-<script src="js/sanitize.js?v=20261110d"></script>
-<script src="js/store.js?v=20261110d"></script>
-<script src="js/templates.js?v=20261110d"></script>
-<script src="js/home.js?v=20261110d"></script>
-<script src="js/landing.js?v=20261110d"></script>
+<script src="js/sanitize.js?v=20261110h"></script>
+<script src="js/store.js?v=20261110h"></script>
+<script src="js/templates.js?v=20261110h"></script>
+<script src="js/home.js?v=20261110h"></script>
+<script src="js/landing.js?v=20261110h"></script>
 </body>
 </html>

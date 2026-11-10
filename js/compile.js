@@ -1,8 +1,8 @@
 /* PaperTeX — compiling the generated LaTeX to a real PDF, in the browser.
 
    The engine is @siglum/engine (MIT): TeX Live 2025 built to WebAssembly. It
-   is loaded only when someone actually asks for a PDF, so the editor stays
-   light. Nothing is uploaded anywhere — the wasm and the TeX Live bundles are
+   starts loading in the background once the editor has settled (see warm()),
+   so the first PDF does not wait for it. Nothing is uploaded anywhere — the wasm and the TeX Live bundles are
    fetched as static files and cached by the browser. */
 (function () {
   'use strict';
@@ -217,9 +217,38 @@
     }).catch(function () { return none; });   /* then TeX says which file it missed */
   }
 
+  /* ---- warming up ----
+     The first PDF used to wait for the engine and the TeX Live parts a
+     document needs (tens of megabytes) to download. Now they start
+     downloading as soon as the editor has settled: a small document with
+     the editor's standard preamble is typeset in the background, which
+     fetches the same parts the starter document uses and leaves them in
+     memory. Make PDF pressed meanwhile waits for it and shows its progress.
+     Not on a connection that asks to save data, or a slow one. */
+  var warming = null;
+  var WARM_TEX = '\\documentclass[11pt,a4paper]{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage[T1]{fontenc}\n' +
+    '\\usepackage{amsmath, amssymb}\n\\usepackage[margin=2.5cm]{geometry}\n\\usepackage{hyperref}\n' +
+    '\\begin{document}\nPaperTeX $\\int_0^1 x^2\\,dx$\n\\end{document}\n';
+  function warm() {
+    if (warming || location.protocol === 'file:') return warming;
+    var net = navigator.connection;
+    if (net && (net.saveData || /(^|-)2g|3g/.test(net.effectiveType || ''))) return null;
+    warming = getCompiler(null).then(function (c) {
+      return c.compile(WARM_TEX, { additionalFiles: {} });
+    }).then(function () { return true; }, function () { return false; });
+    return warming;
+  }
+  function soon(fn) {
+    if (window.requestIdleCallback) requestIdleCallback(fn, { timeout: 4000 }); else setTimeout(fn, 1500);
+  }
+  if (document.readyState === 'complete') soon(warm);
+  else window.addEventListener('load', function () { soon(warm); });
+
   function compile(tex, doc, onProgress) {
     var logs = [];
-    return getCompiler(onProgress).then(function (c) {
+    /* a warm-up still under way: show its progress, then go on from it */
+    progressTo = onProgress || null;
+    return Promise.resolve(warming).then(function () { return getCompiler(onProgress); }).then(function (c) {
       c.onLog = function (m) { logs.push(String(m)); };
       return Promise.all([babelFiles(tex), packageFiles(tex)]).then(function (got) {
         var files = sidecarFiles(tex, doc);
@@ -253,5 +282,5 @@
   }
 
   window.PT = window.PT || {};
-  window.PT.compile = { run: compile, config: CFG };
+  window.PT.compile = { run: compile, warm: warm, config: CFG };
 })();

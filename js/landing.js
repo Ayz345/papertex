@@ -29,23 +29,181 @@
 
   var stage = $('.stage');
   if (!stage) return;
-  var open = $('#open'), rooms = $$('.room'), view = '', busy = false, openT;
+  var open = $('#open'), rooms = $$('.room'), view = '', busy = false;
   function set(name, v) { stage.style.setProperty(name, v); }
   /* a direction given in degrees, anticlockwise from the right, as screen x and y */
   function vec(deg) { var r = deg * Math.PI / 180; return { x: Math.cos(r), y: -Math.sin(r) }; }
 
-  /* ---- the figure on the function page ---- */
+  /* ---- the figures drawn by script: the function plot, the polar rose,
+     and the data chart with its fitted curve ---- */
   (function () {
     var w = '', e = '', e2 = '';
     for (var i = 0; i <= 235; i++) {
       var x = i / 235 * 12, px = 30 + i * 2, env = Math.exp(-x / 4);
-      w += (i ? 'L' : 'M') + px + ' ' + (110 - Math.sin(2 * x) * env * 90).toFixed(1);
-      e += (i ? 'L' : 'M') + px + ' ' + (110 - env * 90).toFixed(1);
-      e2 += (i ? 'L' : 'M') + px + ' ' + (110 + env * 90).toFixed(1);
+      w += (i ? 'L' : 'M') + px + ' ' + (100 - Math.sin(2 * x) * env * 80).toFixed(1);
+      e += (i ? 'L' : 'M') + px + ' ' + (100 - env * 80).toFixed(1);
+      e2 += (i ? 'L' : 'M') + px + ' ' + (100 + env * 80).toFixed(1);
     }
     $('#wave').setAttribute('d', w);
     $('#env').setAttribute('d', e + e2);
+    var r = '';
+    for (var k = 0; k <= 180; k++) {
+      var th = Math.PI * k / 180, rr = 36 * Math.cos(3 * th);
+      r += (k ? 'L' : 'M') + (rr * Math.cos(th)).toFixed(2) + ' ' + (-rr * Math.sin(th)).toFixed(2);
+    }
+    $('#rose').setAttribute('d', r);
   })();
+  var DATA = [[0, 80], [2, 67], [4, 57], [6, 48], [8, 43], [10, 37]];
+  function model(t, tau) { return 20 + 60 * Math.exp(-t / tau); }
+  function rms(tau) { var s = 0; DATA.forEach(function (p) { var d = p[1] - model(p[0], tau); s += d * d; }); return Math.sqrt(s / DATA.length); }
+  function DX(t) { return 24 + t * 26.8; }
+  function DY(T) { return 172 - (T - 20) * 2.34; }
+  (function () {
+    var pts = $('#pts'), NSv = 'http://www.w3.org/2000/svg';
+    DATA.forEach(function (p) {
+      var c = document.createElementNS(NSv, 'circle');
+      c.setAttribute('class', 'pt'); c.setAttribute('r', 4.5);
+      c.setAttribute('cx', DX(p[0]).toFixed(1)); c.setAttribute('cy', DY(p[1]).toFixed(1));
+      pts.appendChild(c);
+    });
+    var d = '';
+    for (var t = 0; t <= 10.001; t += 0.25) d += (t ? 'L' : 'M') + DX(t).toFixed(1) + ' ' + DY(model(t, 11)).toFixed(1);
+    $('#fit').setAttribute('d', d);
+  })();
+
+  /* ---- what happens on the page in each room ----
+     Arriving in a room plays its page once: the equation is typed into
+     its slots, the curve draws itself, the table is pasted, the PDF prints.
+     Each step reveals one thing, so there is one thing to look at at a
+     time. Leaving puts the page back, ready to play again. With reduced
+     motion the page is simply shown finished. */
+  var timers = [], loops = [];
+  function later(ms, fn) { timers.push(setTimeout(fn, REDUCE ? 0 : ms)); }
+  function cancelPlays() {
+    timers.forEach(clearTimeout); timers = [];
+    loops.forEach(cancelAnimationFrame); loops = [];
+  }
+  function reveal(room, k) { $$('[data-k="' + k + '"]', room).forEach(function (n) { n.classList.add('on'); }); }
+  function press(room, text) {
+    var box = $('.typed__keys', room);
+    if (!box) return;
+    $$('kbd', box).forEach(function (n) { n.classList.add('old'); });
+    var kb = document.createElement('kbd'); kb.textContent = text; box.appendChild(kb);
+    while (box.children.length > 4) box.removeChild(box.firstChild);
+  }
+  /* a path drawn from its start, with an optional pen riding its tip */
+  function stroke(path, ms, pen) {
+    var L = 0;
+    try { L = path.getTotalLength(); } catch (e) { L = 0; }
+    if (!L) return;
+    path.style.strokeDasharray = L; path.style.strokeDashoffset = L;
+    if (pen) pen.classList.add('on');
+    var t0 = performance.now();
+    function finish() { path.style.strokeDashoffset = 0; if (pen) pen.classList.remove('on'); }
+    if (REDUCE) { finish(); return; }
+    (function step(now) {
+      var u = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - u, 2);
+      path.style.strokeDashoffset = L * (1 - e);
+      if (pen) { var p = path.getPointAtLength(L * e); pen.setAttribute('cx', p.x.toFixed(1)); pen.setAttribute('cy', p.y.toFixed(1)); }
+      if (u < 1) loops.push(requestAnimationFrame(step)); else finish();
+    })(t0);
+    /* a tab in the background runs no frames: draw it anyway */
+    timers.push(setTimeout(finish, ms + 300));
+  }
+  function count(el, from, to, ms, digits) {
+    var t0 = performance.now();
+    function put(v) { el.textContent = v.toFixed(digits); }
+    if (REDUCE) { put(to); return; }
+    (function step(now) {
+      var u = Math.min(1, (now - t0) / ms), e = 1 - Math.pow(1 - u, 3);
+      put(from + (to - from) * e);
+      if (u < 1) loops.push(requestAnimationFrame(step));
+    })(t0);
+    timers.push(setTimeout(function () { put(to); }, ms + 300));
+  }
+  /* back to the start: everything still to come is hidden */
+  function prep(room) {
+    room.classList.add('pre');
+    $$('[data-k]', room).forEach(function (n) { n.classList.remove('on'); });
+    $$('.slot', room).forEach(function (n) { n.classList.remove('wait'); });
+    $$('.typed__keys', room).forEach(function (n) { n.textContent = ''; });
+    $$('path.cv, .rose', room).forEach(function (p) { p.style.strokeDasharray = ''; p.style.strokeDashoffset = ''; });
+    $$('.pt, .bar, .pie, #env', room).forEach(function (n) { n.classList.remove('on'); });
+    var fx = $('.fx', room); if (fx) { $('.fx__in', fx).textContent = ''; fx.classList.remove('done'); }
+    var st = $('.pdfstate', room); if (st) { st.textContent = 'Running pdflatex…'; room.style.setProperty('--prog', 0); }
+    $$('path.cv', room).forEach(function (p) {
+      var L = 0; try { L = p.getTotalLength(); } catch (e) { L = 0; }
+      if (L) { p.style.strokeDasharray = L; p.style.strokeDashoffset = L; }
+    });
+  }
+  function finished(room) {
+    later(350, function () {
+      room.classList.remove('pre');
+      var h = $('.hot', room);
+      if (h && room.classList.contains('on')) h.setAttribute('aria-expanded', 'true');
+    });
+  }
+  var PLAYS = {
+    eq: function (room) {
+      var t = 350;
+      [['int', 1], ['-inf ↵', 2], ['inf ↵', 3], ['e^-x^2', 4], ['dx = sqrt pi', 5]].forEach(function (s, i) {
+        later(t, function () { press(room, s[0]); });
+        later(t + 420, function () {
+          reveal(room, s[1]);
+          if (s[1] === 1) $$('.slot', room).forEach(function (n) { n.classList.add('wait'); });
+        });
+        t += i === 4 ? 1100 : 820;
+      });
+      later(t, function () { press(room, 'matrix'); });
+      later(t + 450, function () { reveal(room, 6); });
+      later(t + 900, function () { finished(room); });
+    },
+    ch: function (room) {
+      var text = 'sin(2x) * e^(-x/4)', inEl = $('.fx__in', room);
+      text.split('').forEach(function (c, i) { later(300 + i * 55, function () { inEl.textContent = text.slice(0, i + 1); }); });
+      var t = 300 + text.length * 55;
+      later(t, function () { $('.fx', room).classList.add('done'); press(room, '↵'); });
+      later(t + 200, function () { stroke($('#wave'), 1900, $('#pen')); });
+      later(t + 1700, function () { $('#env').classList.add('on'); });
+      later(t + 2200, function () { reveal(room, 2); });
+      later(t + 2700, function () { reveal(room, 3); $$('.pie', room).forEach(function (n) { n.classList.add('on'); }); });
+      later(t + 3300, function () { reveal(room, 4); $$('.bar', room).forEach(function (n) { n.classList.add('on'); }); });
+      later(t + 3900, function () { reveal(room, 5); stroke($('#rose'), 1100); });
+      later(t + 5100, function () { finished(room); });
+    },
+    da: function (room) {
+      var rows = $$('tbody tr', room), pts = $$('.pt', room);
+      rows.forEach(function (r, i) {
+        later(350 + i * 200, function () { r.classList.add('on'); if (pts[i]) pts[i].classList.add('on'); });
+      });
+      var t = 350 + rows.length * 200 + 250;
+      later(t, function () {
+        reveal(room, 3);
+        stroke($('#fit'), 1500);
+        count($('.n-tau', room), 4, 11, 1500, 0);
+        count($('.n-rms', room), rms(4), rms(11), 1500, 1);
+      });
+      later(t + 1800, function () { finished(room); });
+    },
+    pdf: function (room) {
+      var st = $('.pdfstate', room), t0 = performance.now();
+      [0, 1].forEach(function (s) { later(300 + s * 900, function () { st.textContent = 'Running pdflatex… ' + (s + 1) + ' s'; }); });
+      later(300, function () { room.style.setProperty('--prog', 1); });
+      later(2100, function () { st.textContent = '137 kB · made in 1.9 s'; });
+      $$('.print', room).forEach(function (p, i) { later(2200 + i * 230, function () { p.classList.add('on'); }); });
+      later(2200 + $$('.print', room).length * 230 + 200, function () { finished(room); });
+    }
+  };
+  function play(room) {
+    var fn = PLAYS[room.dataset.r];
+    if (!fn) return;
+    cancelPlays();
+    prep(room);
+    /* after the slide has brought the room in */
+    later(750, function () { fn(room); });
+  }
+  /* after the background has copied the finished pages */
+  setTimeout(function () { $$('.room').forEach(function (r) { if (PLAYS[r.dataset.r] && !r.classList.contains('on')) prep(r); }); }, 0);
 
   /* ---- the background: a title page, then a copy of every sheet ---- */
   (function () {
@@ -58,7 +216,8 @@
     $$('.room .sheet').forEach(function (sheet) {
       var c = sheet.cloneNode(true);
       c.removeAttribute('aria-label');
-      $$('.hot, .code', c).forEach(function (n) { n.remove(); });
+      $$('.hot, .code, .typed, .pen', c).forEach(function (n) { n.remove(); });
+      $$('[data-k]', c).forEach(function (n) { n.removeAttribute('data-k'); });
       $$('[id]', c).forEach(function (n) { n.removeAttribute('id'); });
       far.appendChild(c);
     });
@@ -83,16 +242,16 @@
     rays.appendChild(n); return n;
   }
   /* the compass round the words: a ring and a toothed rim */
-  shape('circle', 'rose', { r: 118 });
-  shape('circle', 'rose-teeth', { r: 125 });
+  shape('circle', 'rose', { r: 172 });
+  shape('circle', 'rose-teeth', { r: 181 });
   $$('.dir').forEach(function (d, n) {
     var a = +d.dataset.a, v = vec(a);
     d.style.setProperty('--n', n);
     d.style.setProperty('--x', v.x.toFixed(4)); d.style.setProperty('--y', v.y.toFixed(4));
     d.style.setProperty('--rot', (-a) + 'deg');
     /* a notch on the ring at this bearing, and the ray out to the node */
-    notchOf[d.dataset.to] = shape('path', 'notch', { d: 'M' + (v.x * 111).toFixed(1) + ' ' + (v.y * 111).toFixed(1) + 'L' + (v.x * 125).toFixed(1) + ' ' + (v.y * 125).toFixed(1) });
-    rayOf[d.dataset.to] = shape('line', '', { x1: (v.x * 138).toFixed(1), y1: (v.y * 138).toFixed(1), x2: (v.x * 212).toFixed(1), y2: (v.y * 212).toFixed(1) });
+    notchOf[d.dataset.to] = shape('path', 'notch', { d: 'M' + (v.x * 162).toFixed(1) + ' ' + (v.y * 162).toFixed(1) + 'L' + (v.x * 181).toFixed(1) + ' ' + (v.y * 181).toFixed(1) });
+    rayOf[d.dataset.to] = shape('line', '', { x1: (v.x * 194).toFixed(1), y1: (v.y * 194).toFixed(1), x2: (v.x * 244).toFixed(1), y2: (v.y * 244).toFixed(1) });
   });
   where.go = vec(0);
 
@@ -120,12 +279,14 @@
     rooms.forEach(function (r) { var on = r.dataset.r === id; r.classList.toggle('on', on); r.inert = !on; });
     ORDER.forEach(function (k) { marks[k].setAttribute('aria-current', String(k === id)); });
     closeHots(document);
-    /* a page's first mark opens by itself, so the idea is seen without a click */
-    clearTimeout(openT);
-    openT = setTimeout(function () {
-      var h = $('.room.on .hot');
-      if (h && view === id) h.setAttribute('aria-expanded', 'true');
-    }, REDUCE ? 0 : 2300);
+    /* the page in a room plays as you arrive; one you leave is put back
+       once it is out of sight */
+    var here = rooms.filter(function (r) { return r.dataset.r === id; })[0];
+    if (here && PLAYS[id]) play(here);
+    else cancelPlays();
+    rooms.forEach(function (r) {
+      if (r !== here && PLAYS[r.dataset.r] && !r.classList.contains('pre')) setTimeout(function () { if (!r.classList.contains('on')) prep(r); }, 900);
+    });
   }
   /* go to the map or a room: the plane slides */
   function go(id) {

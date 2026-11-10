@@ -11,7 +11,7 @@
      are data: URLs; the compiled PDF is a blob:. connect-src names the
      engine host — tools/build-web.js narrows it to this site alone when
      TeX Live is deployed beside the page. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-BTJyM//T36beMA6SX6sm1ZiI/X46wKqND3Kylbm02vs=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-MJ5zhakDm7hm0lVafVeFb1BEOQ4+tODFM3S4D+QdsgU=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-CoZh+jYl8McHKRJEdhGuWtNb3QxVr4ajm91zizVx52o=' 'sha256-eRyB0e9MwcV/sN/Bkhv2uITPtCubhMwZrfU9ePEG2XU=' 'sha256-gTXpx1MqBsqZrci2XKPyfaRAhleCjx+MQvyPz6Ia6r8=' 'sha256-m6ZufmdvKdyk6Jk2FHD7vFynWbDROIwnBtSY5MCstIY=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-FhIJdB2P9akUK79/DSM8iXdsf+ylY8k0PqM4qeuNp40=' 'sha256-8pKaQF1tkxeLhGaQRindJVGvU+UQKwiqACC5Q69e8aY=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-xSlWA023E0ZEIcF7Nan+Zxuh2Puld/ez8/LWRJUgkt0='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' 'sha256-BTJyM//T36beMA6SX6sm1ZiI/X46wKqND3Kylbm02vs=' 'sha256-iLLwQ43GJM349ojgEIJUV6PNeNlngArQDFJ9bC3JBNA=' 'sha256-MJ5zhakDm7hm0lVafVeFb1BEOQ4+tODFM3S4D+QdsgU=' 'sha256-gBznwgsA4TAwZV5X5LOTdr5Pb4jXQ+rQXvrlf1thvOs=' 'sha256-6ui/T2ftqdeaTpMQoIWHmM0CTIq1jfnJDoFSnC3zI3I=' 'sha256-TNb6Q7QmoiKM7FMlwB0unFKyyPveH3KqQoWz8x5wPuw=' 'sha256-CoZh+jYl8McHKRJEdhGuWtNb3QxVr4ajm91zizVx52o=' 'sha256-eRyB0e9MwcV/sN/Bkhv2uITPtCubhMwZrfU9ePEG2XU=' 'sha256-gTXpx1MqBsqZrci2XKPyfaRAhleCjx+MQvyPz6Ia6r8=' 'sha256-m6ZufmdvKdyk6Jk2FHD7vFynWbDROIwnBtSY5MCstIY=' 'sha256-fVO5tz1S4ift4e9onmBBSpbuGXBHjeyvVjnHCH/V/74=' 'sha256-XlfSxbmCZgBcj14VoMgRy+6VlvjBU3PIAEh5AKktxyM=' 'sha256-0u+kRO0c/UV+PrUSoLh/Gf3xHNcUUeVacX6fpw3j5Vk=' 'sha256-8pKaQF1tkxeLhGaQRindJVGvU+UQKwiqACC5Q69e8aY=' 'sha256-wYDTC1URsasXAPXC5T/LqgCMnhZf+VIbKOzL0ClIhAI=' 'sha256-xSlWA023E0ZEIcF7Nan+Zxuh2Puld/ez8/LWRJUgkt0='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://cdn.siglum.org; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <!-- Where the compiler's wasm and TeX Live live, if not beside this page
      (engine/texlive/) or on the public CDN. See DEPLOY.md. -->
 <meta name="papertex-engine" content="">
@@ -15258,8 +15258,8 @@ blockquote.pt-quote {
 /* PaperTeX — compiling the generated LaTeX to a real PDF, in the browser.
 
    The engine is @siglum/engine (MIT): TeX Live 2025 built to WebAssembly. It
-   is loaded only when someone actually asks for a PDF, so the editor stays
-   light. Nothing is uploaded anywhere — the wasm and the TeX Live bundles are
+   starts loading in the background once the editor has settled (see warm()),
+   so the first PDF does not wait for it. Nothing is uploaded anywhere — the wasm and the TeX Live bundles are
    fetched as static files and cached by the browser. */
 (function () {
   'use strict';
@@ -15474,9 +15474,38 @@ blockquote.pt-quote {
     }).catch(function () { return none; });   /* then TeX says which file it missed */
   }
 
+  /* ---- warming up ----
+     The first PDF used to wait for the engine and the TeX Live parts a
+     document needs (tens of megabytes) to download. Now they start
+     downloading as soon as the editor has settled: a small document with
+     the editor's standard preamble is typeset in the background, which
+     fetches the same parts the starter document uses and leaves them in
+     memory. Make PDF pressed meanwhile waits for it and shows its progress.
+     Not on a connection that asks to save data, or a slow one. */
+  var warming = null;
+  var WARM_TEX = '\\documentclass[11pt,a4paper]{article}\n\\usepackage[utf8]{inputenc}\n\\usepackage[T1]{fontenc}\n' +
+    '\\usepackage{amsmath, amssymb}\n\\usepackage[margin=2.5cm]{geometry}\n\\usepackage{hyperref}\n' +
+    '\\begin{document}\nPaperTeX $\\int_0^1 x^2\\,dx$\n\\end{document}\n';
+  function warm() {
+    if (warming || location.protocol === 'file:') return warming;
+    var net = navigator.connection;
+    if (net && (net.saveData || /(^|-)2g|3g/.test(net.effectiveType || ''))) return null;
+    warming = getCompiler(null).then(function (c) {
+      return c.compile(WARM_TEX, { additionalFiles: {} });
+    }).then(function () { return true; }, function () { return false; });
+    return warming;
+  }
+  function soon(fn) {
+    if (window.requestIdleCallback) requestIdleCallback(fn, { timeout: 4000 }); else setTimeout(fn, 1500);
+  }
+  if (document.readyState === 'complete') soon(warm);
+  else window.addEventListener('load', function () { soon(warm); });
+
   function compile(tex, doc, onProgress) {
     var logs = [];
-    return getCompiler(onProgress).then(function (c) {
+    /* a warm-up still under way: show its progress, then go on from it */
+    progressTo = onProgress || null;
+    return Promise.resolve(warming).then(function () { return getCompiler(onProgress); }).then(function (c) {
       c.onLog = function (m) { logs.push(String(m)); };
       return Promise.all([babelFiles(tex), packageFiles(tex)]).then(function (got) {
         var files = sidecarFiles(tex, doc);
@@ -15510,7 +15539,7 @@ blockquote.pt-quote {
   }
 
   window.PT = window.PT || {};
-  window.PT.compile = { run: compile, config: CFG };
+  window.PT.compile = { run: compile, warm: warm, config: CFG };
 })();
 </script>
 <script>
